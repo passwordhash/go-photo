@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"go-photo/internal/config"
-	"go-photo/internal/handler/user"
+	"go-photo/internal/handler/v1/user"
 )
 
 type App struct {
@@ -61,9 +61,11 @@ func (a *App) initServiceProvider(_ context.Context) error {
 func (a *App) initHTTPServer(_ context.Context) error {
 	router := gin.New()
 
+	v1 := router.Group("/v1")
+
 	userHandler := user.NewUserHandler(a.sp.UserService())
 
-	userHandler.RegisterRoutes(router)
+	userHandler.RegisterRoutes(v1)
 
 	a.httpServer = router
 

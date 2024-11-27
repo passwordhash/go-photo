@@ -16,6 +16,7 @@ dist/
 *.log
 *.env
 *.env.*
+!.env.example
 *.local
 
 vendor/

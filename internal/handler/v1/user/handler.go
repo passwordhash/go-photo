@@ -3,6 +3,7 @@ package user
 import (
 	"github.com/gin-gonic/gin"
 	"go-photo/internal/service"
+	"strconv"
 )
 
 type Handler struct {
@@ -22,6 +23,14 @@ func (h *Handler) RegisterRoutes(router *gin.RouterGroup) {
 
 func (h *Handler) get(c *gin.Context) {
 	userId := c.Param("id")
+
+	// Пример валидации параметра
+	_, err := strconv.Atoi(userId)
+	if err != nil {
+		c.Error(err)
+		c.JSON(400, gin.H{"error": "invalid user id"})
+		return
+	}
 
 	user, err := h.userService.Get(c, userId)
 	if err != nil {

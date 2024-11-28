@@ -67,6 +67,14 @@ func (a *App) initServiceProvider(_ context.Context) error {
 func (a *App) initLogging(_ context.Context) error {
 	log.SetOutput(os.Stdout)
 	log.SetFormatter(&log.TextFormatter{})
+
+	logLevel, err := log.ParseLevel(a.sp.BaseConfig().LogLevel())
+	if err != nil {
+		log.Printf("failed to parse log level: %v", err)
+		logLevel = log.DebugLevel
+	}
+
+	log.SetLevel(logLevel)
 	return nil
 }
 

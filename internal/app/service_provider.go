@@ -8,7 +8,7 @@ import (
 )
 
 type serviceProvider struct {
-	baseConfig config.Config
+	bc config.Config
 	// services, repositories, etc.
 
 	userSevice service.UserService
@@ -19,16 +19,16 @@ func newServiceProvider() *serviceProvider {
 }
 
 func (s *serviceProvider) BaseConfig() config.Config {
-	if s.baseConfig == nil {
+	if s.bc == nil {
 		cfg, err := config.NewConfig()
 		if err != nil {
 			log.Fatalf("failed to get base config: %s", err.Error())
 		}
 
-		s.baseConfig = cfg
+		s.bc = cfg
 	}
 
-	return s.baseConfig
+	return s.bc
 }
 
 func (s *serviceProvider) UserService() service.UserService {

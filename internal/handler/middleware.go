@@ -25,9 +25,9 @@ func Logger() gin.HandlerFunc {
 		}
 
 		entry := log.WithFields(log.Fields{
-			"status_code":  statusCode,
 			"method":       method,
 			"path":         path,
+			"status_code":  statusCode,
 			"client_ip":    clientIP,
 			"latency_time": latency,
 		})

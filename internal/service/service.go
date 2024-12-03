@@ -7,4 +7,5 @@ import (
 
 type UserService interface {
 	Get(ctx context.Context, uuid string) (model.User, error)
+	GetAll(ctx context.Context) ([]model.User, error)
 }

@@ -4,13 +4,14 @@ import (
 	"go-photo/internal/config"
 	"go-photo/internal/service"
 	userService "go-photo/internal/service/user"
+	desc "go-photo/pkg/account_v1"
 	"log"
 )
 
 type serviceProvider struct {
 	bc config.Config
-	// services, repositories, etc.
 
+	// services, repositories, etc.
 	userSevice service.UserService
 }
 
@@ -31,9 +32,9 @@ func (s *serviceProvider) BaseConfig() config.Config {
 	return s.bc
 }
 
-func (s *serviceProvider) UserService() service.UserService {
+func (s *serviceProvider) UserService(accountClient desc.AccountServiceClient) service.UserService {
 	if s.userSevice == nil {
-		s.userSevice = userService.NewService()
+		s.userSevice = userService.NewService(accountClient)
 	}
 
 	return s.userSevice

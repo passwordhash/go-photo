@@ -2,6 +2,8 @@
 .vscode/
 *.iml
 
+api/account_v1
+
 *.exe
 *.dll
 *.so
@@ -21,8 +23,8 @@ dist/
 
 vendor/
 
-*.pb.go
-*.pb.gw.go
+#*.pb.go
+#*.pb.gw.go
 
 .DS_Store
 Thumbs.db

@@ -1,16 +1,14 @@
-package user
+package photo
 
-import (
-	def "go-photo/internal/service"
-)
+import def "go-photo/internal/service"
 
 // Проверка на соответствие интерфейсу UserService (для статической проверки)
-var _ def.UserService = (*Service)(nil)
+var _ def.PhotoService = (*Service)(nil)
 
 type Service struct {
 	//userRepo repository.UserRepository
 }
 
-func NewUserService() *Service {
+func NewPhotoService() *Service {
 	return &Service{}
 }

@@ -3,6 +3,7 @@ package app
 import (
 	"go-photo/internal/config"
 	"go-photo/internal/service"
+	photoService "go-photo/internal/service/photo"
 	userService "go-photo/internal/service/user"
 	"log"
 )
@@ -11,7 +12,8 @@ type serviceProvider struct {
 	bc config.Config
 	// services, repositories, etc.
 
-	userSevice service.UserService
+	userSevice   service.UserService
+	photoService service.PhotoService
 }
 
 func newServiceProvider() *serviceProvider {
@@ -33,10 +35,16 @@ func (s *serviceProvider) BaseConfig() config.Config {
 
 func (s *serviceProvider) UserService() service.UserService {
 	if s.userSevice == nil {
-		s.userSevice = userService.NewService()
+		s.userSevice = userService.NewUserService()
 	}
 
 	return s.userSevice
 }
 
-// getters ...
+func (s *serviceProvider) PhotoService() service.PhotoService {
+	if s.photoService == nil {
+		s.photoService = photoService.NewPhotoService()
+	}
+
+	return s.photoService
+}

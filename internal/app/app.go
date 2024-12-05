@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"go-photo/internal/config"
 	"go-photo/internal/handler"
+	"go-photo/internal/handler/v1/photos"
 	"go-photo/internal/handler/v1/user"
 	"os"
 	"time"
@@ -68,6 +69,7 @@ func (a *App) initServiceProvider(_ context.Context) error {
 func (a *App) initFolders(_ context.Context) error {
 	folders := []string{config.PhotosDir, config.LogsDir}
 
+	// TODO: move to utils
 	for _, folder := range folders {
 		if _, err := os.Stat(folder); os.IsNotExist(err) {
 			err := os.MkdirAll(folder, os.ModePerm)
@@ -113,11 +115,14 @@ func (a *App) initHTTPServer(_ context.Context) error {
 		)
 	}))
 
-	v1 := router.Group("/v1")
+	api := router.Group("/api")
+	v1 := api.Group("/v1")
 
-	userHandler := user.NewUserHandler(a.sp.UserService())
+	usersHandler := user.NewUserHandler(a.sp.UserService())
+	photosHandler := photos.NewPhotosHandler(a.sp.PhotoService())
 
-	userHandler.RegisterRoutes(v1)
+	usersHandler.RegisterRoutes(v1)
+	photosHandler.RegisterRoutes(v1)
 
 	a.httpServer = router
 

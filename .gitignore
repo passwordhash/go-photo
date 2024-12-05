@@ -2,6 +2,8 @@
 .vscode/
 *.iml
 
+photos/
+
 *.exe
 *.dll
 *.so

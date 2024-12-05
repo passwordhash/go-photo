@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 	"go-photo/internal/config"
 	"go-photo/internal/handler"
 	"go-photo/internal/handler/v1/photos"
 	"go-photo/internal/handler/v1/user"
 	desc "go-photo/pkg/account_v1"
+	"go-photo/pkg/repository"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"os"
@@ -19,7 +22,10 @@ import (
 type App struct {
 	grpcClient desc.AccountServiceClient
 	httpServer *gin.Engine
-	sp         *serviceProvider
+
+	db *sqlx.DB
+
+	sp *serviceProvider
 }
 
 func NewApp(ctx context.Context) (*App, error) {
@@ -43,6 +49,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initServiceProvider,
 		a.initFolders,
 		a.initLogging,
+		a.initPGConnection,
 		a.initGRPCClient,
 		a.initHTTPServer,
 	}
@@ -100,7 +107,19 @@ func (a *App) initLogging(_ context.Context) error {
 	return nil
 }
 
-func (a *App) initGRPCClient(c context.Context) error {
+func (a *App) initPGConnection(_ context.Context) error {
+	pgConfig := a.sp.PSQLConfig()
+	db, err := repository.NewPostgresDB(pgConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create postgres connection: %w with config: %v", err, pgConfig)
+	}
+
+	a.db = db
+
+	return nil
+}
+
+func (a *App) initGRPCClient(_ context.Context) error {
 	conn, err := grpc.NewClient(a.sp.BaseConfig().GRPCAddr(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return fmt.Errorf("failed to create grpc client: %w", err)

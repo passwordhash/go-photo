@@ -6,11 +6,13 @@ import (
 	photoService "go-photo/internal/service/photo"
 	userService "go-photo/internal/service/user"
 	desc "go-photo/pkg/account_v1"
+	"go-photo/pkg/repository"
 	"log"
 )
 
 type serviceProvider struct {
-	bc config.Config
+	bc       config.Config
+	pgConfig *repository.PSQLConfig
 
 	userSevice   service.UserService
 	photoService service.PhotoService
@@ -31,6 +33,19 @@ func (s *serviceProvider) BaseConfig() config.Config {
 	}
 
 	return s.bc
+}
+
+func (s *serviceProvider) PSQLConfig() repository.PSQLConfig {
+	if s.pgConfig == nil {
+		cfg, err := config.NewPSQLConfig()
+		if err != nil {
+			log.Fatalf("failed to get psql config: %s", err.Error())
+		}
+
+		s.pgConfig = &cfg
+	}
+
+	return *s.pgConfig
 }
 
 func (s *serviceProvider) UserService(accountClient desc.AccountServiceClient) service.UserService {

@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func (s Service) Get(_ context.Context, uuid string) (model.User, error) {
+func (s *Service) Get(_ context.Context, uuid string) (model.User, error) {
 	mockUser := model.User{
 		UUID:         uuid,
 		Email:        "mock-email",

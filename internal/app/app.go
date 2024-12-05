@@ -36,6 +36,7 @@ func (a *App) initDeps(ctx context.Context) error {
 	inits := []func(context.Context) error{
 		a.initConfig,
 		a.initServiceProvider,
+		a.initFolders,
 		a.initLogging,
 		a.initHTTPServer,
 	}
@@ -61,6 +62,20 @@ func (a *App) initConfig(_ context.Context) error {
 
 func (a *App) initServiceProvider(_ context.Context) error {
 	a.sp = newServiceProvider()
+	return nil
+}
+
+func (a *App) initFolders(_ context.Context) error {
+	folders := []string{config.PhotosDir, config.LogsDir}
+
+	for _, folder := range folders {
+		if _, err := os.Stat(folder); os.IsNotExist(err) {
+			err := os.MkdirAll(folder, os.ModePerm)
+			if err != nil {
+				return fmt.Errorf("unable to create folder %s: %w", folder, err)
+			}
+		}
+	}
 	return nil
 }
 

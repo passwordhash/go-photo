@@ -158,7 +158,7 @@ func (a *App) initHTTPServer(_ context.Context) error {
 	v1 := api.Group("/v1")
 
 	usersHandler := user.NewUserHandler(a.sp.UserService(a.grpcClient))
-	photosHandler := photos.NewPhotosHandler(a.sp.PhotoService())
+	photosHandler := photos.NewPhotosHandler(a.sp.PhotoService(a.db))
 
 	usersHandler.RegisterRoutes(v1)
 	photosHandler.RegisterRoutes(v1)

@@ -14,7 +14,7 @@ import (
 
 var FileAlreadyExistsError = errors.New("photo with the same name already exists")
 
-func (s *Service) UploadPhoto(_ context.Context, uuid string, photoFile multipart.File, photoName string) (int64, error) {
+func (s *service) UploadPhoto(_ context.Context, uuid string, photoFile multipart.File, photoName string) (int64, error) {
 	userFolder := filepath.Join(config.PhotosDir, uuid)
 	if _, err := os.Stat(userFolder); os.IsNotExist(err) {
 		err := os.Mkdir(userFolder, os.ModePerm)

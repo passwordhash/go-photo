@@ -1,18 +1,23 @@
 package app
 
 import (
+	"github.com/jmoiron/sqlx"
 	"go-photo/internal/config"
+	"go-photo/internal/repository"
+	photoRepository "go-photo/internal/repository/photo"
 	"go-photo/internal/service"
 	photoService "go-photo/internal/service/photo"
 	userService "go-photo/internal/service/user"
 	desc "go-photo/pkg/account_v1"
-	"go-photo/pkg/repository"
+	pkgRepo "go-photo/pkg/repository"
 	"log"
 )
 
 type serviceProvider struct {
 	bc       config.Config
-	pgConfig *repository.PSQLConfig
+	pgConfig *pkgRepo.PSQLConfig
+
+	photoRepository repository.PhotoRepository
 
 	userSevice   service.UserService
 	photoService service.PhotoService
@@ -35,7 +40,7 @@ func (s *serviceProvider) BaseConfig() config.Config {
 	return s.bc
 }
 
-func (s *serviceProvider) PSQLConfig() repository.PSQLConfig {
+func (s *serviceProvider) PSQLConfig() pkgRepo.PSQLConfig {
 	if s.pgConfig == nil {
 		cfg, err := config.NewPSQLConfig()
 		if err != nil {
@@ -48,6 +53,14 @@ func (s *serviceProvider) PSQLConfig() repository.PSQLConfig {
 	return *s.pgConfig
 }
 
+func (s *serviceProvider) PhotoRepository(db *sqlx.DB) repository.PhotoRepository {
+	if s.photoRepository == nil {
+		s.photoRepository = photoRepository.NewRepository(db)
+	}
+
+	return s.photoRepository
+}
+
 func (s *serviceProvider) UserService(accountClient desc.AccountServiceClient) service.UserService {
 	if s.userSevice == nil {
 		s.userSevice = userService.NewUserService(accountClient)
@@ -56,9 +69,9 @@ func (s *serviceProvider) UserService(accountClient desc.AccountServiceClient) s
 	return s.userSevice
 }
 
-func (s *serviceProvider) PhotoService() service.PhotoService {
+func (s *serviceProvider) PhotoService(db *sqlx.DB) service.PhotoService {
 	if s.photoService == nil {
-		s.photoService = photoService.NewPhotoService()
+		s.photoService = photoService.NewService(s.PhotoRepository(db))
 	}
 
 	return s.photoService

@@ -2,7 +2,11 @@
 .vscode/
 *.iml
 
+<<<<<<< HEAD
 photos/
+=======
+api/account_v1
+>>>>>>> connect-grpc
 
 *.exe
 *.dll
@@ -23,8 +27,8 @@ dist/
 
 vendor/
 
-*.pb.go
-*.pb.gw.go
+#*.pb.go
+#*.pb.gw.go
 
 .DS_Store
 Thumbs.db

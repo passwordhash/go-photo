@@ -9,11 +9,15 @@ import (
 	"go-photo/internal/handler"
 	"go-photo/internal/handler/v1/photos"
 	"go-photo/internal/handler/v1/user"
+	desc "go-photo/pkg/account_v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"os"
 	"time"
 )
 
 type App struct {
+	grpcClient desc.AccountServiceClient
 	httpServer *gin.Engine
 	sp         *serviceProvider
 }
@@ -39,6 +43,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initServiceProvider,
 		a.initFolders,
 		a.initLogging,
+		a.initGRPCClient,
 		a.initHTTPServer,
 	}
 
@@ -95,7 +100,22 @@ func (a *App) initLogging(_ context.Context) error {
 	return nil
 }
 
+func (a *App) initGRPCClient(c context.Context) error {
+	conn, err := grpc.NewClient(a.sp.BaseConfig().GRPCAddr(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return fmt.Errorf("failed to create grpc client: %w", err)
+	}
+
+	a.grpcClient = desc.NewAccountServiceClient(conn)
+
+	return nil
+}
+
 func (a *App) initHTTPServer(_ context.Context) error {
+	if a.grpcClient == nil {
+		return fmt.Errorf("grpc client is not initialized")
+	}
+
 	router := gin.New()
 
 	router.Use(gin.Recovery())
@@ -118,7 +138,7 @@ func (a *App) initHTTPServer(_ context.Context) error {
 	api := router.Group("/api")
 	v1 := api.Group("/v1")
 
-	usersHandler := user.NewUserHandler(a.sp.UserService())
+	usersHandler := user.NewUserHandler(a.sp.UserService(a.grpcClient))
 	photosHandler := photos.NewPhotosHandler(a.sp.PhotoService())
 
 	usersHandler.RegisterRoutes(v1)

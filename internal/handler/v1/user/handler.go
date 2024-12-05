@@ -18,6 +18,7 @@ func (h *Handler) RegisterRoutes(router *gin.RouterGroup) {
 	userGroup := router.Group("/users")
 	{
 		userGroup.GET("/:id", h.get)
+		userGroup.GET("/", h.getAll)
 	}
 }
 
@@ -39,4 +40,14 @@ func (h *Handler) get(c *gin.Context) {
 	}
 
 	c.JSON(200, user)
+}
+
+func (h *Handler) getAll(c *gin.Context) {
+	users, err := h.userService.GetAll(c)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, users)
 }

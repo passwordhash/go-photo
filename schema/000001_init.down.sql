@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS PhotoVersions;
+
+DROP TYPE IF EXISTS version_type_enum;
+
+DROP TABLE IF EXISTS Photos;
+
+DROP TABLE IF EXISTS Folders;

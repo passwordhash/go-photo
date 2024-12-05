@@ -2,11 +2,8 @@
 .vscode/
 *.iml
 
-<<<<<<< HEAD
 photos/
-=======
 api/account_v1
->>>>>>> connect-grpc
 
 *.exe
 *.dll

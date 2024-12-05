@@ -1,0 +1,30 @@
+version: '3.9'
+
+services:
+    db:
+        image: postgres:15
+        container_name: db-go-photo
+        restart: always
+        ports:
+            - "${POSTGRES_PORT}:5432"
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+        volumes:
+            - db_data:/var/lib/postgresql/data
+
+    migrate:
+        image: migrate/migrate
+        container_name: migrate-go-photo
+        entrypoint: [
+            "sh", "-c",
+            "sleep 5 && migrate -path /migrations -database postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB} up"
+        ]
+        depends_on:
+            - db
+        volumes:
+            - ./schema:/migrations
+
+volumes:
+    db_data:

@@ -19,6 +19,7 @@ CREATE TABLE PhotoVersions (
   photo_id INTEGER not null ,
   version_type version_type_enum default 'original',
   filepath VARCHAR(255) not null ,
+--     TODO: может стоит вынести в отдельную таблицу
   width INTEGER not null,
   height INTEGER not null,
   size INTEGER not null,

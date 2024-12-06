@@ -12,7 +12,7 @@ type Photo struct {
 	UploadedAt *sql.NullTime `db:"uploaded_at"`
 }
 
-type PhotoVersions struct {
+type PhotoVersion struct {
 	ID          int    `db:"id"`
 	PhotoID     int    `db:"photo_id"`
 	VersionType string `db:"version_type"`

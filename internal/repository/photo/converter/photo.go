@@ -5,7 +5,7 @@ import (
 	repoModel "go-photo/internal/repository/photo/model"
 )
 
-func ToPhotoFromRepo(photo *repoModel.Photo, folder *repoModel.Folder, versions []repoModel.PhotoVersions) *model.Photo {
+func ToPhotoFromRepo(photo *repoModel.Photo, folder *repoModel.Folder, versions []repoModel.PhotoVersion) *model.Photo {
 	return &model.Photo{
 		ID:         photo.ID,
 		UserUUID:   photo.UserUUID,
@@ -23,7 +23,7 @@ func ToFolderFromRepo(folder *repoModel.Folder) *model.Folder {
 	}
 }
 
-func ToPhotoVersionsFromRepo(versions []repoModel.PhotoVersions) []model.PhotoVersion {
+func ToPhotoVersionsFromRepo(versions []repoModel.PhotoVersion) []model.PhotoVersion {
 	var res []model.PhotoVersion
 
 	for _, v := range versions {
@@ -33,7 +33,7 @@ func ToPhotoVersionsFromRepo(versions []repoModel.PhotoVersions) []model.PhotoVe
 	return res
 }
 
-func ToPhotoVersionFromRepo(version repoModel.PhotoVersions) model.PhotoVersion {
+func ToPhotoVersionFromRepo(version repoModel.PhotoVersion) model.PhotoVersion {
 	return model.PhotoVersion{
 		ID:          version.PhotoID,
 		PhotoID:     version.PhotoID,

@@ -1,9 +1,11 @@
-CREATE TABLE Folders (
+CREATE TABLE folders (
   id SERIAL PRIMARY KEY,
   folder_path TEXT not null
 );
 
-CREATE TABLE Photos (
+-- TODO: добавить пользователя в бд
+
+CREATE TABLE photos (
   id SERIAL PRIMARY KEY,
   user_uuid UUID not null ,
   filename VARCHAR(255) not null ,
@@ -14,7 +16,7 @@ CREATE TABLE Photos (
 
 CREATE TYPE version_type_enum AS ENUM ('original', 'thumbnail', 'preview');
 
-CREATE TABLE PhotoVersions (
+CREATE TABLE photo_versions (
   id SERIAL PRIMARY KEY,
   photo_id INTEGER not null ,
   version_type version_type_enum default 'original',
@@ -26,5 +28,5 @@ CREATE TABLE PhotoVersions (
   FOREIGN KEY (photo_id) REFERENCES Photos (id)
 );
 
-CREATE INDEX idx_photos_user_uuid ON Photos (user_uuid);
-CREATE INDEX idx_photo_versions_photo_id ON PhotoVersions (photo_id);
+CREATE INDEX idx_photos_user_uuid ON photos (user_uuid);
+CREATE INDEX idx_photo_versions_photo_id ON photo_versions (photo_id);

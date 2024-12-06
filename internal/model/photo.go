@@ -15,11 +15,11 @@ type Photo struct {
 	UserUUID string
 	Filename string
 	Folder
-	Versions   []PhotoVersions
-	UploadedAt *time.Time
+	Versions   []PhotoVersion
+	UploadedAt time.Time
 }
 
-type PhotoVersions struct {
+type PhotoVersion struct {
 	ID          int
 	PhotoID     int
 	VersionType PhotoVersionType

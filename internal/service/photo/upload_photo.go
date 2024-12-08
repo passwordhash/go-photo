@@ -47,6 +47,7 @@ func (s *service) UploadPhoto(ctx context.Context, userUUID string, photoFile mu
 		UserUUID: userUUID,
 		Folder: model.Folder{
 			Folderpath: config.DefaultUsersFoldername,
+			UserUUID:   userUUID,
 		},
 		Versions: []model.PhotoVersion{
 			{

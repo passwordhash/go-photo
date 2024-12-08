@@ -25,4 +25,5 @@ type PhotoVersion struct {
 type Folder struct {
 	ID         int    `db:"id"`
 	FolderPath string `db:"folder_path"`
+	UserUUID   string `db:"user_uuid"`
 }

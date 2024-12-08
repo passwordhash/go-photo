@@ -36,10 +36,10 @@ func (r *repository) CreatePhoto(ctx context.Context, photo *model.Photo) (int, 
 
 	var folderID int
 	foldersQuery := `
-		INSERT INTO folders (folder_path)
-		VALUES ($1)
+		INSERT INTO folders (folder_path, user_uuid)
+		VALUES ($1, $2)
 		RETURNING id`
-	err = tx.QueryRowContext(ctx, foldersQuery, photo.Folderpath).Scan(&folderID)
+	err = tx.QueryRowContext(ctx, foldersQuery, photo.Folderpath, photo.UserUUID).Scan(&folderID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to insert folder: %w", err)
 	}

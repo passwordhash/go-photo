@@ -32,4 +32,5 @@ type PhotoVersion struct {
 type Folder struct {
 	ID         int
 	Folderpath string
+	UserUUID   string
 }

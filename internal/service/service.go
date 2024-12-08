@@ -6,6 +6,8 @@ import (
 	"mime/multipart"
 )
 
+//go:generate mockgen -destination=mocks/mock.go -source=service.go
+
 type UserService interface {
 	Get(ctx context.Context, uuid string) (model.User, error)
 	GetAll(ctx context.Context) ([]model.User, error)

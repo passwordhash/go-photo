@@ -24,9 +24,9 @@ type PhotoVersion struct {
 	PhotoID     int
 	VersionType PhotoVersionType
 	Filepath    string
-	Width       int
-	Height      int
-	Size        int64
+	//Width       int
+	//Height      int
+	Size int64
 }
 
 type Folder struct {

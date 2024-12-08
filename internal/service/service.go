@@ -12,6 +12,6 @@ type UserService interface {
 }
 
 type PhotoService interface {
-	UploadPhoto(ctx context.Context, uuid string, file multipart.File, photoName string) (int64, error)
-	GetPhotoVersions(ctx context.Context, id int) ([]model.PhotoVersion, error)
+	UploadPhoto(ctx context.Context, userUUID string, file multipart.File, photoName string) (int, error)
+	GetPhotoVersions(ctx context.Context, photoID int) ([]model.PhotoVersion, error)
 }

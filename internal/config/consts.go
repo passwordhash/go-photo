@@ -10,3 +10,6 @@ const (
 	PostgresDefaultPort    = "5432"
 	PostgresDefaultSSLMode = "disable"
 )
+
+// TEMP
+const DefaultUsersFoldername = "/home"

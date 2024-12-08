@@ -3,6 +3,7 @@ package photos
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"go-photo/internal/service"
@@ -19,8 +20,9 @@ const (
 )
 
 // TEMP
-func newErrMessage(c *gin.Context, code int, errMsg string) {
-	c.AbortWithStatusJSON(code, gin.H{"message": errMsg})
+func newErrMessage(c *gin.Context, code int, respMsg string, err error) {
+	c.Error(fmt.Errorf("%s: %w", respMsg, err))
+	c.AbortWithStatusJSON(code, gin.H{"message": respMsg})
 }
 
 type Handler struct {
@@ -45,7 +47,7 @@ func (h *Handler) uploadPhoto(c *gin.Context) {
 
 	file, fileHeader, err := c.Request.FormFile(formPhotoFilename)
 	if err != nil {
-		newErrMessage(c, http.StatusBadRequest, "file not provided")
+		newErrMessage(c, http.StatusBadRequest, "file not found", err)
 		return
 	}
 	defer file.Close()
@@ -54,23 +56,23 @@ func (h *Handler) uploadPhoto(c *gin.Context) {
 
 	ext := strings.ToLower(filepath.Ext(fileName))
 	if !utils.IsPhoto(ext) {
-		newErrMessage(c, http.StatusBadRequest, "invalid file format")
+		newErrMessage(c, http.StatusBadRequest, "file is not a photo", nil)
 		return
 	}
 
-	size, err := h.photoService.UploadPhoto(c, UUID, file, fileHeader.Filename)
+	photoID, err := h.photoService.UploadPhoto(c, UUID, file, fileHeader.Filename)
 	if errors.Is(err, photo.FileAlreadyExistsError) {
-		newErrMessage(c, http.StatusBadRequest, err.Error())
+		newErrMessage(c, http.StatusBadRequest, "file with the same name already exists", err)
 		return
 	}
 	if err != nil {
-		newErrMessage(c, http.StatusInternalServerError, err.Error())
+		newErrMessage(c, http.StatusInternalServerError, "failed to upload photo", err)
 		return
 	}
 
 	c.JSON(200, gin.H{
-		"status":     "ok",
-		"photo_size": size,
+		"status": "ok",
+		"id":     photoID,
 	})
 }
 
@@ -78,7 +80,7 @@ func (h *Handler) getPhotoVersions(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
-		newErrMessage(c, http.StatusBadRequest, "invalid photo id")
+		newErrMessage(c, http.StatusBadRequest, "invalid id param", err)
 		return
 	}
 
@@ -86,7 +88,7 @@ func (h *Handler) getPhotoVersions(c *gin.Context) {
 	version, err := h.photoService.GetPhotoVersions(context.TODO(), id)
 	// TODO: add error handling
 	if err != nil {
-		newErrMessage(c, http.StatusInternalServerError, err.Error())
+		newErrMessage(c, http.StatusInternalServerError, "failed to get photo versions", err)
 		return
 	}
 

@@ -35,7 +35,7 @@ func Logger() gin.HandlerFunc {
 		if errorMessage != "" {
 			entry.Error(errorMessage)
 		} else {
-			entry.Info("Запрос обработан")
+			entry.Info("Request processed")
 		}
 	}
 }

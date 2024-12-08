@@ -13,13 +13,13 @@ type Photo struct {
 }
 
 type PhotoVersion struct {
-	ID          int    `db:"id"`
-	PhotoID     int    `db:"photo_id"`
-	VersionType string `db:"version_type"`
-	Filepath    string `db:"filepath"`
-	Width       int    `db:"width"`
-	Height      int    `db:"height"`
-	Size        int64  `db:"size"`
+	ID          int            `db:"id"`
+	PhotoID     int            `db:"photo_id"`
+	VersionType sql.NullString `db:"version_type"`
+	Filepath    string         `db:"filepath"`
+	//Width       int            `db:"width"`
+	//Height      int            `db:"height"`
+	Size int64 `db:"size"`
 }
 
 type Folder struct {

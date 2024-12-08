@@ -2,9 +2,10 @@ package photo
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"go-photo/internal/config"
+	"go-photo/internal/model"
+	_ "go-photo/internal/service"
 	"go-photo/internal/utils"
 	"io"
 	"mime/multipart"
@@ -12,14 +13,11 @@ import (
 	"path/filepath"
 )
 
-var FileAlreadyExistsError = errors.New("photo with the same name already exists")
-
-func (s *service) UploadPhoto(_ context.Context, uuid string, photoFile multipart.File, photoName string) (int64, error) {
-	userFolder := filepath.Join(config.PhotosDir, uuid)
+func (s *service) UploadPhoto(ctx context.Context, userUUID string, photoFile multipart.File, photoName string) (int, error) {
+	userFolder := filepath.Join(config.PhotosDir, userUUID)
 	if _, err := os.Stat(userFolder); os.IsNotExist(err) {
-		err := os.Mkdir(userFolder, os.ModePerm)
-		if err != nil {
-			return 0, fmt.Errorf("user subfolder creation error")
+		if err := os.MkdirAll(userFolder, os.ModePerm); err != nil {
+			return 0, fmt.Errorf("failed to create user folder %s: %w", userFolder, err)
 		}
 	}
 
@@ -27,7 +25,7 @@ func (s *service) UploadPhoto(_ context.Context, uuid string, photoFile multipar
 
 	exists, err := utils.Exist(photoPath)
 	if err != nil {
-		return 0, fmt.Errorf("cannot check photo path")
+		return 0, fmt.Errorf("failed to check photo path existence: %w", err)
 	}
 	if exists {
 		return 0, FileAlreadyExistsError
@@ -35,14 +33,34 @@ func (s *service) UploadPhoto(_ context.Context, uuid string, photoFile multipar
 
 	file, err := os.Create(photoPath)
 	if err != nil {
-		return 0, fmt.Errorf("cannot create photo file")
+		return 0, fmt.Errorf("failed to create photo file %s: %w", photoPath, err)
 	}
 	defer file.Close()
 
 	fileSize, err := io.Copy(file, photoFile)
 	if err != nil {
-		return 0, fmt.Errorf("failed to save file")
+		return 0, fmt.Errorf("failed to save file to disk: %w", err)
 	}
 
-	return fileSize, nil
+	photo := model.Photo{
+		Filename: photoName,
+		UserUUID: userUUID,
+		Folder: model.Folder{
+			Folderpath: config.DefaultUsersFoldername,
+		},
+		Versions: []model.PhotoVersion{
+			{
+				VersionType: model.Original,
+				Filepath:    photoPath,
+				Size:        fileSize,
+			},
+		},
+	}
+
+	id, err := s.photoRepository.CreatePhoto(ctx, &photo)
+	if err != nil {
+		return 0, fmt.Errorf("failed to save photo in database: %w", err)
+	}
+
+	return id, nil
 }

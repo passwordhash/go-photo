@@ -22,8 +22,8 @@ CREATE TABLE photo_versions (
   version_type version_type_enum default 'original',
   filepath VARCHAR(255) not null ,
 --     TODO: может стоит вынести в отдельную таблицу
-  width INTEGER not null,
-  height INTEGER not null,
+--   width INTEGER not null,
+--   height INTEGER not null,
   size INTEGER not null,
   FOREIGN KEY (photo_id) REFERENCES Photos (id)
 );

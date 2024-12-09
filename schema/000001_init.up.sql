@@ -1,8 +1,8 @@
 CREATE TABLE folders (
   id SERIAL PRIMARY KEY,
   folder_path TEXT not null,
-  user_uuid UUID not null,
-  UNIQUE (folder_path, user_uuid)
+  user_uuid UUID not null
+--   UNIQUE (folder_path, user_uuid)
 );
 
 -- TODO: добавить пользователя в бд

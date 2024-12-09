@@ -7,6 +7,10 @@ import (
 )
 
 type PhotoRepository interface {
-	GetPhotoVersions(ctx context.Context, photoID int) ([]repoModel.PhotoVersion, error)
+	// GetFolders возвращает список папок пользователя. Если папок нет, возвращает пустой список
+	GetFolders(ctx context.Context, userUUID string) ([]repoModel.Folder, error)
+	CreateFolder(ctx context.Context, folderpath, userUUID string) error
+
 	CreatePhoto(ctx context.Context, photo *model.Photo) (int, error)
+	GetPhotoVersions(ctx context.Context, photoID int) ([]repoModel.PhotoVersion, error)
 }

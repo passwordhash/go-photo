@@ -21,6 +21,36 @@ func NewRepository(db *sqlx.DB) *repository {
 	}
 }
 
+func (r *repository) GetFolders(ctx context.Context, userUUID string) ([]repoModel.Folder, error) {
+	var folders []repoModel.Folder
+
+	query := `
+		SELECT folder_path, user_uuid
+		FROM Folders
+		WHERE user_uuid = $1
+	`
+
+	err := r.db.SelectContext(ctx, &folders, query, userUUID)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get users folders: %w", err)
+	}
+
+	return folders, nil
+}
+
+func (r *repository) CreateFolder(ctx context.Context, folderpath, userUUID string) error {
+	query := `
+		INSERT INTO folders (folder_path, user_uuid)
+		VALUES ($1, $2)`
+
+	_, err := r.db.ExecContext(ctx, query, folderpath, userUUID)
+	if err != nil {
+		return fmt.Errorf("failed to insert folder: %w", err)
+	}
+
+	return nil
+}
+
 // CreatePhoto создает новую фотографию в БД только оригинал
 func (r *repository) CreatePhoto(ctx context.Context, photo *model.Photo) (int, error) {
 	tx, err := r.db.BeginTx(ctx, nil)

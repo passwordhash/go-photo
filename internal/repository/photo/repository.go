@@ -2,9 +2,10 @@ package photo
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
-	"go-photo/internal/model"
 	def "go-photo/internal/repository"
 	repoModel "go-photo/internal/repository/photo/model"
 )
@@ -21,38 +22,61 @@ func NewRepository(db *sqlx.DB) *repository {
 	}
 }
 
-func (r *repository) GetFolders(ctx context.Context, userUUID string) ([]repoModel.Folder, error) {
-	var folders []repoModel.Folder
+func (r *repository) GetFolderID(ctx context.Context, folderpath, userUUID string) (int, error) {
+	var folderID int
 
 	query := `
-		SELECT folder_path, user_uuid
+		SELECT id
 		FROM Folders
-		WHERE user_uuid = $1
+		WHERE folder_path = $1 AND user_uuid = $2
 	`
 
-	err := r.db.SelectContext(ctx, &folders, query, userUUID)
+	err := r.db.GetContext(ctx, &folderID, query, folderpath, userUUID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, def.EmptyResultError
+	}
 	if err != nil {
-		return nil, fmt.Errorf("cannot get users folders: %w", err)
+		return 0, fmt.Errorf("cannot get folder: %w", err)
 	}
 
-	return folders, nil
+	return folderID, nil
 }
 
-func (r *repository) CreateFolder(ctx context.Context, folderpath, userUUID string) error {
+func (r *repository) CreateFolder(ctx context.Context, folderpath, userUUID string) (int, error) {
+	var folderID int
+
 	query := `
 		INSERT INTO folders (folder_path, user_uuid)
-		VALUES ($1, $2)`
+		VALUES ($1, $2)
+		RETURNING id
+	`
 
-	_, err := r.db.ExecContext(ctx, query, folderpath, userUUID)
+	err := r.db.QueryRowContext(ctx, query, folderpath, userUUID).Scan(&folderID)
 	if err != nil {
-		return fmt.Errorf("failed to insert folder: %w", err)
+		return 0, fmt.Errorf("failed to insert folder: %w", err)
 	}
 
-	return nil
+	return folderID, nil
 }
 
-// CreatePhoto создает новую фотографию в БД только оригинал
-func (r *repository) CreatePhoto(ctx context.Context, photo *model.Photo) (int, error) {
+func (r *repository) MustGetFolder(ctx context.Context, folderpath, userUUID string) (int, error) {
+	folderID, err := r.GetFolderID(ctx, folderpath, userUUID)
+	if err == nil {
+		return folderID, nil
+	}
+	if !errors.Is(err, def.EmptyResultError) {
+		return 0, fmt.Errorf("failed to get folder: %w", err)
+	}
+
+	folderID, err = r.CreateFolder(ctx, folderpath, userUUID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create folder: %w", err)
+	}
+
+	return folderID, nil
+}
+
+func (r *repository) CreateOriginalPhoto(ctx context.Context, params *repoModel.CreateOriginalPhotoParams) (int, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, fmt.Errorf("failed to begin transaction: %w", err)
@@ -64,24 +88,14 @@ func (r *repository) CreatePhoto(ctx context.Context, photo *model.Photo) (int, 
 		}
 	}()
 
-	var folderID int
-	foldersQuery := `
-		INSERT INTO folders (folder_path, user_uuid)
-		VALUES ($1, $2)
-		RETURNING id`
-	err = tx.QueryRowContext(ctx, foldersQuery, photo.Folderpath, photo.UserUUID).Scan(&folderID)
-	if err != nil {
-		return 0, fmt.Errorf("failed to insert folder: %w", err)
-	}
-
 	var photoID int
 	photosQuery := `
 		INSERT INTO photos (user_uuid, filename, folder_id)
 		VALUES ($1, $2, $3)
 		RETURNING id`
-	err = tx.QueryRowContext(ctx, photosQuery, photo.UserUUID, photo.Filename, folderID).Scan(&photoID)
+	err = tx.QueryRowContext(ctx, photosQuery, params.UserUUID, params.Filename, params.FolderID).Scan(&photoID)
 	if err != nil {
-		return 0, fmt.Errorf("failed to insert photo: %w", err)
+		return 0, fmt.Errorf("failed to insert params: %w", err)
 	}
 
 	photoVersionQuery := `
@@ -89,10 +103,9 @@ func (r *repository) CreatePhoto(ctx context.Context, photo *model.Photo) (int, 
 		VALUES ($1, $2, $3)`
 
 	// TEMP
-	ov := photo.Versions[0]
-	_, err = tx.ExecContext(ctx, photoVersionQuery, photoID, ov.Filepath, ov.Size)
+	_, err = tx.ExecContext(ctx, photoVersionQuery, photoID, params.Filepath, params.Size)
 	if err != nil {
-		return 0, fmt.Errorf("failed to insert photo version: %w", err)
+		return 0, fmt.Errorf("failed to insert params version: %w", err)
 	}
 
 	commitErr := tx.Commit()

@@ -27,3 +27,11 @@ type Folder struct {
 	FolderPath string `db:"folder_path"`
 	UserUUID   string `db:"user_uuid"`
 }
+
+type CreateOriginalPhotoParams struct {
+	UserUUID string
+	Filename string
+	FolderID int
+	Filepath string
+	Size     int64
+}

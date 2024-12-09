@@ -2,15 +2,19 @@ package repository
 
 import (
 	"context"
-	"go-photo/internal/model"
 	repoModel "go-photo/internal/repository/photo/model"
 )
 
 type PhotoRepository interface {
-	// GetFolders возвращает список папок пользователя. Если папок нет, возвращает пустой список
-	GetFolders(ctx context.Context, userUUID string) ([]repoModel.Folder, error)
-	CreateFolder(ctx context.Context, folderpath, userUUID string) error
+	// GetFolderID возвращает ID папки по пути и UUID пользователя.
+	// Если папка не найдена, возвращает ошибку EmptyResultError
+	GetFolderID(ctx context.Context, folderpath, userUUID string) (int, error)
+	// CreateFolder создает новую папку в БД
+	CreateFolder(ctx context.Context, folderpath, userUUID string) (int, error)
+	// MustGetFolder возвращает ID папки по пути и UUID пользователя, если папка не найдена, то создает новую
+	MustGetFolder(ctx context.Context, folderpath, userUUID string) (int, error)
 
-	CreatePhoto(ctx context.Context, photo *model.Photo) (int, error)
+	// CreateOriginalPhoto создает новую запись фото в БД, создается только оригинальная версия
+	CreateOriginalPhoto(ctx context.Context, photo *repoModel.CreateOriginalPhotoParams) (int, error)
 	GetPhotoVersions(ctx context.Context, photoID int) ([]repoModel.PhotoVersion, error)
 }

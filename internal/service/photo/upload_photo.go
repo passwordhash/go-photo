@@ -5,7 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"go-photo/internal/config"
-	"go-photo/internal/model"
+	repoModel "go-photo/internal/repository/photo/model"
 	_ "go-photo/internal/service"
 	"go-photo/internal/utils"
 	"mime/multipart"
@@ -14,28 +14,27 @@ import (
 )
 
 func (s *service) UploadPhoto(ctx context.Context, userUUID string, photoFile multipart.File, photoName string) (int, error) {
-	photoPath, fileSize, err := savePhotoToDisk(userUUID, photoName, photoFile)
+	photoPath, photoSize, err := savePhotoToDisk(userUUID, photoName, photoFile)
 	if err != nil {
 		return 0, fmt.Errorf("failed to save photo locally: %w", err)
 	}
+	fmt.Println("photoPath", photoPath)
 
-	photo := model.Photo{
-		Filename: photoName,
-		UserUUID: userUUID,
-		Folder: model.Folder{
-			Folderpath: config.DefaultUsersFoldername,
-			UserUUID:   userUUID,
-		},
-		Versions: []model.PhotoVersion{
-			{
-				VersionType: model.Original,
-				Filepath:    photoPath,
-				Size:        fileSize,
-			},
-		},
+	// TEMP
+	foldername := config.DefaultUsersFoldername
+
+	folderID, err := s.photoRepository.MustGetFolder(ctx, foldername, userUUID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get user folders: %w", err)
 	}
 
-	id, err := s.photoRepository.CreatePhoto(ctx, &photo)
+	id, err := s.photoRepository.CreateOriginalPhoto(ctx, &repoModel.CreateOriginalPhotoParams{
+		UserUUID: userUUID,
+		Filename: photoName,
+		FolderID: folderID,
+		Filepath: photoPath,
+		Size:     photoSize,
+	})
 	if err != nil {
 		// Если не удалось сохранить фото в базу, удаляем его с диска
 		if rollbackErr := removePhotoFromDisk(photoPath); rollbackErr != nil {

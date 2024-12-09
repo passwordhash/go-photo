@@ -16,10 +16,20 @@ func ToPhotoFromRepo(photo *repoModel.Photo, folder *repoModel.Folder, versions 
 	}
 }
 
+func ToFoldersFromRepo(folders []repoModel.Folder) []model.Folder {
+	var res []model.Folder
+
+	for _, f := range folders {
+		res = append(res, *ToFolderFromRepo(&f))
+	}
+
+	return res
+}
+
 func ToFolderFromRepo(folder *repoModel.Folder) *model.Folder {
 	return &model.Folder{
-		ID:         folder.ID,
 		Folderpath: folder.FolderPath,
+		UserUUID:   folder.UserUUID,
 	}
 }
 

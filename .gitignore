@@ -2,6 +2,8 @@
 .vscode/
 *.iml
 
+*mock*
+
 photos/
 api/account_v1
 

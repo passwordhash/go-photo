@@ -146,3 +146,83 @@ func TestHandler_uploadPhoto(t *testing.T) {
 		})
 	}
 }
+
+func TestHanle_uploadBatchPhotos(t *testing.T) {
+	type mockBehavior func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader)
+
+	tests := []struct {
+		name                 string
+		multipartBody        func() (*bytes.Buffer, string)
+		mockBehavior         mockBehavior
+		expectedStatusCode   int
+		expectedResponseBody string
+	}{
+		{
+			name: "Valid",
+			multipartBody: func() (*bytes.Buffer, string) {
+				body := &bytes.Buffer{}
+				writer := multipart.NewWriter(body)
+
+				fileWriter, _ := writer.CreateFormFile(FormPhotoBatchFiles, "test1.jpg")
+				fileWriter.Write([]byte("fake image data"))
+
+				fileWriter, _ = writer.CreateFormFile(FormPhotoBatchFiles, "test2.jpg")
+				fileWriter.Write([]byte("fake image data"))
+
+				writer.Close()
+				return body, writer.FormDataContentType()
+			},
+			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader) {
+				s.EXPECT().
+					UploadBatchPhotos(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return([]string{"test1.jpg", "test2.jpg"}, nil).
+					Times(1)
+			},
+			expectedStatusCode: 200,
+			expectedResponseBody: `
+				{
+					"status": "ok",
+					"total_count": 2,
+					"success_count": 2,	
+					"uploaded_photos": ["test1.jpg", "test2.jpg"]
+				}`,
+		},
+		{
+			name: "File not found",
+			multipartBody: func() (*bytes.Buffer, string) {
+				body := &bytes.Buffer{}
+				writer := multipart.NewWriter(body)
+				writer.Close()
+				return body, writer.FormDataContentType()
+			},
+			mockBehavior:         func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader) {},
+			expectedStatusCode:   400,
+			expectedResponseBody: `{"message":"no batch_photo_files in form"}`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockPhotoService := mock_service.NewMockPhotoService(ctrl)
+			test.mockBehavior(mockPhotoService, "", nil)
+
+			h := NewPhotosHandler(mockPhotoService)
+
+			r := gin.New()
+			r.POST("/upload-batch", h.uploadBatchPhotos)
+
+			w := httptest.NewRecorder()
+			body, contentType := test.multipartBody()
+			req := httptest.NewRequest("POST", "/upload-batch", body)
+			req.Header.Set("Content-Type", contentType)
+
+			r.ServeHTTP(w, req)
+
+			assert.Equal(t, test.expectedStatusCode, w.Code)
+			assert.JSONEq(t, test.expectedResponseBody, w.Body.String())
+		})
+	}
+}

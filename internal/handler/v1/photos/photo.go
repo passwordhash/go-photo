@@ -3,6 +3,7 @@ package photos
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"go-photo/internal/config"
 	"go-photo/internal/handler"
@@ -15,8 +16,8 @@ import (
 )
 
 const (
-	formPhotoFile       = "photo_file"
-	formBatchPhotoFiles = "batch_photo_files"
+	FormPhotoFile       = "photo_file"
+	FormPhotoBatchFiles = "batch_photo_files"
 )
 
 func (h *Handler) uploadPhoto(c *gin.Context) {
@@ -26,7 +27,7 @@ func (h *Handler) uploadPhoto(c *gin.Context) {
 	// TEMP
 	UUID := "123e4567-e89b-12d3-a456-426614174000"
 
-	fileHeader, err := c.FormFile(formPhotoFile)
+	fileHeader, err := c.FormFile(FormPhotoFile)
 	if err != nil {
 		handler.NewErrResponse(c, http.StatusBadRequest, "file not found", err)
 		return
@@ -38,8 +39,9 @@ func (h *Handler) uploadPhoto(c *gin.Context) {
 		return
 	}
 
+	var alreadyExistsErr *photo.FileAlreadyExistsError
 	photoID, err := h.photoService.UploadPhoto(ctx, UUID, fileHeader)
-	if errors.Is(err, photo.FileAlreadyExistsError) {
+	if errors.As(err, &alreadyExistsErr) {
 		handler.NewErrResponse(c, http.StatusBadRequest, "file with the same name already exists", err)
 		return
 	}
@@ -66,14 +68,17 @@ func (h *Handler) uploadBatchPhotos(c *gin.Context) {
 		return
 	}
 
-	files := form.File[formBatchPhotoFiles]
+	files := form.File[FormPhotoBatchFiles]
 	if len(files) == 0 {
 		handler.NewErrResponse(c, http.StatusBadRequest, "no batch_photo_files in form", nil)
 		return
 	}
 
 	photos, err := h.photoService.UploadBatchPhotos(ctx, UUID, files)
-	if errors.Is(err, photo.FileAlreadyExistsError) {
+	var alreadyExistsErr *photo.FileAlreadyExistsError
+	if errors.As(err, &alreadyExistsErr) {
+		handler.NewErrResponse(c, http.StatusBadRequest, fmt.Sprintf("file with name '%s' already exists in the folder",
+			alreadyExistsErr.Filename), err)
 		return
 	}
 	if handler.HandleError(c, err) {

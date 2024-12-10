@@ -30,7 +30,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 				body := &bytes.Buffer{}
 				writer := multipart.NewWriter(body)
 
-				fileWriter, _ := writer.CreateFormFile("photoFile", "test.jpg")
+				fileWriter, _ := writer.CreateFormFile(FormPhotoFile, "test.jpg")
 				fileWriter.Write([]byte("fake image data"))
 
 				writer.Close()
@@ -38,7 +38,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 			},
 			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {
 				s.EXPECT().
-					UploadPhoto(gomock.Any(), userUUID, gomock.Any(), filename).
+					UploadPhoto(gomock.Any(), userUUID, gomock.Any()).
 					Return(123, nil).
 					Times(1)
 			},
@@ -65,7 +65,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 				body := &bytes.Buffer{}
 				writer := multipart.NewWriter(body)
 
-				fileWriter, _ := writer.CreateFormFile("photoFile", "test.txt")
+				fileWriter, _ := writer.CreateFormFile(FormPhotoFile, "test.txt")
 				fileWriter.Write([]byte("fake image data"))
 
 				writer.Close()
@@ -82,7 +82,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 				body := &bytes.Buffer{}
 				writer := multipart.NewWriter(body)
 
-				fileWriter, _ := writer.CreateFormFile("photoFile", "test.jpg")
+				fileWriter, _ := writer.CreateFormFile(FormPhotoFile, "test.jpg")
 				fileWriter.Write([]byte("fake image data"))
 
 				writer.Close()
@@ -90,8 +90,8 @@ func TestHandler_uploadPhoto(t *testing.T) {
 			},
 			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {
 				s.EXPECT().
-					UploadPhoto(gomock.Any(), userUUID, gomock.Any(), filename).
-					Return(0, photo.FileAlreadyExistsError).
+					UploadPhoto(gomock.Any(), userUUID, gomock.Any()).
+					Return(0, &photo.FileAlreadyExistsError{Filename: "test.jpg"}).
 					Times(1)
 			},
 			expectedStatusCode:   400,
@@ -104,7 +104,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 				body := &bytes.Buffer{}
 				writer := multipart.NewWriter(body)
 
-				fileWriter, _ := writer.CreateFormFile("photoFile", "test.jpg")
+				fileWriter, _ := writer.CreateFormFile(FormPhotoFile, "test.jpg")
 				fileWriter.Write([]byte("fake image data"))
 
 				writer.Close()
@@ -112,7 +112,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 			},
 			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {
 				s.EXPECT().
-					UploadPhoto(gomock.Any(), userUUID, gomock.Any(), filename).
+					UploadPhoto(gomock.Any(), userUUID, gomock.Any()).
 					Return(0, assert.AnError).
 					Times(1)
 			},

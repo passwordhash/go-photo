@@ -22,16 +22,9 @@ type PhotoVersion struct {
 	Size int64 `db:"size"`
 }
 
-type Folder struct {
-	//ID         int    `db:"id"`
-	FolderPath string `db:"folder_path"`
-	UserUUID   string `db:"user_uuid"`
-}
-
 type CreateOriginalPhotoParams struct {
 	UserUUID string
 	Filename string
-	FolderID int
 	Filepath string
 	Size     int64
 }

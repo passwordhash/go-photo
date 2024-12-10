@@ -1,9 +1,9 @@
-CREATE TABLE folders (
-    id SERIAL PRIMARY KEY,
-    folder_path TEXT NOT NULL,
-    user_uuid UUID NOT NULL,
-    UNIQUE (folder_path, user_uuid)
-);
+-- CREATE TABLE folders (
+--     id SERIAL PRIMARY KEY,
+--     folder_path TEXT NOT NULL,
+--     user_uuid UUID NOT NULL,
+--     UNIQUE (folder_path, user_uuid)
+-- );
 
 -- TODO: добавить пользователя в бд
 
@@ -11,9 +11,7 @@ CREATE TABLE photos (
   id SERIAL PRIMARY KEY,
   user_uuid UUID not null ,
   filename VARCHAR(255) not null ,
-  folder_id INTEGER,
-  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (folder_id) REFERENCES Folders (id)
+  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TYPE version_type_enum AS ENUM ('original', 'thumbnail', 'preview');

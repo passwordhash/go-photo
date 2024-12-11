@@ -5,21 +5,32 @@ import (
 	"io"
 	"mime/multipart"
 	"os"
+	"path/filepath"
 )
 
+var imageExt = map[string]struct{}{
+	".jpg":  {},
+	".jpeg": {},
+	".png":  {},
+	".svg":  {},
+}
+
+// IsAllPhotos проверяет, что все файлы являются фотографиями по расширению.
+// При первом несоответствии возвращает false и имя файла.
+// Если все файлы являются фотографиями, возвращает пустую строку и true.
+func IsAllPhotos(fileHeaders []*multipart.FileHeader) (bool, string) {
+	for _, header := range fileHeaders {
+		ext := filepath.Ext(header.Filename)
+		if !IsPhoto(ext) {
+			return false, header.Filename
+		}
+	}
+	return true, ""
+}
+
 func IsPhoto(extension string) bool {
-	imageExt := map[string]struct{}{
-		".jpg":  {},
-		".jpeg": {},
-		".png":  {},
-		".svg":  {},
-	}
-
-	if _, ok := imageExt[extension]; !ok {
-		return false
-	}
-
-	return true
+	_, ok := imageExt[extension]
+	return ok
 }
 
 func Exist(path string) (bool, error) {

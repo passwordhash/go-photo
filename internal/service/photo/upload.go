@@ -25,7 +25,7 @@ func (s *service) UploadBatchPhotos(ctx context.Context, userUUID string, photoF
 	for _, file := range photoFiles {
 		_, err := s.processFile(ctx, userUUID, file, userFolder)
 		if err != nil {
-			return nil, err // Прерываем выполнение, если ошибка
+			return nil, err
 		}
 		uploaded = append(uploaded, file.Filename)
 	}

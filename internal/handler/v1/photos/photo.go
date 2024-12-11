@@ -35,7 +35,7 @@ func (h *Handler) uploadPhoto(c *gin.Context) {
 
 	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
 	if !utils.IsPhoto(ext) {
-		handler.NewErrResponse(c, http.StatusBadRequest, "file is not a photo", nil)
+		handler.NewErrResponse(c, http.StatusBadRequest, "unsupported file type", nil)
 		return
 	}
 
@@ -74,11 +74,22 @@ func (h *Handler) uploadBatchPhotos(c *gin.Context) {
 		return
 	}
 
+	if ok, notPhoto := utils.IsAllPhotos(files); !ok {
+		handler.NewErrResponse(c, http.StatusBadRequest, "unsupported file type: "+notPhoto, nil)
+		return
+	}
+
 	photos, err := h.photoService.UploadBatchPhotos(ctx, UUID, files)
 	var alreadyExistsErr *photo.FileAlreadyExistsError
 	if errors.As(err, &alreadyExistsErr) {
-		handler.NewErrResponse(c, http.StatusBadRequest, fmt.Sprintf("file with name '%s' already exists in the folder",
-			alreadyExistsErr.Filename), err)
+		errMsg := fmt.Sprintf("file with name '%s' already exists in the folder", alreadyExistsErr.Filename)
+		handler.NewOkResponse(c, UploadBatchPhotosResponse{
+			Status:         handler.PartialOkResponse,
+			TotalCount:     len(files),
+			SuccessCount:   len(photos),
+			UploadedPhotos: append(make([]string, 0), photos...),
+			Error:          errMsg,
+		})
 		return
 	}
 	if handler.HandleError(c, err) {

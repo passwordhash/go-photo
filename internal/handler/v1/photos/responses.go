@@ -7,4 +7,5 @@ type UploadBatchPhotosResponse struct {
 	TotalCount     int                    `json:"total_count"`
 	SuccessCount   int                    `json:"success_count"`
 	UploadedPhotos []string               `json:"uploaded_photos"`
+	Error          string                 `json:"error,omitempty"`
 }

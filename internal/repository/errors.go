@@ -1,7 +1,11 @@
 package repository
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
-	EmptyResultError = errors.New("empty result")
+	NotFoundError = errors.New("not found")
+	PhotoNotFound = fmt.Errorf("photo %w", NotFoundError)
 )

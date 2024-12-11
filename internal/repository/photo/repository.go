@@ -2,6 +2,8 @@ package photo
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	def "go-photo/internal/repository"
@@ -58,18 +60,46 @@ func (r *repository) CreateOriginalPhoto(ctx context.Context, params *repoModel.
 	return photoID, nil
 }
 
-func (r *repository) GetPhotoVersions(_ context.Context, photoID int) ([]repoModel.PhotoVersion, error) {
+func (r *repository) GetPhotoByID(ctx context.Context, photoID int) (*repoModel.Photo, error) {
+	var photo repoModel.Photo
+
+	query := `
+		SELECT id, user_uuid, filename, uploaded_at
+		FROM photos
+		WHERE id = $1`
+
+	err := r.db.GetContext(ctx, &photo, query, photoID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, def.PhotoNotFound
+		}
+		return nil, err
+	}
+
+	return &photo, nil
+}
+
+func (r *repository) GetPhotoVersions(ctx context.Context, photoID int) ([]repoModel.PhotoVersion, error) {
 	var versions []repoModel.PhotoVersion
+
+	_, err := r.GetPhotoByID(ctx, photoID)
+	if errors.Is(err, def.PhotoNotFound) {
+		return nil, def.PhotoNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get photo by id: %w", err)
+	}
 
 	query := `
 		SELECT id, photo_id, version_type, filepath, size 
 		FROM photo_versions 
-		WHERE photo_id = $1`
+		WHERE photo_id = $1
+		ORDER BY size`
 
-	err := r.db.Select(&versions, query, photoID)
+	err = r.db.Select(&versions, query, photoID)
 	if err != nil {
 		return nil, err
 	}
 
-	return versions, err
+	return versions, nil
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	mock_service "go-photo/internal/service/mocks"
 	"go-photo/internal/service/photo"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http/httptest"
 	"testing"
@@ -74,7 +75,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 			},
 			mockBehavior:         func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {},
 			expectedStatusCode:   400,
-			expectedResponseBody: `{"message":"file is not a photo"}`,
+			expectedResponseBody: `{"message":"unsupported file type"}`,
 		},
 		{
 			name:     "File with the same name already exists",
@@ -133,6 +134,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 			h := NewPhotosHandler(mockPhotoService)
 
 			r := gin.New()
+			gin.DefaultWriter = ioutil.Discard
 			r.POST("/upload", h.uploadPhoto)
 
 			w := httptest.NewRecorder()

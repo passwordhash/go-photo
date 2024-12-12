@@ -8,10 +8,16 @@ import (
 // Проверка на соответствие интерфейсу UserService (для статической проверки)
 var _ def.PhotoService = (*service)(nil)
 
+type Deps struct {
+	// абсолютный путь к папке с фотографиями
+	StorageFolderPath string
+}
+
 type service struct {
+	d               Deps
 	photoRepository repository.PhotoRepository
 }
 
-func NewService(photoRepository repository.PhotoRepository) *service {
-	return &service{photoRepository: photoRepository}
+func NewService(d Deps, photoRepository repository.PhotoRepository) *service {
+	return &service{d: d, photoRepository: photoRepository}
 }

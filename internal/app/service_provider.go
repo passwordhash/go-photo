@@ -71,7 +71,10 @@ func (s *serviceProvider) UserService(accountClient desc.AccountServiceClient) s
 
 func (s *serviceProvider) PhotoService(db *sqlx.DB) service.PhotoService {
 	if s.photoService == nil {
-		s.photoService = photoService.NewService(s.PhotoRepository(db))
+		deps := photoService.Deps{
+			StorageFolderPath: s.BaseConfig().StorageFolder(),
+		}
+		s.photoService = photoService.NewService(deps, s.PhotoRepository(db))
 	}
 
 	return s.photoService

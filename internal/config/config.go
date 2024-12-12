@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	httpPortEnvName = "HTTP_PORT"
-	logLevelEnvName = "LOG_LEVEL"
-	grpcAddrEnvName = "GRPC_ADDR"
+	httpPortEnvName   = "HTTP_PORT"
+	logLevelEnvName   = "LOG_LEVEL"
+	grpcAddrEnvName   = "GRPC_ADDR"
+	storageFolderPath = "STORAGE_FOLDER"
 )
 
 type Config interface {
@@ -18,12 +19,15 @@ type Config interface {
 	GRPCAddr() string
 
 	LogLevel() string
+
+	StorageFolder() string
 }
 
 type baseConfig struct {
-	httpPort string
-	grpcAddr string
-	logLevel string
+	httpPort          string
+	grpcAddr          string
+	logLevel          string
+	storageFolderPath string
 }
 
 func NewConfig() (Config, error) {
@@ -42,10 +46,16 @@ func NewConfig() (Config, error) {
 		return nil, errors.New("grpc addr not found")
 	}
 
+	storageFolder := os.Getenv(storageFolderPath)
+	if len(storageFolder) == 0 {
+		storageFolder = DefaultStorageFolderPath
+	}
+
 	return &baseConfig{
-		httpPort: port,
-		grpcAddr: grpcAddr,
-		logLevel: logLever,
+		httpPort:          port,
+		grpcAddr:          grpcAddr,
+		logLevel:          logLever,
+		storageFolderPath: storageFolder,
 	}, nil
 }
 
@@ -68,4 +78,8 @@ func (c *baseConfig) GRPCAddr() string {
 
 func (c *baseConfig) LogLevel() string {
 	return c.logLevel
+}
+
+func (c *baseConfig) StorageFolder() string {
+	return c.storageFolderPath
 }

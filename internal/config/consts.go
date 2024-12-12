@@ -3,8 +3,8 @@ package config
 import "time"
 
 const (
-	PhotosDir = "photos"
-	LogsDir   = "logs"
+	DefaultStorageFolderPath = "./storage"
+	LogsDir                  = "logs"
 )
 
 const (

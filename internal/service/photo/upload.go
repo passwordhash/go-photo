@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"go-photo/internal/config"
 	repoModel "go-photo/internal/repository/photo/model"
 	"go-photo/internal/utils"
 	"io"
@@ -17,7 +16,7 @@ import (
 func (s *service) UploadBatchPhotos(ctx context.Context, userUUID string, photoFiles []*multipart.FileHeader) ([]string, error) {
 	var uploaded []string
 
-	userFolder, err := ensureUserFolder(userUUID)
+	userFolder, err := ensureUserFolder(s.d.StorageFolderPath, userUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to ensure user's photos folder exists: %w", err)
 	}
@@ -35,7 +34,7 @@ func (s *service) UploadBatchPhotos(ctx context.Context, userUUID string, photoF
 
 // UploadPhoto загружает одну фотографию
 func (s *service) UploadPhoto(ctx context.Context, userUUID string, photoFile *multipart.FileHeader) (int, error) {
-	userFolder, err := ensureUserFolder(userUUID)
+	userFolder, err := ensureUserFolder(s.d.StorageFolderPath, userUUID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to ensure user's photos folder exists: %w", err)
 	}
@@ -62,7 +61,7 @@ func (s *service) processFile(ctx context.Context, userUUID string, file *multip
 
 	err = saveFile(file, destPath)
 	if err != nil {
-		return 0, fmt.Errorf("failed to save photo with name '%s': %w", file.Filename, err)
+		return 0, fmt.Errorf("failed to save photo with name '%s' in '%s': %w", file.Filename, destPath, err)
 	}
 
 	id, err := s.photoRepository.CreateOriginalPhoto(ctx, &repoModel.CreateOriginalPhotoParams{
@@ -83,8 +82,8 @@ func (s *service) processFile(ctx context.Context, userUUID string, file *multip
 }
 
 // ensureUserFolder проверяет или создает директорию для пользователя
-func ensureUserFolder(userUUID string) (string, error) {
-	userFolder := filepath.Join(config.PhotosDir, userUUID)
+func ensureUserFolder(storageFolderPath, userUUID string) (string, error) {
+	userFolder := filepath.Join(storageFolderPath, userUUID)
 	return userFolder, utils.EnsureDirectoryExists(userFolder)
 }
 

@@ -25,3 +25,7 @@ type CreateOriginalPhotoParams struct {
 	Filepath string
 	Size     int64
 }
+
+func (p *CreateOriginalPhotoParams) IsValid() bool {
+	return p.UserUUID != "" && p.Filename != "" && p.Filepath != "" && p.Size > 0
+}

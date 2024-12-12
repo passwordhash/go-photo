@@ -6,7 +6,8 @@ import (
 )
 
 type PhotoRepository interface {
-	// CreateOriginalPhoto создает новую запись фото в БД, создается только оригинальная версия
+	// CreateOriginalPhoto создает новую запись repoModel.Photo в БД и к ней repoModel.PhotoVersion.
+	// Гарантируется, что у фото будет original версия.
 	CreateOriginalPhoto(ctx context.Context, photo *repoModel.CreateOriginalPhotoParams) (int, error)
 
 	// GetPhotoByID возвращает фото по его ID.

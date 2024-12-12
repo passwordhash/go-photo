@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
+	log "github.com/sirupsen/logrus"
 	def "go-photo/internal/repository"
 	repoModel "go-photo/internal/repository/photo/model"
 )
@@ -23,14 +24,22 @@ func NewRepository(db *sqlx.DB) *repository {
 }
 
 func (r *repository) CreateOriginalPhoto(ctx context.Context, params *repoModel.CreateOriginalPhotoParams) (int, error) {
+	if params == nil {
+		return 0, def.NilParamsError
+	}
+	if !params.IsValid() {
+		return 0, fmt.Errorf("%w: %v", def.InvalidParamsError, params)
+	}
+
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, fmt.Errorf("failed to begin transaction: %w", err)
+		return 0, fmt.Errorf("%w: %v", def.BeginTxError, err)
 	}
 
 	defer func() {
 		if err != nil {
-			_ = tx.Rollback()
+			err = tx.Rollback()
+			log.Errorf("failed to rollback transaction: %v\ncontext: %v", err, ctx)
 		}
 	}()
 
@@ -41,7 +50,7 @@ func (r *repository) CreateOriginalPhoto(ctx context.Context, params *repoModel.
 		RETURNING id`
 	err = tx.QueryRowContext(ctx, photosQuery, params.UserUUID, params.Filename).Scan(&photoID)
 	if err != nil {
-		return 0, fmt.Errorf("failed to insert params: %w", err)
+		return 0, fmt.Errorf("%w: %v", def.InsertPhotoError, err)
 	}
 
 	photoVersionQuery := `
@@ -49,7 +58,7 @@ func (r *repository) CreateOriginalPhoto(ctx context.Context, params *repoModel.
 		VALUES ($1, $2, $3)`
 	_, err = tx.ExecContext(ctx, photoVersionQuery, photoID, params.Filepath, params.Size)
 	if err != nil {
-		return 0, fmt.Errorf("failed to insert params version: %w", err)
+		return 0, fmt.Errorf("%w: %v", def.InsertVersionError, err)
 	}
 
 	commitErr := tx.Commit()

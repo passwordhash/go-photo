@@ -8,6 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 	def "go-photo/internal/repository"
+	repoErr "go-photo/internal/repository/error"
 	repoModel "go-photo/internal/repository/photo/model"
 )
 
@@ -25,15 +26,15 @@ func NewRepository(db *sqlx.DB) *repository {
 
 func (r *repository) CreateOriginalPhoto(ctx context.Context, params *repoModel.CreateOriginalPhotoParams) (int, error) {
 	if params == nil {
-		return 0, def.NilParamsError
+		return 0, repoErr.NilParamsError
 	}
 	if !params.IsValid() {
-		return 0, fmt.Errorf("%w: %v", def.InvalidParamsError, params)
+		return 0, fmt.Errorf("%w: %v", repoErr.InvalidParamsError, params)
 	}
 
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, fmt.Errorf("%w: %v", def.BeginTxError, err)
+		return 0, fmt.Errorf("%w: %v", repoErr.BeginTxError, err)
 	}
 
 	defer func() {
@@ -50,7 +51,7 @@ func (r *repository) CreateOriginalPhoto(ctx context.Context, params *repoModel.
 		RETURNING id`
 	err = tx.QueryRowContext(ctx, photosQuery, params.UserUUID, params.Filename).Scan(&photoID)
 	if err != nil {
-		return 0, fmt.Errorf("%w: %v", def.InsertPhotoError, err)
+		return 0, fmt.Errorf("photo %w: %v", repoErr.InsertError, err)
 	}
 
 	photoVersionQuery := `
@@ -58,7 +59,7 @@ func (r *repository) CreateOriginalPhoto(ctx context.Context, params *repoModel.
 		VALUES ($1, $2, $3)`
 	_, err = tx.ExecContext(ctx, photoVersionQuery, photoID, params.Filepath, params.Size)
 	if err != nil {
-		return 0, fmt.Errorf("%w: %v", def.InsertVersionError, err)
+		return 0, fmt.Errorf("version %w: %v", repoErr.InsertError, err)
 	}
 
 	commitErr := tx.Commit()
@@ -80,7 +81,7 @@ func (r *repository) GetPhotoByID(ctx context.Context, photoID int) (*repoModel.
 	err := r.db.GetContext(ctx, &photo, query, photoID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, def.PhotoNotFound
+			return nil, repoErr.PhotoNotFound
 		}
 		return nil, err
 	}
@@ -92,8 +93,8 @@ func (r *repository) GetPhotoVersions(ctx context.Context, photoID int) ([]repoM
 	var versions []repoModel.PhotoVersion
 
 	_, err := r.GetPhotoByID(ctx, photoID)
-	if errors.Is(err, def.PhotoNotFound) {
-		return nil, def.PhotoNotFound
+	if errors.Is(err, repoErr.PhotoNotFound) {
+		return nil, repoErr.PhotoNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get photo by id: %w", err)

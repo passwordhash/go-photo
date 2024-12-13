@@ -9,7 +9,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	def "go-photo/internal/repository"
+	def "go-photo/internal/repository/error"
 	"go-photo/internal/repository/photo/model"
 	"testing"
 	"time"
@@ -99,12 +99,12 @@ func TestRepository_CreateOriginalPhoto(t *testing.T) {
 
 				mock.ExpectQuery("INSERT INTO photos").
 					WithArgs("user-uuid", "test.png").
-					WillReturnError(def.InsertPhotoError)
+					WillReturnError(def.InsertError)
 
 				mock.ExpectRollback()
 			},
 			expectedID:    0,
-			expectedError: def.InsertPhotoError,
+			expectedError: def.InsertError,
 		},
 		{
 			name:   "Failed insert version",
@@ -119,12 +119,12 @@ func TestRepository_CreateOriginalPhoto(t *testing.T) {
 
 				mock.ExpectExec("INSERT INTO photo_versions").
 					WithArgs(1, "home/user-uuid/test.png", 12345).
-					WillReturnError(def.InsertVersionError)
+					WillReturnError(def.InsertError)
 
 				mock.ExpectRollback()
 			},
 			expectedID:    0,
-			expectedError: def.InsertVersionError,
+			expectedError: def.InsertError,
 		},
 		{
 			name:   "Correct ID returned",

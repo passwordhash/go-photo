@@ -1,4 +1,4 @@
-package repository
+package error
 
 import (
 	"errors"
@@ -12,9 +12,7 @@ var (
 	BeginTxError  = errors.New("failed to begin transaction")
 	CommitTxError = errors.New("failed to commit transaction")
 
-	InsertError        = errors.New("failed to insert")
-	InsertPhotoError   = fmt.Errorf("%w photo", InsertError)
-	InsertVersionError = fmt.Errorf("%w version", InsertError)
+	InsertError = errors.New("failed to insert")
 
 	InvalidParamsError = errors.New("invalid params")
 	NilParamsError     = fmt.Errorf("%w: params are nil", InvalidParamsError)

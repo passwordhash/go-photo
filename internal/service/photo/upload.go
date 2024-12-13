@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	repoModel "go-photo/internal/repository/photo/model"
+	serviceErr "go-photo/internal/service/error"
 	"go-photo/internal/utils"
 	"io"
 	"mime/multipart"
@@ -13,18 +14,19 @@ import (
 )
 
 // UploadBatchPhotos загружает несколько фотографий
+// Если файл с таким именем уже существует, возвращается ошибка FileAlreadyExistsError
 func (s *service) UploadBatchPhotos(ctx context.Context, userUUID string, photoFiles []*multipart.FileHeader) ([]string, error) {
 	var uploaded []string
 
 	userFolder, err := ensureUserFolder(s.d.StorageFolderPath, userUUID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to ensure user's photos folder exists: %w", err)
+		return nil, fmt.Errorf("%w: %v", serviceErr.ServiceError, err)
 	}
 
 	for _, file := range photoFiles {
 		_, err := s.processFile(ctx, userUUID, file, userFolder)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("processing file %s err: %w", file.Filename, err)
 		}
 		uploaded = append(uploaded, file.Filename)
 	}
@@ -48,34 +50,34 @@ func (s *service) UploadPhoto(ctx context.Context, userUUID string, photoFile *m
 }
 
 // processFile обрабатывает загрузку одного файла: проверяет существование, сохраняет, записывает в базу
-func (s *service) processFile(ctx context.Context, userUUID string, file *multipart.FileHeader, userFolder string) (int, error) {
-	destPath := filepath.Join(userFolder, file.Filename)
+func (s *service) processFile(ctx context.Context, userUUID string, photoFile *multipart.FileHeader, userFolder string) (int, error) {
+	photoPath := filepath.Join(userFolder, photoFile.Filename)
 
-	exist, err := utils.Exist(destPath)
+	exist, err := utils.Exist(photoPath)
 	if err != nil {
-		return 0, fmt.Errorf("failed to check if file exists: %w", err)
+		return 0, fmt.Errorf("failed to check if photoFile exists: %w", err)
 	}
 	if exist {
-		return 0, &FileAlreadyExistsError{Filename: file.Filename}
+		return 0, &FileAlreadyExistsError{Filename: photoFile.Filename}
 	}
 
-	err = saveFile(file, destPath)
+	err = saveFile(photoFile, photoPath)
 	if err != nil {
-		return 0, fmt.Errorf("failed to save photo with name '%s' in '%s': %w", file.Filename, destPath, err)
+		return 0, fmt.Errorf("failed to save photo with name '%s' in '%s': %w", photoFile.Filename, photoPath, err)
 	}
 
 	id, err := s.photoRepository.CreateOriginalPhoto(ctx, &repoModel.CreateOriginalPhotoParams{
 		UserUUID: userUUID,
-		Filename: file.Filename,
-		Filepath: destPath,
-		Size:     file.Size,
+		Filename: photoFile.Filename,
+		Filepath: photoPath,
+		Size:     photoFile.Size,
 	})
 	if err != nil {
 		// Если не удалось сохранить фото в базу, удаляем его с диска
-		if rollbackErr := removePhotoFromDisk(destPath); rollbackErr != nil {
+		if rollbackErr := removePhotoFromDisk(photoPath); rollbackErr != nil {
 			log.Errorf("failed to rollback local save: %v", rollbackErr)
 		}
-		return 0, fmt.Errorf("failed to save photo in database: %w", err)
+		return 0, fmt.Errorf("save photo %w: %v", serviceErr.DbError, err)
 	}
 
 	return id, nil
@@ -84,7 +86,11 @@ func (s *service) processFile(ctx context.Context, userUUID string, file *multip
 // ensureUserFolder проверяет или создает директорию для пользователя
 func ensureUserFolder(storageFolderPath, userUUID string) (string, error) {
 	userFolder := filepath.Join(storageFolderPath, userUUID)
-	return userFolder, utils.EnsureDirectoryExists(userFolder)
+	err := utils.EnsureDirectoryExists(userFolder)
+	if err != nil {
+		return "", fmt.Errorf("failed to ensure user's photos folder exists: %w", err)
+	}
+	return userFolder, nil
 }
 
 // saveFile сохраняет загружаемый файл на диск

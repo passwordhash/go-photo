@@ -11,6 +11,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -73,10 +74,145 @@ func TestService_UploadBatchPhotos(t *testing.T) {
 
 			uploaded, err := s.UploadBatchPhotos(context.Background(), tt.userUUID, tt.photoFiles())
 			if tt.expectedError != nil {
-				assert.EqualError(t, err, tt.expectedError.Error())
+				assert.ErrorAs(t, err, &tt.expectedError)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedUploaded, uploaded)
+			}
+		})
+	}
+}
+
+func TestEnsureUserFolder(t *testing.T) {
+	t.Run("Create directory successfully", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		defer os.RemoveAll(tmpDir)
+
+		userUUID := "test-user"
+		expectedPath := filepath.Join(tmpDir, userUUID)
+
+		actualPath, err := ensureUserFolder(tmpDir, userUUID)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedPath, actualPath)
+
+		info, err := os.Stat(expectedPath)
+		assert.NoError(t, err)
+		assert.True(t, info.IsDir())
+	})
+
+	t.Run("Error creating directory", func(t *testing.T) {
+		invalidDir := "/invalid/path"
+
+		_, err := ensureUserFolder(invalidDir, "test-user")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to create directory")
+	})
+}
+
+func TestSaveFile(t *testing.T) {
+	t.Run("Save file successfully", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		defer os.RemoveAll(tmpDir)
+
+		file := mockFileHeader("test.jpg", 100, "file content")
+		destPath := filepath.Join(tmpDir, "test.jpg")
+
+		err := saveFile(file, destPath)
+		assert.NoError(t, err)
+
+		_, err = os.Stat(destPath)
+		assert.NoError(t, err)
+
+		content, err := os.ReadFile(destPath)
+		assert.NoError(t, err)
+		assert.Equal(t, "file content", string(content))
+	})
+
+	t.Run("Error opening file", func(t *testing.T) {
+		file := mockFileHeader("test.jpg", 100, "")
+
+		destPath := "/invalid/path/test.jpg"
+		err := saveFile(file, destPath)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to create file")
+	})
+}
+
+func TestRemovePhotoFromDisk(t *testing.T) {
+	t.Run("Remove file successfully", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		defer os.RemoveAll(tmpDir)
+
+		testFile := filepath.Join(tmpDir, "test.jpg")
+		err := os.WriteFile(testFile, []byte("test content"), 0644)
+		assert.NoError(t, err)
+
+		err = removePhotoFromDisk(testFile)
+		assert.NoError(t, err)
+
+		_, err = os.Stat(testFile)
+		assert.Error(t, err)
+		assert.True(t, os.IsNotExist(err))
+	})
+
+	t.Run("Error removing file", func(t *testing.T) {
+		nonExistentFile := "/invalid/path/test.jpg"
+
+		err := removePhotoFromDisk(nonExistentFile)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to remove photo file")
+	})
+}
+
+func TestProcessFile(t *testing.T) {
+	type mockBehavior func(repo *mock_repository.MockPhotoRepository, userUUID string)
+
+	tests := []struct {
+		name          string
+		userUUID      string
+		file          func() *multipart.FileHeader
+		mockBehavior  mockBehavior
+		expectedID    int
+		expectedError error
+	}{
+		{
+			name:     "Valid",
+			userUUID: "user-uuid",
+			file: func() *multipart.FileHeader {
+				return mockFileHeader("test.jpg", 100, "content")
+			},
+			mockBehavior: func(repo *mock_repository.MockPhotoRepository, userUUID string) {
+				repo.EXPECT().CreateOriginalPhoto(gomock.Any(), gomock.Any()).Return(123, nil)
+			},
+			expectedID:    123,
+			expectedError: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpFolder := t.TempDir()
+			defer os.RemoveAll(tmpFolder)
+
+			userFolder := filepath.Join(tmpFolder, tt.userUUID)
+			err := os.MkdirAll(userFolder, 0755)
+			assert.NoError(t, err)
+
+			c := gomock.NewController(t)
+			defer c.Finish()
+
+			mockRepo := mock_repository.NewMockPhotoRepository(c)
+			tt.mockBehavior(mockRepo, tt.userUUID)
+
+			s := NewService(Deps{StorageFolderPath: tmpFolder}, mockRepo)
+
+			id, err := s.processFile(context.Background(), tt.userUUID, tt.file(), userFolder)
+			if tt.expectedError != nil {
+				assert.EqualError(t, err, tt.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedID, id)
 			}
 		})
 	}

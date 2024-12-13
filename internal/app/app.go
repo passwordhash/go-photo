@@ -79,7 +79,7 @@ func (a *App) initServiceProvider(_ context.Context) error {
 }
 
 func (a *App) initFolders(_ context.Context) error {
-	folders := []string{config.PhotosDir, config.LogsDir}
+	folders := []string{a.sp.BaseConfig().StorageFolder(), config.LogsDir}
 
 	// TODO: move to utils
 	for _, folder := range folders {

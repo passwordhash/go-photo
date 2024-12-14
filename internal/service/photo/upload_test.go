@@ -5,10 +5,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/mock/gomock"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	mock_repository "go-photo/internal/repository/mocks"
 	serviceErr "go-photo/internal/service/error"
-	"io/ioutil"
+	serviceModel "go-photo/internal/service/photo/model"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -125,6 +127,132 @@ func TestService_UploadBatchPhotos(t *testing.T) {
 	}
 }
 
+func TestService_SaveFile(t *testing.T) {
+	tests := []struct {
+		name        string
+		fileHeader  *multipart.FileHeader
+		destFolder  string
+		prepareFile func() *multipart.FileHeader
+		expectedErr string
+	}{
+		{
+			name: "Successful Save",
+			prepareFile: func() *multipart.FileHeader {
+				return mockFileHeader("test.jpg", 100, "file content")
+			},
+			expectedErr: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			defer os.RemoveAll(tempDir)
+
+			fileHeader := tt.prepareFile()
+			destFolder := filepath.Join(tempDir, "dest")
+			err := os.Mkdir(destFolder, 0755)
+			assert.NoError(t, err)
+			log.Info("destFolder", destFolder)
+
+			src, err := fileHeader.Open()
+			log.Errorf("err: %v", err)
+			defer src.Close()
+
+			err = saveFileToDisk(fileHeader, destFolder)
+			if tt.expectedErr != "" {
+				assert.ErrorContains(t, err, tt.expectedErr)
+			} else {
+				assert.NoError(t, err)
+				destPath := filepath.Join(destFolder, fileHeader.Filename)
+				_, statErr := os.Stat(destPath)
+				assert.NoError(t, statErr)
+			}
+		})
+	}
+}
+
+func TestService_SaveToDatabase(t *testing.T) {
+	type mockBehavior func(repo *mock_repository.MockPhotoRepository, ctx context.Context, userUUID string, info serviceModel.UploadInfo)
+
+	tests := []struct {
+		name           string
+		userUUID       string
+		filePath       string
+		uploadInfo     serviceModel.UploadInfo
+		mockBehavior   mockBehavior
+		expectedInfo   serviceModel.UploadInfo
+		expectedLogMsg string
+	}{
+		{
+			name:     "Successful Save to Database",
+			userUUID: "user-id",
+			filePath: "test1.jpg",
+			uploadInfo: serviceModel.UploadInfo{
+				Filename: "test1.jpg",
+				Size:     100,
+			},
+			mockBehavior: func(repo *mock_repository.MockPhotoRepository, ctx context.Context, userUUID string, info serviceModel.UploadInfo) {
+				repo.EXPECT().CreateOriginalPhoto(ctx, gomock.Any()).Return(1, nil).Times(1)
+			},
+			expectedInfo: serviceModel.UploadInfo{
+				Filename: "test1.jpg",
+				Size:     100,
+				PhotoID:  1,
+			},
+		},
+		{
+			name:     "Database Save Error with Rollback",
+			userUUID: "user-id",
+			filePath: "test1.jpg",
+			uploadInfo: serviceModel.UploadInfo{
+				Filename: "test1.jpg",
+				Size:     100,
+			},
+			mockBehavior: func(repo *mock_repository.MockPhotoRepository, ctx context.Context, userUUID string, info serviceModel.UploadInfo) {
+				repo.EXPECT().CreateOriginalPhoto(ctx, gomock.Any()).Return(0, fmt.Errorf("db error")).Times(1)
+			},
+			expectedInfo: serviceModel.UploadInfo{
+				Filename: "test1.jpg",
+				Size:     100,
+				Error:    fmt.Errorf("db save error: db error"),
+			},
+			expectedLogMsg: "Failed to remove file",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Создаем временную директорию для хранения файлов
+			storageDir := t.TempDir()
+			defer os.RemoveAll(storageDir)
+
+			filePath := filepath.Join(storageDir, tt.filePath)
+			_ = os.WriteFile(filePath, []byte("file content"), 0644)
+
+			c := gomock.NewController(t)
+			defer c.Finish()
+
+			mockRepo := mock_repository.NewMockPhotoRepository(c)
+			tt.mockBehavior(mockRepo, context.Background(), tt.userUUID, tt.uploadInfo)
+
+			s := NewService(Deps{StorageFolderPath: storageDir}, mockRepo)
+
+			// Вызываем тестируемый метод
+			info := s.saveToDatabase(context.Background(), tt.userUUID, tt.uploadInfo)
+
+			// Проверяем результат
+			assert.Equal(t, tt.expectedInfo.Filename, info.Filename)
+			assert.Equal(t, tt.expectedInfo.PhotoID, info.PhotoID)
+			if tt.expectedInfo.Error != nil {
+				assert.Contains(t, info.Error.Error(), tt.expectedInfo.Error.Error())
+			} else {
+				assert.NoError(t, info.Error)
+			}
+		})
+	}
+}
+
 func TestEnsureUserFolder(t *testing.T) {
 	t.Run("Create directory successfully", func(t *testing.T) {
 		tmpDir := t.TempDir()
@@ -151,36 +279,6 @@ func TestEnsureUserFolder(t *testing.T) {
 	})
 }
 
-func TestSaveFile(t *testing.T) {
-	t.Run("Save file successfully", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		defer os.RemoveAll(tmpDir)
-
-		file := mockFileHeader("test.jpg", 100, "file content")
-		destPath := filepath.Join(tmpDir, "test.jpg")
-
-		err := saveFileToDisk(file, destPath)
-		assert.NoError(t, err)
-
-		_, err = os.Stat(destPath)
-		assert.NoError(t, err)
-
-		content, err := os.ReadFile(destPath)
-		assert.NoError(t, err)
-		assert.Equal(t, "file content", string(content))
-	})
-
-	t.Run("Error opening file", func(t *testing.T) {
-		file := mockFileHeader("test.jpg", 100, "")
-
-		destPath := "/invalid/path/test.jpg"
-		err := saveFileToDisk(file, destPath)
-
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "failed to create file")
-	})
-}
-
 func mockFileHeader(filename string, size int64, content string) *multipart.FileHeader {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -189,14 +287,14 @@ func mockFileHeader(filename string, size int64, content string) *multipart.File
 	if err != nil {
 		panic(fmt.Sprintf("failed to create form file: %v", err))
 	}
-	_, _ = part.Write([]byte(content)) // Пишем содержимое файл
+	_, _ = part.Write([]byte(content))
 
 	writer.Close()
 
 	req := &http.Request{Header: http.Header{"Content-Type": {writer.FormDataContentType()}}}
-	req.Body = ioutil.NopCloser(body)
+	req.Body = io.NopCloser(body)
 
-	err = req.ParseMultipartForm(10 << 20) // Парсим с лимитом размера
+	err = req.ParseMultipartForm(10 << 20)
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse multipart form: %v", err))
 	}

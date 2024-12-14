@@ -140,32 +140,6 @@ func TestSaveFile(t *testing.T) {
 	})
 }
 
-func TestRemovePhotoFromDisk(t *testing.T) {
-	t.Run("Remove file successfully", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		defer os.RemoveAll(tmpDir)
-
-		testFile := filepath.Join(tmpDir, "test.jpg")
-		err := os.WriteFile(testFile, []byte("test content"), 0644)
-		assert.NoError(t, err)
-
-		err = removePhotoFromDisk(testFile)
-		assert.NoError(t, err)
-
-		_, err = os.Stat(testFile)
-		assert.Error(t, err)
-		assert.True(t, os.IsNotExist(err))
-	})
-
-	t.Run("Error removing file", func(t *testing.T) {
-		nonExistentFile := "/invalid/path/test.jpg"
-
-		err := removePhotoFromDisk(nonExistentFile)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "failed to remove photo file")
-	})
-}
-
 func TestProcessFile(t *testing.T) {
 	type mockBehavior func(repo *mock_repository.MockPhotoRepository, userUUID string)
 

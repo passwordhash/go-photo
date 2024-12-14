@@ -12,6 +12,7 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 )
 
@@ -22,46 +23,19 @@ func (s *service) UploadPhoto(ctx context.Context, userUUID string, photoFile *m
 		return 0, fmt.Errorf("failed to ensure user's photos folder exists: %w", err)
 	}
 
-	id, err := s.processFile(ctx, userUUID, photoFile, userFolder)
-	if err != nil {
-		return 0, err
+	info := s.saveFile(ctx, photoFile, userFolder)
+	if info.Error != nil {
+		log.Errorf("Failed to save file %s: %v", photoFile.Filename, info.Error)
+		return 0, info.Error
 	}
 
-	return id, nil
-}
-
-// processFile обрабатывает загрузку одного файла: проверяет существование, сохраняет, записывает в базу
-func (s *service) processFile(ctx context.Context, userUUID string, photoFile *multipart.FileHeader, userFolder string) (int, error) {
-	photoPath := filepath.Join(userFolder, photoFile.Filename)
-
-	exist, err := utils.Exist(photoPath)
-	if err != nil {
-		return 0, fmt.Errorf("failed to check if photoFile exists: %w", err)
-	}
-	if exist {
-		return 0, &serviceErr.FileAlreadyExistsError{Filename: photoFile.Filename}
+	info = s.saveToDatabase(ctx, userUUID, info)
+	if info.Error != nil {
+		log.Errorf("Failed to save file %s to database: %v", photoFile.Filename, info.Error)
+		return 0, info.Error
 	}
 
-	err = saveFileToDisk(photoFile, photoPath)
-	if err != nil {
-		return 0, fmt.Errorf("failed to save photo with name '%s' in '%s': %w", photoFile.Filename, photoPath, err)
-	}
-
-	id, err := s.photoRepository.CreateOriginalPhoto(ctx, &repoModel.CreateOriginalPhotoParams{
-		UserUUID: userUUID,
-		Filename: photoFile.Filename,
-		Filepath: photoPath,
-		Size:     photoFile.Size,
-	})
-	if err != nil {
-		// Если не удалось сохранить фото в базу, удаляем его с диска
-		if rollbackErr := removePhotoFromDisk(photoPath); rollbackErr != nil {
-			log.Errorf("failed to rollback local save: %v", rollbackErr)
-		}
-		return 0, fmt.Errorf("save photo %w: %v", serviceErr.DbError, err)
-	}
-
-	return id, nil
+	return info.PhotoID, nil
 }
 
 // UploadBatchPhotos загружает несколько фотографий конкурентно
@@ -71,75 +45,81 @@ func (s *service) UploadBatchPhotos(ctx context.Context, userUUID string, photoF
 		return nil, fmt.Errorf("failed to ensure user's photos folder exists: %w", err)
 	}
 
-	workerCount := len(photoFiles)
-
-	saver := make(chan *multipart.FileHeader)
-	creater := make(chan *serviceModel.UploadInfo)
-
 	uploaded := &serviceModel.UploadInfoList{}
+	fileTaskChan := make(chan *multipart.FileHeader)
+	dbTaskChan := make(chan serviceModel.UploadInfo)
+	resultChan := make(chan serviceModel.UploadInfo)
 
+	fileWorkerCount := runtime.NumCPU() / 3
+	dbWorkerCount := runtime.NumCPU() / 3
+
+	fileWg := sync.WaitGroup{}
+	for i := 0; i < fileWorkerCount; i++ {
+		fileWg.Add(1)
+		go func(workerID int) {
+			defer fileWg.Done()
+			for file := range fileTaskChan {
+				select {
+				case <-ctx.Done():
+					log.Warnf("File worker %d stopped due to context cancellation. Context: %v", workerID, ctx.Err())
+				default:
+				}
+
+				info := s.saveFile(ctx, file, destFolder)
+				dbTaskChan <- info
+			}
+		}(i)
+	}
+
+	dbWg := sync.WaitGroup{}
+	for i := 0; i < dbWorkerCount; i++ {
+		dbWg.Add(1)
+		go func(workerID int) {
+			defer dbWg.Done()
+			for info := range dbTaskChan {
+				select {
+				case <-ctx.Done():
+					log.Warnf("DB worker %d stopped due to context cancellation. Context: %v", workerID, ctx.Err())
+				default:
+				}
+
+				info = s.saveToDatabase(ctx, userUUID, info)
+				if info.Error != nil {
+					log.Errorf("Failed to save file %s: %v", info.Filename, info.Error)
+					log.Warnf("Skipping DB save for file %s due to disk save error: %v", info.Filename, info.Error)
+					resultChan <- info
+					continue
+				}
+
+				resultChan <- info
+			}
+		}(i)
+	}
+
+	// Ожидание завершения всех задач
 	go func() {
-		for _, file := range photoFiles {
-			saver <- file
-		}
-		close(saver)
+		fileWg.Wait()
+		close(dbTaskChan)
+		dbWg.Wait()
+		close(resultChan)
 	}()
 
-	wgSaver := &sync.WaitGroup{}
-	wgSaver.Add(workerCount)
-	for i := 0; i < workerCount; i++ {
-		go func(i int) {
-			defer wgSaver.Done()
-			for file := range saver {
-				info := serviceModel.UploadInfo{
-					Filename: file.Filename,
-					Size:     file.Size,
-				}
-
-				err := saveFileToDisk(file, destFolder)
-				if err != nil {
-					saveErr := fmt.Errorf("failed to save photo with name '%s' in '%s': %w", file.Filename, destFolder, err)
-					log.Errorf(saveErr.Error())
-					info.Error = saveErr
-				}
-
-				creater <- &info
-			}
-		}(i)
-	}
-
-	wgCreater := &sync.WaitGroup{}
-	wgCreater.Add(workerCount)
-	for i := 0; i < workerCount; i++ {
-		go func(i int) {
-			defer wgCreater.Done()
-
-			info := <-creater
-			if info.Error != nil {
-				uploaded.Add(*info)
+	// Отправка задач на сохранение файлов
+	go func() {
+		for _, file := range photoFiles {
+			select {
+			case <-ctx.Done():
+				log.Warn("File task sending stopped due to context cancellation")
 				return
-				// TODO: почему не continue?
+			case fileTaskChan <- file:
 			}
+		}
+		close(fileTaskChan)
+	}()
 
-			id, err := s.photoRepository.CreateOriginalPhoto(ctx, &repoModel.CreateOriginalPhotoParams{
-				UserUUID: userUUID,
-				Filename: info.Filename,
-				Filepath: filepath.Join(destFolder, info.Filename),
-				Size:     info.Size,
-			})
-			if err != nil {
-				dbErr := fmt.Errorf("save photo %w: %v", serviceErr.DbError, err)
-				log.Errorf(dbErr.Error())
-				info.Error = dbErr
-			} else {
-				info.PhotoID = id
-			}
-
-			uploaded.Add(*info)
-		}(i)
+	for res := range resultChan {
+		uploaded.Add(res)
 	}
-
-	wgCreater.Wait()
 
 	if uploaded.IsAllError() {
 		return uploaded, serviceErr.AllFailedError
@@ -151,7 +131,51 @@ func (s *service) UploadBatchPhotos(ctx context.Context, userUUID string, photoF
 	return uploaded, nil
 }
 
-// ensureUserFolder проверяет или создает директорию для пользователя
+// saveFile - сохраняет файл на диск
+func (s *service) saveFile(_ context.Context, file *multipart.FileHeader, destFolder string) serviceModel.UploadInfo {
+	info := serviceModel.UploadInfo{
+		Filename: file.Filename,
+		Size:     file.Size,
+	}
+
+	if err := saveFileToDisk(file, destFolder); err != nil {
+		log.Errorf("Failed to save file %s: %v", file.Filename, err)
+		info.Error = fmt.Errorf("disk save error: %w", err)
+	}
+
+	return info
+}
+
+// saveToDatabase сохраняет информацию о файле в базе данных. Если произошла ошибка, файл удаляется с диска
+func (s *service) saveToDatabase(ctx context.Context, userUUID string, info serviceModel.UploadInfo) serviceModel.UploadInfo {
+	if info.Error != nil {
+		return info
+	}
+
+	id, err := s.photoRepository.CreateOriginalPhoto(ctx, &repoModel.CreateOriginalPhotoParams{
+		UserUUID: userUUID,
+		Filename: info.Filename,
+		Filepath: filepath.Join(s.d.StorageFolderPath, userUUID, info.Filename),
+		Size:     info.Size,
+	})
+	if err != nil {
+		log.Errorf("DB save error for file %s: %v", info.Filename, err)
+		info.Error = fmt.Errorf("db save error: %w", err)
+
+		filePath := filepath.Join(s.d.StorageFolderPath, userUUID, info.Filename)
+		if rmErr := os.Remove(filePath); rmErr != nil {
+			log.Errorf("Failed to remove file %s after DB save error: %v", filePath, rmErr)
+			info.Error = fmt.Errorf("%w; additionally, rollback failed: %v", info.Error, rmErr)
+		} else {
+			log.Infof("File %s removed due to failed DB save", filePath)
+		}
+	} else {
+		info.PhotoID = id
+	}
+
+	return info
+}
+
 func ensureUserFolder(storageFolderPath, userUUID string) (string, error) {
 	userFolder := filepath.Join(storageFolderPath, userUUID)
 	err := utils.EnsureDirectoryExists(userFolder)
@@ -161,7 +185,6 @@ func ensureUserFolder(storageFolderPath, userUUID string) (string, error) {
 	return userFolder, nil
 }
 
-// saveFileToDisk сохраняет загружаемый файл на диск
 func saveFileToDisk(file *multipart.FileHeader, destFolder string) error {
 	src, err := file.Open()
 	if err != nil {
@@ -181,13 +204,5 @@ func saveFileToDisk(file *multipart.FileHeader, destFolder string) error {
 		return fmt.Errorf("failed to write file to disk: %w", err)
 	}
 
-	return nil
-}
-
-// removePhotoFromDisk удаляет файл с диска
-func removePhotoFromDisk(photoPath string) error {
-	if err := os.Remove(photoPath); err != nil {
-		return fmt.Errorf("failed to remove photo file %s: %w", photoPath, err)
-	}
 	return nil
 }

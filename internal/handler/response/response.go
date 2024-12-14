@@ -1,4 +1,4 @@
-package handler
+package response
 
 import (
 	"context"
@@ -8,12 +8,12 @@ import (
 	"net/http"
 )
 
-type ResponseStatus string
+type Status string
 
 const (
-	OkResponse        ResponseStatus = "ok"
-	ErrResponse       ResponseStatus = "error"
-	PartialOkResponse ResponseStatus = "partial_ok"
+	OkResponse        Status = "ok"
+	ErrResponse       Status = "error"
+	PartialOkResponse Status = "partial_ok"
 )
 
 func NewOkResponse(c *gin.Context, data interface{}) {

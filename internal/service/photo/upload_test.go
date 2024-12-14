@@ -7,6 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	mock_repository "go-photo/internal/repository/mocks"
+	error2 "go-photo/internal/service/error"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -55,7 +56,7 @@ func TestService_UploadBatchPhotos(t *testing.T) {
 				repo.EXPECT().CreateOriginalPhoto(gomock.Any(), gomock.Any())
 			},
 			expectedUploaded: nil,
-			expectedError:    &FileAlreadyExistsError{Filename: "test1.jpg"},
+			expectedError:    &error2.FileAlreadyExistsError{Filename: "test1.jpg"},
 		},
 	}
 
@@ -117,7 +118,7 @@ func TestSaveFile(t *testing.T) {
 		file := mockFileHeader("test.jpg", 100, "file content")
 		destPath := filepath.Join(tmpDir, "test.jpg")
 
-		err := saveFile(file, destPath)
+		err := saveFileToDisk(file, destPath)
 		assert.NoError(t, err)
 
 		_, err = os.Stat(destPath)
@@ -132,7 +133,7 @@ func TestSaveFile(t *testing.T) {
 		file := mockFileHeader("test.jpg", 100, "")
 
 		destPath := "/invalid/path/test.jpg"
-		err := saveFile(file, destPath)
+		err := saveFileToDisk(file, destPath)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to create file")

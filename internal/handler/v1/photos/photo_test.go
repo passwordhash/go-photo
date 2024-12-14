@@ -6,8 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	error2 "go-photo/internal/service/error"
 	mock_service "go-photo/internal/service/mocks"
-	"go-photo/internal/service/photo"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http/httptest"
@@ -93,7 +93,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {
 				s.EXPECT().
 					UploadPhoto(gomock.Any(), userUUID, gomock.Any()).
-					Return(0, &photo.FileAlreadyExistsError{Filename: "test.jpg"}).
+					Return(0, &error2.FileAlreadyExistsError{Filename: "test.jpg"}).
 					Times(1)
 			},
 			expectedStatusCode:   400,
@@ -228,7 +228,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader) {
 				s.EXPECT().
 					UploadBatchPhotos(gomock.Any(), userUUID, gomock.Any()).
-					Return([]string{"test1.jpg"}, &photo.FileAlreadyExistsError{Filename: "test2.jpg"}).
+					Return([]string{"test1.jpg"}, &error2.FileAlreadyExistsError{Filename: "test2.jpg"}).
 					Times(1)
 			},
 			expectedStatusCode:   200,

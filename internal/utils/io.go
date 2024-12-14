@@ -13,6 +13,7 @@ var imageExt = map[string]struct{}{
 	".jpeg": {},
 	".png":  {},
 	".svg":  {},
+	".webp": {},
 }
 
 // IsAllPhotos проверяет, что все файлы являются фотографиями по расширению.

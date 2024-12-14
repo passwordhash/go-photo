@@ -5,6 +5,7 @@
 *mock*
 
 photos/
+storage/
 api/account_v1
 
 *.exe

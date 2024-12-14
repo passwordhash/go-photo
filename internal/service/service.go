@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"go-photo/internal/model"
+	serviceModel "go-photo/internal/service/photo/model"
 	"mime/multipart"
 )
 
@@ -15,6 +16,6 @@ type UserService interface {
 
 type PhotoService interface {
 	UploadPhoto(ctx context.Context, userUUID string, photoFile *multipart.FileHeader) (int, error)
-	UploadBatchPhotos(ctx context.Context, userUUID string, photoFiles []*multipart.FileHeader) ([]string, error)
+	UploadBatchPhotos(ctx context.Context, userUUID string, photoFiles []*multipart.FileHeader) (*serviceModel.UploadInfoList, error)
 	GetPhotoVersions(ctx context.Context, photoID int) ([]model.PhotoVersion, error)
 }

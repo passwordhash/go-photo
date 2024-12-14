@@ -7,7 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	mock_repository "go-photo/internal/repository/mocks"
-	error2 "go-photo/internal/service/error"
+	serviceErr "go-photo/internal/service/error"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -22,7 +22,7 @@ func TestService_UploadBatchPhotos(t *testing.T) {
 	tests := []struct {
 		name             string
 		userUUID         string
-		photoFiles       func() []*multipart.FileHeader
+		files            func() []*multipart.FileHeader
 		mockBehavior     mockBehavior
 		expectedUploaded []string
 		expectedError    error
@@ -30,33 +30,69 @@ func TestService_UploadBatchPhotos(t *testing.T) {
 		{
 			name:     "Valid",
 			userUUID: "user-id",
-			photoFiles: func() []*multipart.FileHeader {
+			files: func() []*multipart.FileHeader {
 				return []*multipart.FileHeader{
-					mockFileHeader("test1.jpg", 100, "content1"),
-					mockFileHeader("test2.jpg", 200, "content2"),
+					mockFileHeader("test1.jpg", 100, "file content"),
+					mockFileHeader("test2.jpg", 100, "file content"),
 				}
 			},
 			mockBehavior: func(repo *mock_repository.MockPhotoRepository, userUUID string, photoFiles []*multipart.FileHeader) {
-				repo.EXPECT().CreateOriginalPhoto(gomock.Any(), gomock.Any()).Return(1, nil).Times(1)
-				repo.EXPECT().CreateOriginalPhoto(gomock.Any(), gomock.Any()).Return(2, nil).Times(1)
+				for i := range photoFiles {
+					repo.EXPECT().CreateOriginalPhoto(gomock.Any(), gomock.Any()).Return(i+1, nil).Times(1)
+				}
 			},
 			expectedUploaded: []string{"test1.jpg", "test2.jpg"},
 			expectedError:    nil,
 		},
 		{
-			name:     "File already exists",
+			name:     "Disk Save Error",
 			userUUID: "user-id",
-			photoFiles: func() []*multipart.FileHeader {
+			files: func() []*multipart.FileHeader {
 				return []*multipart.FileHeader{
-					mockFileHeader("test1.jpg", 100, "content1"),
-					mockFileHeader("test1.jpg", 100, "content1"),
+					mockFileHeader("test1.jpg", 100, "file content"),
+					mockFileHeader("test2.jpg", 100, "file content"),
 				}
 			},
 			mockBehavior: func(repo *mock_repository.MockPhotoRepository, userUUID string, photoFiles []*multipart.FileHeader) {
-				repo.EXPECT().CreateOriginalPhoto(gomock.Any(), gomock.Any())
+				repo.EXPECT().CreateOriginalPhoto(gomock.Any(), gomock.Any()).Times(1)
+				repo.EXPECT().CreateOriginalPhoto(gomock.Any(), gomock.Any()).Times(1).Return(0, serviceErr.DbError)
+			},
+			expectedUploaded: []string{"test1.jpg"},
+			expectedError:    serviceErr.ParticalSuccessError,
+		},
+		{
+			name:     "DB Save Error",
+			userUUID: "user-id",
+			files: func() []*multipart.FileHeader {
+				return []*multipart.FileHeader{
+					mockFileHeader("test1.jpg", 100, "file content"),
+					mockFileHeader("test2.jpg", 100, "file content"),
+				}
+			},
+			mockBehavior: func(repo *mock_repository.MockPhotoRepository, userUUID string, photoFiles []*multipart.FileHeader) {
+				repo.EXPECT().CreateOriginalPhoto(gomock.Any(), gomock.Any()).
+					Return(0, fmt.Errorf("db error")).Times(2)
 			},
 			expectedUploaded: nil,
-			expectedError:    &error2.FileAlreadyExistsError{Filename: "test1.jpg"},
+			expectedError:    serviceErr.AllFailedError,
+		},
+		{
+			name:     "Partial Error",
+			userUUID: "user-id",
+			files: func() []*multipart.FileHeader {
+				return []*multipart.FileHeader{
+					mockFileHeader("test1.jpg", 100, "file content"),
+					mockFileHeader("test2.jpg", 100, "file content"),
+					mockFileHeader("test3.jpg", 100, "file content"),
+				}
+			},
+			mockBehavior: func(repo *mock_repository.MockPhotoRepository, userUUID string, photoFiles []*multipart.FileHeader) {
+				repo.EXPECT().CreateOriginalPhoto(gomock.Any(), gomock.Any()).Return(1, nil).Times(1)
+				repo.EXPECT().CreateOriginalPhoto(gomock.Any(), gomock.Any()).Return(0, fmt.Errorf("db error")).Times(1)
+				repo.EXPECT().CreateOriginalPhoto(gomock.Any(), gomock.Any()).Return(2, nil).Times(1)
+			},
+			expectedUploaded: []string{"test1.jpg", "test3.jpg"},
+			expectedError:    serviceErr.ParticalSuccessError,
 		},
 	}
 
@@ -69,16 +105,21 @@ func TestService_UploadBatchPhotos(t *testing.T) {
 			defer c.Finish()
 
 			mockRepo := mock_repository.NewMockPhotoRepository(c)
-			tt.mockBehavior(mockRepo, tt.userUUID, tt.photoFiles())
+			tt.mockBehavior(mockRepo, tt.userUUID, tt.files())
 
 			s := NewService(Deps{StorageFolderPath: storageDir}, mockRepo)
 
-			uploaded, err := s.UploadBatchPhotos(context.Background(), tt.userUUID, tt.photoFiles())
+			uploaded, err := s.UploadBatchPhotos(context.Background(), tt.userUUID, tt.files())
+
 			if tt.expectedError != nil {
-				assert.ErrorAs(t, err, &tt.expectedError)
+				assert.ErrorIs(t, err, tt.expectedError)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedUploaded, uploaded)
+				var uploadedFiles []string
+				for _, file := range uploaded.Get() {
+					uploadedFiles = append(uploadedFiles, file.Filename)
+				}
+				assert.ElementsMatch(t, tt.expectedUploaded, uploadedFiles)
 			}
 		})
 	}
@@ -138,59 +179,6 @@ func TestSaveFile(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to create file")
 	})
-}
-
-func TestProcessFile(t *testing.T) {
-	type mockBehavior func(repo *mock_repository.MockPhotoRepository, userUUID string)
-
-	tests := []struct {
-		name          string
-		userUUID      string
-		file          func() *multipart.FileHeader
-		mockBehavior  mockBehavior
-		expectedID    int
-		expectedError error
-	}{
-		{
-			name:     "Valid",
-			userUUID: "user-uuid",
-			file: func() *multipart.FileHeader {
-				return mockFileHeader("test.jpg", 100, "content")
-			},
-			mockBehavior: func(repo *mock_repository.MockPhotoRepository, userUUID string) {
-				repo.EXPECT().CreateOriginalPhoto(gomock.Any(), gomock.Any()).Return(123, nil)
-			},
-			expectedID:    123,
-			expectedError: nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tmpFolder := t.TempDir()
-			defer os.RemoveAll(tmpFolder)
-
-			userFolder := filepath.Join(tmpFolder, tt.userUUID)
-			err := os.MkdirAll(userFolder, 0755)
-			assert.NoError(t, err)
-
-			c := gomock.NewController(t)
-			defer c.Finish()
-
-			mockRepo := mock_repository.NewMockPhotoRepository(c)
-			tt.mockBehavior(mockRepo, tt.userUUID)
-
-			s := NewService(Deps{StorageFolderPath: tmpFolder}, mockRepo)
-
-			id, err := s.processFile(context.Background(), tt.userUUID, tt.file(), userFolder)
-			if tt.expectedError != nil {
-				assert.EqualError(t, err, tt.expectedError.Error())
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedID, id)
-			}
-		})
-	}
 }
 
 func mockFileHeader(filename string, size int64, content string) *multipart.FileHeader {

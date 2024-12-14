@@ -16,7 +16,6 @@ import (
 	"sync"
 )
 
-// UploadPhoto загружает одну фотографию
 func (s *service) UploadPhoto(ctx context.Context, userUUID string, photoFile *multipart.FileHeader) (int, error) {
 	userFolder, err := ensureUserFolder(s.d.StorageFolderPath, userUUID)
 	if err != nil {
@@ -38,7 +37,6 @@ func (s *service) UploadPhoto(ctx context.Context, userUUID string, photoFile *m
 	return info.PhotoID, nil
 }
 
-// UploadBatchPhotos загружает несколько фотографий конкурентно
 func (s *service) UploadBatchPhotos(ctx context.Context, userUUID string, photoFiles []*multipart.FileHeader) (*serviceModel.UploadInfoList, error) {
 	destFolder, err := ensureUserFolder(s.d.StorageFolderPath, userUUID)
 	if err != nil {
@@ -66,6 +64,13 @@ func (s *service) UploadBatchPhotos(ctx context.Context, userUUID string, photoF
 				}
 
 				info := s.saveFile(ctx, file, destFolder)
+				if info.Error != nil {
+					log.Errorf("Failed to save file %s: %v", info.Filename, info.Error)
+					log.Warnf("Skipping DB save for file %s due to disk save error: %v", info.Filename, info.Error)
+					resultChan <- info
+					continue
+				}
+
 				dbTaskChan <- info
 			}
 		}(i)
@@ -84,13 +89,6 @@ func (s *service) UploadBatchPhotos(ctx context.Context, userUUID string, photoF
 				}
 
 				info = s.saveToDatabase(ctx, userUUID, info)
-				if info.Error != nil {
-					log.Errorf("Failed to save file %s: %v", info.Filename, info.Error)
-					log.Warnf("Skipping DB save for file %s due to disk save error: %v", info.Filename, info.Error)
-					resultChan <- info
-					continue
-				}
-
 				resultChan <- info
 			}
 		}(i)

@@ -6,10 +6,9 @@ import (
 )
 
 type UploadInfoList struct {
-	mu       sync.RWMutex
-	uploads  []UploadInfo
-	total    int
-	errCount int
+	mu      sync.RWMutex
+	uploads []UploadInfo
+	total   int
 }
 
 type UploadInfo struct {
@@ -24,9 +23,6 @@ func (il *UploadInfoList) Add(info UploadInfo) {
 	defer il.mu.Unlock()
 	il.uploads = append(il.uploads, info)
 	il.total++
-	if info.Error != nil {
-		il.errCount++
-	}
 }
 
 func (il *UploadInfoList) Get() []UploadInfo {
@@ -41,22 +37,35 @@ func (il *UploadInfoList) Total() int {
 	return il.total
 }
 
+func (il *UploadInfoList) ErrorCount() int {
+	il.mu.RLock()
+	defer il.mu.RUnlock()
+	cnt := 0
+	for _, upload := range il.uploads {
+		if upload.Error != nil {
+			cnt++
+		}
+	}
+	return cnt
+}
+
 func (il *UploadInfoList) SuccessCount() int {
 	il.mu.RLock()
 	defer il.mu.RUnlock()
-	return il.total - il.errCount
+	return il.total - il.ErrorCount()
 }
 
 func (il *UploadInfoList) IsAllError() bool {
 	il.mu.RLock()
 	defer il.mu.RUnlock()
-	return il.total == il.errCount
+	return il.total == il.ErrorCount()
 }
 
 func (il *UploadInfoList) IsSomeError() bool {
 	il.mu.RLock()
 	defer il.mu.RUnlock()
-	return il.errCount > 0 && il.errCount < il.total
+	errCount := il.ErrorCount()
+	return errCount > 0 && errCount < il.total
 }
 
 func ToUploadsInfoFromService(uploads []UploadInfo) []response.UploadInfo {

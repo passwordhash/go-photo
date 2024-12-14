@@ -20,7 +20,7 @@ const (
 	FormPhotoBatchFiles = "batch_photo_files"
 )
 
-func (h *Handler) uploadPhoto(c *gin.Context) {
+func (h *handler) uploadPhoto(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 
@@ -55,7 +55,7 @@ func (h *Handler) uploadPhoto(c *gin.Context) {
 	})
 }
 
-func (h *Handler) uploadBatchPhotos(c *gin.Context) {
+func (h *handler) uploadBatchPhotos(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 
@@ -99,7 +99,7 @@ func (h *Handler) uploadBatchPhotos(c *gin.Context) {
 	c.JSON(respStatus, body)
 }
 
-func (h *Handler) getPhotoVersions(c *gin.Context) {
+func (h *handler) getPhotoVersions(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 

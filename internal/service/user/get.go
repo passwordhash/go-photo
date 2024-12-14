@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func (s *Service) Get(_ context.Context, uuid string) (model.User, error) {
+func (s *service) Get(_ context.Context, uuid string) (model.User, error) {
 	mockUser := model.User{
 		UUID:         uuid,
 		Email:        "mock-email",
@@ -19,7 +19,7 @@ func (s *Service) Get(_ context.Context, uuid string) (model.User, error) {
 	return mockUser, nil
 }
 
-func (s Service) GetAll(ctx context.Context) ([]model.User, error) {
+func (s *service) GetAll(ctx context.Context) ([]model.User, error) {
 	resp, err := s.accountClient.GetAll(ctx, &emptypb.Empty{})
 	if err != nil {
 		return nil, err

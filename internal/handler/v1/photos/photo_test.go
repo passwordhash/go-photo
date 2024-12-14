@@ -134,7 +134,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 			mockPhotoService := mock_service.NewMockPhotoService(ctrl)
 			test.mockBehavior(mockPhotoService, test.userUUID, nil, "test.jpg")
 
-			h := NewPhotosHandler(mockPhotoService)
+			h := NewHandler(mockPhotoService)
 
 			r := gin.New()
 			gin.DefaultWriter = ioutil.Discard
@@ -250,7 +250,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			mockPhotoService := mock_service.NewMockPhotoService(ctrl)
 			tt.mockBehavior(mockPhotoService, tt.userUUID, nil)
 
-			h := NewPhotosHandler(mockPhotoService)
+			h := NewHandler(mockPhotoService)
 
 			r := gin.New()
 			r.POST("/uploadBatch", h.uploadBatchPhotos)

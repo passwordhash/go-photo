@@ -8,34 +8,44 @@ import (
 	"net/http"
 )
 
-type Status string
+type ErrMessage string
 
 const (
-	OkResponse        Status = "ok"
-	ErrResponse       Status = "error"
-	PartialOkResponse Status = "partial_ok"
+	InternalServerError ErrMessage = "internal_server_error"
+	TimedOut                       = "timed_out"
+	InvalidRequestBody             = "invalid_request_body"
+	InvalidCredentials             = "invalid_credentials"
+	LoginFailed                    = "login_failed"
 )
 
-func NewOkResponse(c *gin.Context, data interface{}) {
+type ErrorResponse struct {
+	Error   ErrMessage `json:"error"`
+	Message string     `json:"message"`
+}
+
+func NewOk(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, data)
 }
 
-func NewErrResponse(c *gin.Context, code int, respMsg string, err error) {
-	outErr := errors.New(respMsg)
+func NewErr(c *gin.Context, code int, respMsg ErrMessage, err error, clientMessage string) {
+	outErr := errors.New(string(respMsg))
 	if err != nil {
 		outErr = fmt.Errorf("%s: %w", respMsg, err)
 	}
 	c.Error(outErr)
-	c.AbortWithStatusJSON(code, gin.H{"message": respMsg})
+	c.AbortWithStatusJSON(code, ErrorResponse{
+		Error:   respMsg,
+		Message: clientMessage,
+	})
 }
 
 func HandleError(c *gin.Context, err error) bool {
 	if errors.Is(err, context.DeadlineExceeded) {
-		NewErrResponse(c, http.StatusGatewayTimeout, "operation timed out, please try again later", err)
+		NewErr(c, http.StatusGatewayTimeout, TimedOut, err, "gateway timeout")
 		return true
 	}
 	if err != nil {
-		NewErrResponse(c, http.StatusInternalServerError, "internal server error", err)
+		NewErr(c, http.StatusInternalServerError, InternalServerError, err, "internal server error")
 		return true
 	}
 	return false

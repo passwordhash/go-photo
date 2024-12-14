@@ -20,4 +20,8 @@ var (
 
 	ParticalSuccessError = errors.New("partical success")
 	AllFailedError       = errors.New("all failed")
+
+	UserNotFoundError = errors.New("user not found")
+
+	UnexpectedGRPCError = errors.New("unexpected grpc error")
 )

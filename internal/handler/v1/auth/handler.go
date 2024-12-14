@@ -30,7 +30,7 @@ func (h *handler) login(c *gin.Context) {
 	var input request.AuthLogin
 	err := c.ShouldBindJSON(&input)
 	if err != nil {
-		response.NewErr(c, http.StatusBadRequest, response.InvalidRequestBody, err, "Invalid request body format.")
+		response.NewErr(c, http.StatusBadRequest, response.InvalidRequestParams, err, "Invalid request body format.")
 		return
 	}
 

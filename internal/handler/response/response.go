@@ -11,11 +11,13 @@ import (
 type ErrMessage string
 
 const (
-	InternalServerError ErrMessage = "internal_server_error"
-	TimedOut                       = "timed_out"
-	InvalidRequestBody             = "invalid_request_body"
-	InvalidCredentials             = "invalid_credentials"
-	LoginFailed                    = "login_failed"
+	InternalServerError  ErrMessage = "internal_server_error"
+	TimedOut                        = "timed_out"
+	InvalidRequestParams            = "invalid_request_params"
+	ParamsMissing                   = "params_missing"
+	UnsupportedFileType             = "unsupported_file_type"
+	InvalidCredentials              = "invalid_credentials"
+	LoginFailed                     = "login_failed"
 )
 
 type ErrorResponse struct {

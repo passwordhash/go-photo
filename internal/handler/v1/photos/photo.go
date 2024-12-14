@@ -3,6 +3,7 @@ package photos
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"go-photo/internal/config"
 	"go-photo/internal/handler/response"
@@ -29,22 +30,17 @@ func (h *handler) uploadPhoto(c *gin.Context) {
 
 	fileHeader, err := c.FormFile(FormPhotoFile)
 	if err != nil {
-		response.NewErr(c, http.StatusBadRequest, "file not found", err)
+		response.NewErr(c, http.StatusBadRequest, response.ParamsMissing, err, fmt.Sprintf("No %s in form.", FormPhotoFile))
 		return
 	}
 
 	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
 	if !utils.IsPhoto(ext) {
-		response.NewErr(c, http.StatusBadRequest, "unsupported file type", nil)
+		response.NewErr(c, http.StatusBadRequest, response.UnsupportedFileType, nil, "Unsupported file type: "+ext)
 		return
 	}
 
-	var alreadyExistsErr *serviceErr.FileAlreadyExistsError
 	photoID, err := h.photoService.UploadPhoto(ctx, UUID, fileHeader)
-	if errors.As(err, &alreadyExistsErr) {
-		response.NewErr(c, http.StatusBadRequest, "file with the same name already exists", err)
-		return
-	}
 	if response.HandleError(c, err) {
 		return
 	}
@@ -66,18 +62,18 @@ func (h *handler) uploadBatchPhotos(c *gin.Context) {
 
 	form, err := c.MultipartForm()
 	if err != nil {
-		response.NewErr(c, http.StatusBadRequest, "failed to parse form", err)
+		response.NewErr(c, http.StatusBadRequest, response.InvalidRequestParams, err, "No form data.")
 		return
 	}
 
 	files := form.File[FormPhotoBatchFiles]
 	if len(files) == 0 {
-		response.NewErr(c, http.StatusBadRequest, "no batch_photo_files in form", nil)
+		response.NewErr(c, http.StatusBadRequest, response.ParamsMissing, nil, fmt.Sprintf("No %s in form.", FormPhotoBatchFiles))
 		return
 	}
 
 	if ok, notPhoto := utils.IsAllPhotos(files); !ok {
-		response.NewErr(c, http.StatusBadRequest, "unsupported file type: "+notPhoto, nil)
+		response.NewErr(c, http.StatusBadRequest, response.UnsupportedFileType, err, fmt.Sprintf("File %s is not a photo.", notPhoto))
 		return
 	}
 
@@ -106,13 +102,13 @@ func (h *handler) getPhotoVersions(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
-		response.NewErr(c, http.StatusBadRequest, "invalid id param", err)
+		response.NewErr(c, http.StatusBadRequest, response.InvalidRequestParams, err, "Invalid photo id.")
 		return
 	}
 
 	version, err := h.photoService.GetPhotoVersions(ctx, id)
 	if err != nil {
-		response.NewErr(c, http.StatusInternalServerError, "failed to get photo versions", err)
+		response.NewErr(c, http.StatusInternalServerError, response.InternalServerError, err, "Failed to get photo versions.")
 		return
 	}
 	if response.HandleError(c, err) {

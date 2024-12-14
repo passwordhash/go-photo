@@ -18,6 +18,13 @@ type UploadInfo struct {
 	Size     int64
 }
 
+func NewUploadInfoList(infos []UploadInfo) *UploadInfoList {
+	return &UploadInfoList{
+		uploads: infos,
+		total:   len(infos),
+	}
+}
+
 func (il *UploadInfoList) Add(info UploadInfo) {
 	il.mu.Lock()
 	defer il.mu.Unlock()

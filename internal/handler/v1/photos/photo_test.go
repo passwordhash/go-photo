@@ -2,12 +2,15 @@ package photos
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	error2 "go-photo/internal/service/error"
+	"go-photo/internal/handler/response"
+	serviceErr "go-photo/internal/service/error"
 	mock_service "go-photo/internal/service/mocks"
+	serviceModel "go-photo/internal/service/photo/model"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http/httptest"
@@ -93,7 +96,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {
 				s.EXPECT().
 					UploadPhoto(gomock.Any(), userUUID, gomock.Any()).
-					Return(0, &error2.FileAlreadyExistsError{Filename: "test.jpg"}).
+					Return(0, &serviceErr.FileAlreadyExistsError{Filename: "test.jpg"}).
 					Times(1)
 			},
 			expectedStatusCode:   400,
@@ -153,118 +156,99 @@ func TestHandler_uploadPhoto(t *testing.T) {
 func TestHandler_uploadBatchPhotos(t *testing.T) {
 	type mockBehavior func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader)
 
+	defaultUploads := createDefaultUploads(3)
+
 	tests := []struct {
-		name                 string
-		userUUID             string
-		multipartBody        func() (*bytes.Buffer, string)
-		mockBehavior         mockBehavior
-		expectedStatusCode   int
-		expectedResponseBody string
+		name               string
+		userUUID           string
+		multipartBody      func() (*bytes.Buffer, string)
+		mockBehavior       mockBehavior
+		expectedStatusCode int
+		expectedResponse   any
 	}{
 		{
 			name:     "Valid",
 			userUUID: "123e4567-e89b-12d3-a456-426614174000",
 			multipartBody: func() (*bytes.Buffer, string) {
-				body := &bytes.Buffer{}
-				writer := multipart.NewWriter(body)
-
-				for i := 1; i <= 3; i++ {
-					fileWriter, _ := writer.CreateFormFile(FormPhotoBatchFiles, fmt.Sprintf("test%d.jpg", i))
-					fileWriter.Write([]byte("fake image data"))
-				}
-
-				writer.Close()
-				return body, writer.FormDataContentType()
+				return createMultipartBody(3, "tt%d.jpg", "fake image data")
 			},
 			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader) {
 				s.EXPECT().
 					UploadBatchPhotos(gomock.Any(), userUUID, gomock.Any()).
-					Return([]string{"test1.jpg", "test2.jpg", "test3.jpg"}, nil).
+					Return(&defaultUploads, nil).
 					Times(1)
 			},
-			expectedStatusCode:   200,
-			expectedResponseBody: `{"status":"ok","total_count":3,"success_count":3,"uploaded_photos":["test1.jpg","test2.jpg","test3.jpg"]}`,
+			expectedStatusCode: 200,
+			expectedResponse: response.UploadBatchPhotosResponse{
+				TotalCount:   3,
+				SuccessCount: 3,
+				UploadInfos:  serviceModel.ToUploadsInfoFromService(defaultUploads.Get()),
+			},
 		},
 		{
 			name:     "Second file is not a photo",
 			userUUID: "123e4567-e89b-12d3-a456-426614174000",
 			multipartBody: func() (*bytes.Buffer, string) {
-				body := &bytes.Buffer{}
-				writer := multipart.NewWriter(body)
-
-				// Первый файл - фото
-				fileWriter1, _ := writer.CreateFormFile(FormPhotoBatchFiles, "test1.jpg")
-				fileWriter1.Write([]byte("fake image data"))
-
-				// Второй файл - не фото
-				fileWriter2, _ := writer.CreateFormFile(FormPhotoBatchFiles, "test2.txt")
-				fileWriter2.Write([]byte("not an image"))
-
-				writer.Close()
-				return body, writer.FormDataContentType()
+				return createMultipartBodyMixed(
+					[]string{"test1.jpg", "test2.txt"},
+					[]string{"fake image data", "not an image"},
+				)
 			},
-			mockBehavior:         func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader) {},
-			expectedStatusCode:   400,
-			expectedResponseBody: `{"message":"unsupported file type: test2.txt"}`,
+			mockBehavior:       func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader) {},
+			expectedStatusCode: 400,
+			expectedResponse: map[string]interface{}{
+				"message": "unsupported file type: test2.txt",
+			},
 		},
 		{
-			name:     "Second file already exists",
+			name:     "Partical success",
 			userUUID: "123e4567-e89b-12d3-a456-426614174000",
 			multipartBody: func() (*bytes.Buffer, string) {
-				body := &bytes.Buffer{}
-				writer := multipart.NewWriter(body)
-
-				// Первый файл - фото
-				fileWriter1, _ := writer.CreateFormFile(FormPhotoBatchFiles, "test1.jpg")
-				fileWriter1.Write([]byte("fake image data"))
-
-				// Второй файл - фото, но уже существует
-				fileWriter2, _ := writer.CreateFormFile(FormPhotoBatchFiles, "test2.jpg")
-				fileWriter2.Write([]byte("fake image data"))
-
-				writer.Close()
-				return body, writer.FormDataContentType()
+				return createMultipartBody(3, "tt%d.jpg", "fake image data")
 			},
 			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader) {
+				uploads := createPartialUploads()
 				s.EXPECT().
 					UploadBatchPhotos(gomock.Any(), userUUID, gomock.Any()).
-					Return([]string{"test1.jpg"}, &error2.FileAlreadyExistsError{Filename: "test2.jpg"}).
+					Return(uploads, serviceErr.ParticalSuccessError).
 					Times(1)
 			},
-			expectedStatusCode:   200,
-			expectedResponseBody: `{"status":"partial_ok","total_count":2,"success_count":1,"uploaded_photos":["test1.jpg"],"error":"file with name 'test2.jpg' already exists in the folder"}`,
+			expectedStatusCode: 206,
+			expectedResponse: response.UploadBatchPhotosResponse{
+				TotalCount:   3,
+				SuccessCount: 2,
+				UploadInfos:  serviceModel.ToUploadsInfoFromService(createPartialUploads().Get()),
+			},
 		},
 		{
-			name:     "Internal error",
+			name:     "All failed",
 			userUUID: "123e4567-e89b-12d3-a456-426614174000",
 			multipartBody: func() (*bytes.Buffer, string) {
-				body := &bytes.Buffer{}
-				writer := multipart.NewWriter(body)
-
-				fileWriter, _ := writer.CreateFormFile(FormPhotoBatchFiles, "test.jpg")
-				fileWriter.Write([]byte("fake image data"))
-
-				writer.Close()
-				return body, writer.FormDataContentType()
+				return createMultipartBody(2, "tt%d.jpg", "fake image data")
 			},
 			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader) {
+				uploads := createFailedUploads()
 				s.EXPECT().
 					UploadBatchPhotos(gomock.Any(), userUUID, gomock.Any()).
-					Return(nil, assert.AnError).
+					Return(uploads, serviceErr.AllFailedError).
 					Times(1)
 			},
-			expectedStatusCode:   500,
-			expectedResponseBody: `{"message":"internal server error"}`,
+			expectedStatusCode: 400,
+			expectedResponse: response.UploadBatchPhotosResponse{
+				TotalCount:   2,
+				SuccessCount: 0,
+				UploadInfos:  serviceModel.ToUploadsInfoFromService(createFailedUploads().Get()),
+			},
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			mockPhotoService := mock_service.NewMockPhotoService(ctrl)
-			test.mockBehavior(mockPhotoService, test.userUUID, nil)
+			tt.mockBehavior(mockPhotoService, tt.userUUID, nil)
 
 			h := NewPhotosHandler(mockPhotoService)
 
@@ -272,14 +256,71 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			r.POST("/uploadBatch", h.uploadBatchPhotos)
 
 			w := httptest.NewRecorder()
-			body, contentType := test.multipartBody()
+			body, contentType := tt.multipartBody()
 			req := httptest.NewRequest("POST", "/uploadBatch", body)
 			req.Header.Set("Content-Type", contentType)
 
 			r.ServeHTTP(w, req)
 
-			assert.Equal(t, test.expectedStatusCode, w.Code)
-			assert.JSONEq(t, test.expectedResponseBody, w.Body.String())
+			content, err := json.Marshal(tt.expectedResponse)
+			assert.NoError(t, err)
+
+			assert.Equal(t, tt.expectedStatusCode, w.Code)
+			assert.JSONEq(t, string(content), w.Body.String())
 		})
 	}
+}
+
+// Вспомогательные функции
+
+func createMultipartBody(count int, filenamePattern, content string) (*bytes.Buffer, string) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	for i := 1; i <= count; i++ {
+		fileWriter, _ := writer.CreateFormFile(FormPhotoBatchFiles, fmt.Sprintf(filenamePattern, i))
+		fileWriter.Write([]byte(content))
+	}
+
+	writer.Close()
+	return body, writer.FormDataContentType()
+}
+
+func createMultipartBodyMixed(filenames, contents []string) (*bytes.Buffer, string) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	for i, filename := range filenames {
+		fileWriter, _ := writer.CreateFormFile(FormPhotoBatchFiles, filename)
+		fileWriter.Write([]byte(contents[i]))
+	}
+
+	writer.Close()
+	return body, writer.FormDataContentType()
+}
+
+func createDefaultUploads(count int) serviceModel.UploadInfoList {
+	uploads := serviceModel.UploadInfoList{}
+	for i := 1; i <= count; i++ {
+		uploads.Add(serviceModel.UploadInfo{
+			PhotoID:  i,
+			Filename: fmt.Sprintf("tt%d.jpg", i),
+		})
+	}
+	return uploads
+}
+
+func createPartialUploads() *serviceModel.UploadInfoList {
+	return serviceModel.NewUploadInfoList([]serviceModel.UploadInfo{
+		{PhotoID: 1, Filename: "tt1.jpg"},
+		{PhotoID: 0, Filename: "tt2.jpg", Error: serviceErr.DbError},
+		{PhotoID: 3, Filename: "tt3.jpg"},
+	})
+}
+
+func createFailedUploads() *serviceModel.UploadInfoList {
+	return serviceModel.NewUploadInfoList([]serviceModel.UploadInfo{
+		{PhotoID: 0, Filename: "tt1.jpg", Error: serviceErr.DbError},
+		{PhotoID: 0, Filename: "tt2.jpg", Error: serviceErr.ServiceError},
+	})
 }

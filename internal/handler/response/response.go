@@ -17,7 +17,6 @@ const (
 	ParamsMissing                   = "params_missing"
 	UnsupportedFileType             = "unsupported_file_type"
 	InvalidCredentials              = "invalid_credentials"
-	LoginFailed                     = "login_failed"
 )
 
 type Error struct {

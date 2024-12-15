@@ -15,8 +15,8 @@ func (e *FileAlreadyExistsError) Error() string {
 }
 
 var (
-	ServiceError = errors.New("service error")
-	DbError      = errors.New("db error")
+	InternalError = errors.New("internal error")
+	DbError       = errors.New("db error")
 
 	ParticalSuccessError = errors.New("partical success")
 	AllFailedError       = errors.New("all failed")

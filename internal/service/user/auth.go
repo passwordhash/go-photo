@@ -10,9 +10,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *service) Login(ctx context.Context, login string, password string) (string, error) {
+func (s *service) Login(ctx context.Context, email string, password string) (string, error) {
 	// TODO encrypt password
-	resp, err := s.accountClient.Login(ctx, &def.LoginRequest{Email: login, EncryptedPassword: password})
+	resp, err := s.accountClient.Login(ctx, &def.LoginRequest{Email: email, EncryptedPassword: password})
 	if err != nil {
 		return "", s.handleGRPCErr(err)
 	}
@@ -41,7 +41,7 @@ func (s *service) Register(ctx context.Context, input serviceUserModel.RegisterP
 func (s *service) handleGRPCErr(err error) error {
 	st, ok := status.FromError(err)
 	if !ok {
-		return serviceErr.ServiceError
+		return serviceErr.InternalError
 	}
 
 	switch st.Code() {
@@ -50,7 +50,7 @@ func (s *service) handleGRPCErr(err error) error {
 	case codes.AlreadyExists:
 		return serviceErr.UserAlreadyExistsError
 	case codes.Internal:
-		return fmt.Errorf("internal error: %v", st.Message())
+		return fmt.Errorf("%w: %v", serviceErr.InternalError, st.Message())
 	}
 
 	return fmt.Errorf("unhandled error: %v", err)

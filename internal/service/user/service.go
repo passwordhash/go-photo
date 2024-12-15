@@ -14,6 +14,6 @@ type service struct {
 	//userRepo repository.UserRepository
 }
 
-func NewUserService(accountClient desc.AccountServiceClient) *service {
+func NewService(accountClient desc.AccountServiceClient) *service {
 	return &service{accountClient: accountClient}
 }

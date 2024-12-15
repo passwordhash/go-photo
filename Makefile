@@ -19,6 +19,7 @@ generate-pb:
 go-generate-mock:
 	$(GOPATH)/bin/mockgen -destination=$(SERVICE_MOCKDIR)/mock.go -source=$(SERVICE_MOCKGEN_SRC)
 	$(GOPATH)/bin/mockgen -destination=$(REPO_MOCKDIR)/mock.go -source=$(REPO_MOCKGEN_SRC)
+	$(GOPATH)/bin/mockgen -destination=pkg/account_v1/mocks/mock.go -source=pkg/account_v1/account_grpc.pb.go AccountServiceServer
 
 
 migrate-down:

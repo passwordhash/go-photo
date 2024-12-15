@@ -20,7 +20,7 @@ const (
 	LoginFailed                     = "login_failed"
 )
 
-type ErrorResponse struct {
+type Error struct {
 	Error   ErrMessage `json:"error"`
 	Message string     `json:"message"`
 }
@@ -35,7 +35,7 @@ func NewErr(c *gin.Context, code int, respMsg ErrMessage, err error, clientMessa
 		outErr = fmt.Errorf("%s: %w", respMsg, err)
 	}
 	c.Error(outErr)
-	c.AbortWithStatusJSON(code, ErrorResponse{
+	c.AbortWithStatusJSON(code, Error{
 		Error:   respMsg,
 		Message: clientMessage,
 	})

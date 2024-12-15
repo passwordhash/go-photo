@@ -61,7 +61,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 			},
 			mockBehavior:       func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {},
 			expectedStatusCode: 400,
-			expectedResponseBody: response.ErrorResponse{
+			expectedResponseBody: response.Error{
 				Error: response.ParamsMissing,
 			},
 		},
@@ -80,7 +80,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 			},
 			mockBehavior:       func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {},
 			expectedStatusCode: 400,
-			expectedResponseBody: response.ErrorResponse{
+			expectedResponseBody: response.Error{
 				Error: response.UnsupportedFileType,
 			},
 		},
@@ -104,7 +104,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 					Times(1)
 			},
 			expectedStatusCode: 500,
-			expectedResponseBody: response.ErrorResponse{
+			expectedResponseBody: response.Error{
 				Error: response.InternalServerError,
 			},
 		},
@@ -133,11 +133,11 @@ func TestHandler_uploadPhoto(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatusCode, w.Code)
 			switch tt.expectedResponseBody.(type) {
-			case response.ErrorResponse:
-				var resp response.ErrorResponse
+			case response.Error:
+				var resp response.Error
 				err := json.Unmarshal(w.Body.Bytes(), &resp)
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedResponseBody.(response.ErrorResponse).Error, resp.Error)
+				assert.Equal(t, tt.expectedResponseBody.(response.Error).Error, resp.Error)
 			default:
 				assert.JSONEq(t, tt.expectedResponseBody.(string), w.Body.String())
 			}
@@ -188,7 +188,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			},
 			mockBehavior:       func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader) {},
 			expectedStatusCode: 400,
-			expectedResponse: response.ErrorResponse{
+			expectedResponse: response.Error{
 				Error: response.UnsupportedFileType,
 			},
 		},
@@ -260,11 +260,11 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			assert.Equal(t, tt.expectedStatusCode, w.Code)
 
 			switch tt.expectedResponse.(type) {
-			case response.ErrorResponse:
-				var resp response.ErrorResponse
+			case response.Error:
+				var resp response.Error
 				err := json.Unmarshal(w.Body.Bytes(), &resp)
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedResponse.(response.ErrorResponse).Error, resp.Error)
+				assert.Equal(t, tt.expectedResponse.(response.Error).Error, resp.Error)
 			default:
 				assert.JSONEq(t, string(content), w.Body.String())
 			}

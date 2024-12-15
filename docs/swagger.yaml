@@ -1,0 +1,67 @@
+definitions:
+  request.AuthLogin:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  response.ErrMessage:
+    enum:
+    - internal_server_error
+    type: string
+    x-enum-varnames:
+    - InternalServerError
+  response.Error:
+    properties:
+      error:
+        $ref: '#/definitions/response.ErrMessage'
+      message:
+        type: string
+    type: object
+  response.Login:
+    properties:
+      token:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user by email and password, and return a JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/request.AuthLogin'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Login'
+        "400":
+          description: Invalid request body format.
+          schema:
+            $ref: '#/definitions/response.Error'
+        "401":
+          description: Email or password is incorrect.
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Unexpected error occurred.
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Login user
+      tags:
+      - auth
+swagger: "2.0"

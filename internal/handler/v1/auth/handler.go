@@ -26,6 +26,17 @@ func (h *handler) RegisterRoutes(router *gin.RouterGroup) {
 	}
 }
 
+// @Summary Login user
+// @Description Authenticate a user by email and password, and return a JWT token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body request.AuthLogin true "Login credentials"
+// @Success 200 {object} response.Login
+// @Failure 400 {object} response.Error "Invalid request body format."
+// @Failure 401 {object} response.Error "Email or password is incorrect."
+// @Failure 500 {object} response.Error "Unexpected error occurred."
+// @Router /api/v1/auth/login [post]
 func (h *handler) login(c *gin.Context) {
 	var input request.AuthLogin
 	err := c.ShouldBindJSON(&input)
@@ -44,5 +55,5 @@ func (h *handler) login(c *gin.Context) {
 		return
 	}
 
-	response.NewOk(c, gin.H{"token": token})
+	response.NewOk(c, response.Login{Token: token})
 }

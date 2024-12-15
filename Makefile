@@ -5,7 +5,9 @@ SERVICE_MOCKGEN_SRC = internal/service/service.go
 REPO_MOCKDIR = internal/repository/mocks
 REPO_MOCKGEN_SRC = internal/repository/repository.go
 
-generate:  go-generate-mock generate-pb
+DOCS_DIR = ./docs
+
+generate: swagger go-generate-mock generate-pb
 
 generate-pb:
 	mkdir -p pkg/account_v1
@@ -22,3 +24,6 @@ go-generate-mock:
 migrate-down:
 	docker run --rm -v ./schema:/migrations --network host migrate/migrate \
   -path=/migrations -database "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable" down 1
+
+swagger:
+	swag init --output $(DOCS_DIR) --generalInfo ./cmd/http_server/main.go

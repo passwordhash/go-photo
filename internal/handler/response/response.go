@@ -17,6 +17,7 @@ const (
 	ParamsMissing                   = "params_missing"
 	UnsupportedFileType             = "unsupported_file_type"
 	InvalidCredentials              = "invalid_credentials"
+	UserAlreadyExists               = "user_already_exists"
 )
 
 type Error struct {
@@ -46,7 +47,7 @@ func HandleError(c *gin.Context, err error) bool {
 		return true
 	}
 	if err != nil {
-		NewErr(c, http.StatusInternalServerError, InternalServerError, err, "internal server error")
+		NewErr(c, http.StatusInternalServerError, InternalServerError, err, "Unexpected error occurred.")
 		return true
 	}
 	return false

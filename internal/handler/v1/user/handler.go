@@ -6,15 +6,15 @@ import (
 	"strconv"
 )
 
-type Handler struct {
+type handler struct {
 	userService service.UserService
 }
 
-func NewUserHandler(userService service.UserService) *Handler {
-	return &Handler{userService: userService}
+func NewHandler(userService service.UserService) *handler {
+	return &handler{userService: userService}
 }
 
-func (h *Handler) RegisterRoutes(router *gin.RouterGroup) {
+func (h *handler) RegisterRoutes(router *gin.RouterGroup) {
 	userGroup := router.Group("/users")
 	{
 		userGroup.GET("/:id", h.get)
@@ -22,7 +22,7 @@ func (h *Handler) RegisterRoutes(router *gin.RouterGroup) {
 	}
 }
 
-func (h *Handler) get(c *gin.Context) {
+func (h *handler) get(c *gin.Context) {
 	userId := c.Param("id")
 
 	// Пример валидации параметра
@@ -42,7 +42,7 @@ func (h *Handler) get(c *gin.Context) {
 	c.JSON(200, user)
 }
 
-func (h *Handler) getAll(c *gin.Context) {
+func (h *handler) getAll(c *gin.Context) {
 	users, err := h.userService.GetAll(c)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})

@@ -5,15 +5,15 @@ import (
 	"go-photo/internal/service"
 )
 
-type Handler struct {
+type handler struct {
 	photoService service.PhotoService
 }
 
-func NewPhotosHandler(photoService service.PhotoService) *Handler {
-	return &Handler{photoService: photoService}
+func NewHandler(photoService service.PhotoService) *handler {
+	return &handler{photoService: photoService}
 }
 
-func (h *Handler) RegisterRoutes(router *gin.RouterGroup) {
+func (h *handler) RegisterRoutes(router *gin.RouterGroup) {
 	photosGroup := router.Group("/photos")
 	{
 		photosGroup.POST("/", h.uploadPhoto)

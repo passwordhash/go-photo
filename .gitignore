@@ -7,6 +7,8 @@
 photos/
 storage/
 api/*
+pkg/account_v1
+docs
 
 *.exe
 *.dll

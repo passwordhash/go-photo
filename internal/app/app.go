@@ -9,6 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"go-photo/internal/config"
 	"go-photo/internal/handler"
+	"go-photo/internal/handler/v1/auth"
+	"go-photo/internal/handler/v1/docs"
 	"go-photo/internal/handler/v1/photos"
 	"go-photo/internal/handler/v1/user"
 	desc "go-photo/pkg/account_v1"
@@ -157,9 +159,13 @@ func (a *App) initHTTPServer(_ context.Context) error {
 	api := router.Group("/api")
 	v1 := api.Group("/v1")
 
-	usersHandler := user.NewUserHandler(a.sp.UserService(a.grpcClient))
-	photosHandler := photos.NewPhotosHandler(a.sp.PhotoService(a.db))
+	docsHandler := docs.NewHandler()
+	authHandler := auth.NewHandler(a.sp.UserService(a.grpcClient))
+	usersHandler := user.NewHandler(a.sp.UserService(a.grpcClient))
+	photosHandler := photos.NewHandler(a.sp.PhotoService(a.db))
 
+	docsHandler.RegisterRoutes(v1)
+	authHandler.RegisterRoutes(v1)
 	usersHandler.RegisterRoutes(v1)
 	photosHandler.RegisterRoutes(v1)
 

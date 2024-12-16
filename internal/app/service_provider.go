@@ -63,7 +63,7 @@ func (s *serviceProvider) PhotoRepository(db *sqlx.DB) repository.PhotoRepositor
 
 func (s *serviceProvider) UserService(accountClient desc.AccountServiceClient) service.UserService {
 	if s.userSevice == nil {
-		s.userSevice = userService.NewUserService(accountClient)
+		s.userSevice = userService.NewService(accountClient)
 	}
 
 	return s.userSevice

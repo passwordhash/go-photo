@@ -6,14 +6,14 @@ import (
 )
 
 // Проверка на соответствие интерфейсу UserService (для статической проверки)
-var _ def.UserService = (*Service)(nil)
+var _ def.UserService = (*service)(nil)
 
-type Service struct {
+type service struct {
 	accountClient desc.AccountServiceClient
 
 	//userRepo repository.UserRepository
 }
 
-func NewUserService(accountClient desc.AccountServiceClient) *Service {
-	return &Service{accountClient: accountClient}
+func NewService(accountClient desc.AccountServiceClient) *service {
+	return &service{accountClient: accountClient}
 }

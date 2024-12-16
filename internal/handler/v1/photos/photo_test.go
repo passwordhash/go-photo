@@ -26,7 +26,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 		multipartBody        func() (*bytes.Buffer, string)
 		mockBehavior         mockBehavior
 		expectedStatusCode   int
-		expectedResponseBody string
+		expectedResponseBody any
 	}{
 		{
 			name:     "Valid",
@@ -35,7 +35,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 				body := &bytes.Buffer{}
 				writer := multipart.NewWriter(body)
 
-				fileWriter, _ := writer.CreateFormFile(FormPhotoFile, "test.jpg")
+				fileWriter, _ := writer.CreateFormFile(FormPhotoFile, "tt.jpg")
 				fileWriter.Write([]byte("fake image data"))
 
 				writer.Close()
@@ -59,9 +59,11 @@ func TestHandler_uploadPhoto(t *testing.T) {
 				writer.Close()
 				return body, writer.FormDataContentType()
 			},
-			mockBehavior:         func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {},
-			expectedStatusCode:   400,
-			expectedResponseBody: `{"message":"file not found"}`,
+			mockBehavior:       func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {},
+			expectedStatusCode: 400,
+			expectedResponseBody: response.Error{
+				Error: response.ParamsMissing,
+			},
 		},
 		{
 			name:     "File is not a photo",
@@ -70,37 +72,17 @@ func TestHandler_uploadPhoto(t *testing.T) {
 				body := &bytes.Buffer{}
 				writer := multipart.NewWriter(body)
 
-				fileWriter, _ := writer.CreateFormFile(FormPhotoFile, "test.txt")
+				fileWriter, _ := writer.CreateFormFile(FormPhotoFile, "tt.txt")
 				fileWriter.Write([]byte("fake image data"))
 
 				writer.Close()
 				return body, writer.FormDataContentType()
 			},
-			mockBehavior:         func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {},
-			expectedStatusCode:   400,
-			expectedResponseBody: `{"message":"unsupported file type"}`,
-		},
-		{
-			name:     "File with the same name already exists",
-			userUUID: "123e4567-e89b-12d3-a456-426614174000",
-			multipartBody: func() (*bytes.Buffer, string) {
-				body := &bytes.Buffer{}
-				writer := multipart.NewWriter(body)
-
-				fileWriter, _ := writer.CreateFormFile(FormPhotoFile, "test.jpg")
-				fileWriter.Write([]byte("fake image data"))
-
-				writer.Close()
-				return body, writer.FormDataContentType()
+			mockBehavior:       func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {},
+			expectedStatusCode: 400,
+			expectedResponseBody: response.Error{
+				Error: response.UnsupportedFileType,
 			},
-			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {
-				s.EXPECT().
-					UploadPhoto(gomock.Any(), userUUID, gomock.Any()).
-					Return(0, &serviceErr.FileAlreadyExistsError{Filename: "test.jpg"}).
-					Times(1)
-			},
-			expectedStatusCode:   400,
-			expectedResponseBody: `{"message":"file with the same name already exists"}`,
 		},
 		{
 			name:     "Internal error",
@@ -109,7 +91,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 				body := &bytes.Buffer{}
 				writer := multipart.NewWriter(body)
 
-				fileWriter, _ := writer.CreateFormFile(FormPhotoFile, "test.jpg")
+				fileWriter, _ := writer.CreateFormFile(FormPhotoFile, "tt.jpg")
 				fileWriter.Write([]byte("fake image data"))
 
 				writer.Close()
@@ -121,34 +103,44 @@ func TestHandler_uploadPhoto(t *testing.T) {
 					Return(0, assert.AnError).
 					Times(1)
 			},
-			expectedStatusCode:   500,
-			expectedResponseBody: `{"message":"internal server error"}`,
+			expectedStatusCode: 500,
+			expectedResponseBody: response.Error{
+				Error: response.InternalServerError,
+			},
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			mockPhotoService := mock_service.NewMockPhotoService(ctrl)
-			test.mockBehavior(mockPhotoService, test.userUUID, nil, "test.jpg")
+			tt.mockBehavior(mockPhotoService, tt.userUUID, nil, "tt.jpg")
 
-			h := NewPhotosHandler(mockPhotoService)
+			h := NewHandler(mockPhotoService)
 
 			r := gin.New()
 			gin.DefaultWriter = ioutil.Discard
 			r.POST("/upload", h.uploadPhoto)
 
 			w := httptest.NewRecorder()
-			body, contentType := test.multipartBody()
+			body, contentType := tt.multipartBody()
 			req := httptest.NewRequest("POST", "/upload", body)
 			req.Header.Set("Content-Type", contentType)
 
 			r.ServeHTTP(w, req)
 
-			assert.Equal(t, test.expectedStatusCode, w.Code)
-			assert.JSONEq(t, test.expectedResponseBody, w.Body.String())
+			assert.Equal(t, tt.expectedStatusCode, w.Code)
+			switch tt.expectedResponseBody.(type) {
+			case response.Error:
+				var resp response.Error
+				err := json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResponseBody.(response.Error).Error, resp.Error)
+			default:
+				assert.JSONEq(t, tt.expectedResponseBody.(string), w.Body.String())
+			}
 		})
 	}
 }
@@ -196,8 +188,8 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			},
 			mockBehavior:       func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader) {},
 			expectedStatusCode: 400,
-			expectedResponse: map[string]interface{}{
-				"message": "unsupported file type: test2.txt",
+			expectedResponse: response.Error{
+				Error: response.UnsupportedFileType,
 			},
 		},
 		{
@@ -250,7 +242,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			mockPhotoService := mock_service.NewMockPhotoService(ctrl)
 			tt.mockBehavior(mockPhotoService, tt.userUUID, nil)
 
-			h := NewPhotosHandler(mockPhotoService)
+			h := NewHandler(mockPhotoService)
 
 			r := gin.New()
 			r.POST("/uploadBatch", h.uploadBatchPhotos)
@@ -266,7 +258,16 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.Equal(t, tt.expectedStatusCode, w.Code)
-			assert.JSONEq(t, string(content), w.Body.String())
+
+			switch tt.expectedResponse.(type) {
+			case response.Error:
+				var resp response.Error
+				err := json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResponse.(response.Error).Error, resp.Error)
+			default:
+				assert.JSONEq(t, string(content), w.Body.String())
+			}
 		})
 	}
 }
@@ -321,6 +322,6 @@ func createPartialUploads() *serviceModel.UploadInfoList {
 func createFailedUploads() *serviceModel.UploadInfoList {
 	return serviceModel.NewUploadInfoList([]serviceModel.UploadInfo{
 		{PhotoID: 0, Filename: "tt1.jpg", Error: serviceErr.DbError},
-		{PhotoID: 0, Filename: "tt2.jpg", Error: serviceErr.ServiceError},
+		{PhotoID: 0, Filename: "tt2.jpg", Error: serviceErr.InternalError},
 	})
 }

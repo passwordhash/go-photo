@@ -2,10 +2,23 @@ package main
 
 import (
 	"context"
+	_ "go-photo/docs"
 	"go-photo/internal/app"
 	"log"
 )
 
+// @title Go-Photo API
+// @version 1.0
+// @description API Server for Go-Photo app
+
+// @contact.name   Yaroslav Molodcov
+// @contact.email  iam@it-yaroslav.ru
+
+// @basePath /
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 func main() {
 	ctx := context.Background()
 

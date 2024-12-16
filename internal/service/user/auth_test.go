@@ -103,10 +103,7 @@ func TestService_Register(t *testing.T) {
 				Password: "password",
 			},
 			mockBehavior: func(m *mock_account_v1.MockAccountServiceClient, params serviceUserModel.RegisterParams) {
-				m.EXPECT().Signup(gomock.Any(), &def.CreateRequest{
-					Email:             params.Email,
-					EncryptedPassword: params.Password,
-				}).Return(&def.CreateResponse{
+				m.EXPECT().Signup(gomock.Any(), gomock.Any()).Return(&def.CreateResponse{
 					Uuid:     "uuid",
 					JwtToken: "jwt-token",
 				}, nil)
@@ -124,10 +121,7 @@ func TestService_Register(t *testing.T) {
 				Password: "password",
 			},
 			mockBehavior: func(m *mock_account_v1.MockAccountServiceClient, params serviceUserModel.RegisterParams) {
-				m.EXPECT().Signup(gomock.Any(), &def.CreateRequest{
-					Email:             params.Email,
-					EncryptedPassword: params.Password,
-				}).Return(nil, status.Error(codes.AlreadyExists, "user already exists"))
+				m.EXPECT().Signup(gomock.Any(), gomock.Any()).Return(nil, status.Error(codes.AlreadyExists, "user already exists"))
 			},
 			expectedInfo:  serviceUserModel.RegisterInfo{},
 			expectedError: serviceErr.UserAlreadyExistsError,
@@ -139,10 +133,7 @@ func TestService_Register(t *testing.T) {
 				Password: "password",
 			},
 			mockBehavior: func(m *mock_account_v1.MockAccountServiceClient, params serviceUserModel.RegisterParams) {
-				m.EXPECT().Signup(gomock.Any(), &def.CreateRequest{
-					Email:             params.Email,
-					EncryptedPassword: params.Password,
-				}).Return(nil, status.Error(codes.Internal, "internal error"))
+				m.EXPECT().Signup(gomock.Any(), gomock.Any()).Return(nil, status.Error(codes.Internal, "internal error"))
 			},
 			expectedInfo:  serviceUserModel.RegisterInfo{},
 			expectedError: serviceErr.InternalError,
@@ -158,6 +149,10 @@ func TestService_Register(t *testing.T) {
 			tt.mockBehavior(mockAccountClient, tt.params)
 
 			s := NewService(mockAccountClient)
+			s.publicKeyCache = publicKeyCache{
+				key: PublicKey,
+				ttl: time.Now().Add(time.Minute),
+			}
 
 			info, err := s.Register(nil, tt.params)
 			if tt.expectedError != nil {
@@ -165,6 +160,50 @@ func TestService_Register(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedInfo, info)
+			}
+		})
+	}
+}
+
+func TestService_getPublicKey(t *testing.T) {
+	tests := []struct {
+		name          string
+		mockBehavior  func(*mock_account_v1.MockAccountServiceClient)
+		expectedError error
+	}{
+		{
+			name: "Valid",
+			mockBehavior: func(m *mock_account_v1.MockAccountServiceClient) {
+				m.EXPECT().GetPublicKey(gomock.Any(), gomock.Any()).Return(&def.GetPublicKeyResponse{
+					PublicKey: PublicKey,
+				}, nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Internal error",
+			mockBehavior: func(m *mock_account_v1.MockAccountServiceClient) {
+				m.EXPECT().GetPublicKey(gomock.Any(), gomock.Any()).Return(nil, status.Error(codes.Internal, "internal error"))
+			},
+			expectedError: serviceErr.InternalError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockAccountClient := mock_account_v1.NewMockAccountServiceClient(ctrl)
+			tt.mockBehavior(mockAccountClient)
+
+			s := NewService(mockAccountClient)
+			key, err := s.getPublicKey(nil)
+			if tt.expectedError != nil {
+				assert.ErrorIs(t, err, tt.expectedError)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, PublicKey, key)
 			}
 		})
 	}

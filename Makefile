@@ -5,6 +5,12 @@ SERVICE_MOCKGEN_SRC = internal/service/service.go
 REPO_MOCKDIR = internal/repository/mocks
 REPO_MOCKGEN_SRC = internal/repository/repository.go
 
+
+build:  generate compose-up
+
+compose-up:
+	docker-compose up -d
+
 generate:  go-generate-mock generate-pb
 
 generate-pb:

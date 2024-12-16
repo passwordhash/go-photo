@@ -10,7 +10,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"testing"
+	"time"
 )
+
+const PublicKey = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqv7uJc+0TqvV9uFPOQeV\nQ/VoDYuYVztUlB5whWxtwRbX4YczgHf77V04QIC5LEuE5+Vo+3eDXgUO43gUb6i7\ntggx3x8n8F6bZgApsrF+uPnNlTHx8p4/uxQWXfrB4IaRG4Xrr9G/KFfjt3+RpQlX\nFlLQKZmHRR5PpOkBKGPvl5ew7NfBGNR4Peexz84WY2Im+DN/zVvENPLSMY4BqGjQ\n8EzlgF5XFFJX6bQ0BXIbMR7+iAed5y9ahLciJbWNVPaOjyHOf1Rv3TOktU91ZnDX\nx0gZIHgDQCQHclURIVSYFZSvx5W8keQ/XsWr5jP/Y44gpzPiGJQchRtYT4/GPj4t\nXQIDAQAB\n-----END PUBLIC KEY-----"
 
 func TestService_Login(t *testing.T) {
 	type mockBehavior func(*mock_account_v1.MockAccountServiceClient, string, string)
@@ -28,6 +31,10 @@ func TestService_Login(t *testing.T) {
 			email:    "john@doe.ru",
 			password: "password",
 			mockBehavior: func(m *mock_account_v1.MockAccountServiceClient, email, password string) {
+				//m.EXPECT().GetPublicKey(gomock.Any(), gomock.Any()).Return(&def.GetPublicKeyResponse{
+				//	PublicKey: "public-key",
+				//}, nil)
+
 				m.EXPECT().Login(gomock.Any(), &def.LoginRequest{
 					Email:             email,
 					EncryptedPassword: password,
@@ -75,6 +82,10 @@ func TestService_Login(t *testing.T) {
 			tt.mockBehavior(mockAccountClient, tt.email, tt.password)
 
 			s := NewService(mockAccountClient)
+			s.publicKeyCache = publicKeyCache{
+				key: PublicKey,
+				ttl: time.Now().Add(time.Minute),
+			}
 
 			token, err := s.Login(nil, tt.email, tt.password)
 			if tt.expectedError != nil {

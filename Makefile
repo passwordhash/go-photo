@@ -12,7 +12,7 @@ build:  generate compose-up
 compose-up:
 	docker-compose up -d
 
-generate: swagger go-generate-mock generate-pb
+generate: swagger generate-pb  go-generate-mock
 
 generate-pb:
 	mkdir -p pkg/account_v1

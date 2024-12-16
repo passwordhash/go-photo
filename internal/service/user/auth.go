@@ -49,9 +49,7 @@ func (s *service) handleGRPCErr(err error) error {
 		return serviceErr.UserNotFoundError
 	case codes.AlreadyExists:
 		return serviceErr.UserAlreadyExistsError
-	case codes.Internal:
-		return fmt.Errorf("%w: %v", serviceErr.InternalError, st.Message())
 	}
 
-	return fmt.Errorf("unhandled error: %v", err)
+	return fmt.Errorf("%w: %v", serviceErr.InternalError, st.Message())
 }

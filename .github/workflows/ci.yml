@@ -20,7 +20,7 @@ jobs:
               run: go mod download
 
             - name: Run hello
-              ru: go run main.go
+              run: go run main.go
 
 #            - name: Run tests
 #              run: go test -v ./...

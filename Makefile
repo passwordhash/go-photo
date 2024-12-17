@@ -41,10 +41,10 @@ generate-pb:
 	api/account_v1/account.proto
 
 go-generate-mock:
-	$(GOPATH)/bin/mockgen -destination=$(SERVICE_DIR)/mock/mocks.go -source=$(SERVICE_DIR)/service.go
-	$(GOPATH)/bin/mockgen -destination=$(REPO_DIR)/mock/mocks.go -source=$(REPO_DIR)/repository.go
-	$(GOPATH)/bin/mockgen -destination=$(PB_DIR)/mock/mocks.go -source=$(PB_DIR)/account_grpc.pb.go AccountServiceServer
-	$(GOPATH)/bin/mockgen -destination=$(UTILS_DIR)/mock/mocks.go -source=$(UTILS_DIR)/utils.go
+	$(shell go env GOPATH)/bin/mockgen -destination=$(SERVICE_DIR)/mock/mocks.go -source=$(SERVICE_DIR)/service.go
+	$(shell go env GOPATH)/bin/mockgen -destination=$(REPO_DIR)/mock/mocks.go -source=$(REPO_DIR)/repository.go
+	$(shell go env GOPATH)/bin/mockgen -destination=$(PB_DIR)/mock/mocks.go -source=$(PB_DIR)/account_grpc.pb.go AccountServiceServer
+	$(shell go env GOPATH)/bin/mockgen -destination=$(UTILS_DIR)/mock/mocks.go -source=$(UTILS_DIR)/utils.go
 
 migrate-down:
 	docker run --rm -v ./schema:/migrations --network host migrate/migrate \

@@ -10,6 +10,12 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v2
 
+            - name: Checkout protobuf repository
+              uses: actions/checkout@v3
+              with:
+                  repository: passwordhash/protobuf-files
+                  path: api
+
             - name: Set up Go
               uses: actions/setup-go@v2
               with:

@@ -16,7 +16,7 @@ DOCS_DIR = ./docs
 tests-build: install-deps generate-pb go-generate-mock
 
 run-tests:
-	go test -v ./..
+	go test -v ./...
 
 build:  generate compose-up
 

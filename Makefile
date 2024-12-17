@@ -16,6 +16,9 @@ DOCS_DIR = ./docs
 tests-build: install-deps generate-pb go-generate-mock swagger
 
 run-tests:
+	@echo "Tidying go.mod and go.sum..."
+	go mod tidy
+	@echo "Running tests..."
 	go test -v ./...
 
 build:  generate compose-up

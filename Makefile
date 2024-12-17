@@ -13,7 +13,7 @@ PB_DIR = pkg/account_v1
 
 DOCS_DIR = ./docs
 
-tests-build: install-deps generate-pb go-generate-mock
+tests-build: install-deps generate-pb go-generate-mock swagger
 
 run-tests:
 	go test -v ./...
@@ -29,6 +29,7 @@ install-deps:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	go install github.com/golang/mock/mockgen@latest
+	go install github.com/swaggo/swag/cmd/swag@latest
 	@echo "Dependencies installed successfully!"
 
 generate: swagger generate-pb  go-generate-mock

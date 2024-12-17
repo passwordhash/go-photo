@@ -13,7 +13,7 @@ PB_DIR = pkg/account_v1
 
 DOCS_DIR = ./docs
 
-test: install-deps generate
+test: install-deps generate go-generate-mock
 
 run-tests:
 	go test -v ./..

@@ -3,7 +3,6 @@ package user
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"go-photo/internal/config"
 	serviceErr "go-photo/internal/service/error"
 	serviceUserModel "go-photo/internal/service/user/model"
@@ -22,7 +21,7 @@ func (s *service) Login(ctx context.Context, email string, password string) (str
 
 	encryptedPassword, err := s.utils.EncryptPassword(publicKey, password)
 	if err != nil {
-		return "", fmt.Errorf("%w: %v", serviceErr.InternalError, err)
+		return "", fmt.Errorf("%w: %s", serviceErr.ServiceError, err)
 	}
 
 	resp, err := s.accountClient.Login(ctx, &def.LoginRequest{Email: email, EncryptedPassword: encryptedPassword})
@@ -41,7 +40,7 @@ func (s *service) Register(ctx context.Context, input serviceUserModel.RegisterP
 
 	encryptedPassword, err := s.utils.EncryptPassword(publickKey, input.Password)
 	if err != nil {
-		return serviceUserModel.RegisterInfo{}, fmt.Errorf("%w: %v", serviceErr.InternalError, err)
+		return serviceUserModel.RegisterInfo{}, fmt.Errorf("%w: %v", serviceErr.ServiceError, err)
 	}
 
 	resp, err := s.accountClient.Signup(ctx, &def.CreateRequest{
@@ -63,7 +62,7 @@ func (s *service) Register(ctx context.Context, input serviceUserModel.RegisterP
 func (s *service) handleGRPCErr(err error) error {
 	st, ok := status.FromError(err)
 	if !ok {
-		return serviceErr.InternalError
+		return serviceErr.ServiceError
 	}
 
 	switch st.Code() {
@@ -73,14 +72,13 @@ func (s *service) handleGRPCErr(err error) error {
 		return serviceErr.UserAlreadyExistsError
 	}
 
-	return fmt.Errorf("%w: %v", serviceErr.InternalError, st.Message())
+	return fmt.Errorf("%w: %v", serviceErr.ServiceError, st.Message())
 }
 
 func (s *service) getPublicKey(ctx context.Context) (*string, error) {
 	s.publicKeyCache.mu.RLock()
 	if time.Now().Before(s.publicKeyCache.ttl) && s.publicKeyCache.key != "" {
 		s.publicKeyCache.mu.RUnlock()
-		log.Infof("public key from cache: %s", s.publicKeyCache.key)
 		return &s.publicKeyCache.key, nil
 	}
 	s.publicKeyCache.mu.RUnlock()

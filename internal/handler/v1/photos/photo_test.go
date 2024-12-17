@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go-photo/internal/handler/response"
 	serviceErr "go-photo/internal/service/error"
-	mock_service "go-photo/internal/service/mocks"
+	mock_service "go-photo/internal/service/mock"
 	serviceModel "go-photo/internal/service/photo/model"
 	"io/ioutil"
 	"mime/multipart"
@@ -322,6 +322,6 @@ func createPartialUploads() *serviceModel.UploadInfoList {
 func createFailedUploads() *serviceModel.UploadInfoList {
 	return serviceModel.NewUploadInfoList([]serviceModel.UploadInfo{
 		{PhotoID: 0, Filename: "tt1.jpg", Error: serviceErr.DbError},
-		{PhotoID: 0, Filename: "tt2.jpg", Error: serviceErr.InternalError},
+		{PhotoID: 0, Filename: "tt2.jpg", Error: serviceErr.ServiceError},
 	})
 }

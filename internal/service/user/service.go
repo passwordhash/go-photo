@@ -19,10 +19,13 @@ type service struct {
 	utils utils.Inteface
 }
 
-func NewService(accountClient desc.AccountServiceClient) *service {
+func NewService(accountClient desc.AccountServiceClient, u utils.Inteface) *service {
+	if u == nil {
+		u = utils.New()
+	}
 	return &service{
 		accountClient: accountClient,
-		utils:         utils.NewUtils(),
+		utils:         u,
 	}
 }
 

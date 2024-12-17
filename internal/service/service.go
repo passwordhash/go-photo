@@ -8,7 +8,7 @@ import (
 	"mime/multipart"
 )
 
-//go:generate mockgen -destination=mocks/mock.go -source=service.go
+//go:generate mockgen -destination=mock/mocks.go -source=service.go
 
 type UserService interface {
 	// Login выполняет аутентификацию пользователя по логину и паролю. Возвращает JWT token

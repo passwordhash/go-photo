@@ -9,6 +9,6 @@ type Inteface interface {
 type Utils struct {
 }
 
-func NewUtils() *Utils {
+func New() *Utils {
 	return &Utils{}
 }

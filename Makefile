@@ -30,6 +30,7 @@ install-deps:
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	go install github.com/golang/mock/mockgen@latest
 	go install github.com/swaggo/swag/cmd/swag@latest
+	export PATH=$PATH:$(go env GOPATH)/bin
 	@echo "Dependencies installed successfully!"
 
 generate: swagger generate-pb  go-generate-mock

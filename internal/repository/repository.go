@@ -5,6 +5,8 @@ import (
 	repoModel "go-photo/internal/repository/photo/model"
 )
 
+//go:generate mockgen -source=repository.go -destination=mock/mocks.go
+
 type PhotoRepository interface {
 	// CreateOriginalPhoto создает новую запись repoModel.Photo в БД и к ней repoModel.PhotoVersion.
 	// Гарантируется, что у фото будет original версия.

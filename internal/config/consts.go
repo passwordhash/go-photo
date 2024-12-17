@@ -8,12 +8,15 @@ const (
 )
 
 const (
+	RSAPublicKeyDefaultTTL = time.Hour * 1
+)
+
+const (
 	PostgresDefaultHost    = "localhost"
 	PostgresDefaultPort    = "5432"
 	PostgresDefaultSSLMode = "disable"
 )
 
-// TEMP
 const DefaultUsersFoldername = "/home"
 
 const DefaultContextTimeout = time.Duration(time.Second * 5)

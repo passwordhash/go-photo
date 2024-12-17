@@ -6,7 +6,7 @@
 
 photos/
 storage/
-api/account_v1
+api/*
 pkg/account_v1
 docs
 

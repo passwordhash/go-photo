@@ -3,16 +3,28 @@ package user
 import (
 	"context"
 	"fmt"
+	"go-photo/internal/config"
 	serviceErr "go-photo/internal/service/error"
 	serviceUserModel "go-photo/internal/service/user/model"
 	def "go-photo/pkg/account_v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
+	"time"
 )
 
 func (s *service) Login(ctx context.Context, email string, password string) (string, error) {
-	// TODO encrypt password
-	resp, err := s.accountClient.Login(ctx, &def.LoginRequest{Email: email, EncryptedPassword: password})
+	publicKey, err := s.getPublicKey(ctx)
+	if err != nil {
+		return "", s.handleGRPCErr(err)
+	}
+
+	encryptedPassword, err := s.utils.EncryptPassword(publicKey, password)
+	if err != nil {
+		return "", fmt.Errorf("%w: %s", serviceErr.ServiceError, err)
+	}
+
+	resp, err := s.accountClient.Login(ctx, &def.LoginRequest{Email: email, EncryptedPassword: encryptedPassword})
 	if err != nil {
 		return "", s.handleGRPCErr(err)
 	}
@@ -21,10 +33,19 @@ func (s *service) Login(ctx context.Context, email string, password string) (str
 }
 
 func (s *service) Register(ctx context.Context, input serviceUserModel.RegisterParams) (serviceUserModel.RegisterInfo, error) {
-	// TODO encrypt password
+	publickKey, err := s.getPublicKey(ctx)
+	if err != nil {
+		return serviceUserModel.RegisterInfo{}, s.handleGRPCErr(err)
+	}
+
+	encryptedPassword, err := s.utils.EncryptPassword(publickKey, input.Password)
+	if err != nil {
+		return serviceUserModel.RegisterInfo{}, fmt.Errorf("%w: %v", serviceErr.ServiceError, err)
+	}
+
 	resp, err := s.accountClient.Signup(ctx, &def.CreateRequest{
 		Email:             input.Email,
-		EncryptedPassword: input.Password,
+		EncryptedPassword: encryptedPassword,
 	})
 	if err != nil {
 		return serviceUserModel.RegisterInfo{}, s.handleGRPCErr(err)
@@ -41,7 +62,7 @@ func (s *service) Register(ctx context.Context, input serviceUserModel.RegisterP
 func (s *service) handleGRPCErr(err error) error {
 	st, ok := status.FromError(err)
 	if !ok {
-		return serviceErr.InternalError
+		return serviceErr.ServiceError
 	}
 
 	switch st.Code() {
@@ -51,5 +72,26 @@ func (s *service) handleGRPCErr(err error) error {
 		return serviceErr.UserAlreadyExistsError
 	}
 
-	return fmt.Errorf("%w: %v", serviceErr.InternalError, st.Message())
+	return fmt.Errorf("%w: %v", serviceErr.ServiceError, st.Message())
+}
+
+func (s *service) getPublicKey(ctx context.Context) (*string, error) {
+	s.publicKeyCache.mu.RLock()
+	if time.Now().Before(s.publicKeyCache.ttl) && s.publicKeyCache.key != "" {
+		s.publicKeyCache.mu.RUnlock()
+		return &s.publicKeyCache.key, nil
+	}
+	s.publicKeyCache.mu.RUnlock()
+
+	publicKey, err := s.accountClient.GetPublicKey(ctx, &emptypb.Empty{})
+	if err != nil {
+		return nil, s.handleGRPCErr(err)
+	}
+
+	s.publicKeyCache.mu.Lock()
+	s.publicKeyCache.key = publicKey.PublicKey
+	s.publicKeyCache.ttl = time.Now().Add(config.RSAPublicKeyDefaultTTL)
+	s.publicKeyCache.mu.Unlock()
+
+	return &publicKey.PublicKey, nil
 }

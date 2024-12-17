@@ -7,7 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	mock_repository "go-photo/internal/repository/mocks"
+	mock_repository "go-photo/internal/repository/mock"
 	serviceErr "go-photo/internal/service/error"
 	serviceModel "go-photo/internal/service/photo/model"
 	"io"

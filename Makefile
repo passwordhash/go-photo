@@ -6,14 +6,14 @@ endif
 .PHONY: install-deps generate test clean
 
 BIN_DIR := $(shell go env GOPATH)/bin
-SERVICE_DIR = internal/service/
-REPO_DIR = internal/repository/
-UTILS_DIR = internal/utils/
+SERVICE_DIR = internal/service
+REPO_DIR = internal/repository
+UTILS_DIR = internal/utils
 PB_DIR = pkg/account_v1
 
 DOCS_DIR = ./docs
 
-test: install-deps generate-pb go-generate-mock
+tests-build: install-deps generate-pb go-generate-mock
 
 run-tests:
 	go test -v ./..

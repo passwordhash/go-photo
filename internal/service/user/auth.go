@@ -2,12 +2,6 @@ package user
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/base64"
-	"encoding/pem"
-	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"go-photo/internal/config"
@@ -26,7 +20,7 @@ func (s *service) Login(ctx context.Context, email string, password string) (str
 		return "", s.handleGRPCErr(err)
 	}
 
-	encryptedPassword, err := s.encryptPassword(publicKey, password)
+	encryptedPassword, err := s.utils.EncryptPassword(publicKey, password)
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", serviceErr.InternalError, err)
 	}
@@ -45,7 +39,7 @@ func (s *service) Register(ctx context.Context, input serviceUserModel.RegisterP
 		return serviceUserModel.RegisterInfo{}, s.handleGRPCErr(err)
 	}
 
-	encryptedPassword, err := s.encryptPassword(publickKey, input.Password)
+	encryptedPassword, err := s.utils.EncryptPassword(publickKey, input.Password)
 	if err != nil {
 		return serviceUserModel.RegisterInfo{}, fmt.Errorf("%w: %v", serviceErr.InternalError, err)
 	}
@@ -82,42 +76,18 @@ func (s *service) handleGRPCErr(err error) error {
 	return fmt.Errorf("%w: %v", serviceErr.InternalError, st.Message())
 }
 
-func (s *service) encryptPassword(publicKeyStr string, password string) (string, error) {
-	block, _ := pem.Decode([]byte(publicKeyStr))
-	if block == nil || block.Type != "PUBLIC KEY" {
-		return "", errors.New("failed to parse PEM block containing the public key")
-	}
-
-	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
-	if err != nil {
-		return "", err
-	}
-
-	rsaPub, ok := pub.(*rsa.PublicKey)
-	if !ok {
-		return "", errors.New("not an RSA public key")
-	}
-
-	encryptedBytes, err := rsa.EncryptPKCS1v15(rand.Reader, rsaPub, []byte(password))
-	if err != nil {
-		return "", err
-	}
-
-	return base64.StdEncoding.EncodeToString(encryptedBytes), nil
-}
-
-func (s *service) getPublicKey(ctx context.Context) (string, error) {
+func (s *service) getPublicKey(ctx context.Context) (*string, error) {
 	s.publicKeyCache.mu.RLock()
 	if time.Now().Before(s.publicKeyCache.ttl) && s.publicKeyCache.key != "" {
 		s.publicKeyCache.mu.RUnlock()
 		log.Infof("public key from cache: %s", s.publicKeyCache.key)
-		return s.publicKeyCache.key, nil
+		return &s.publicKeyCache.key, nil
 	}
 	s.publicKeyCache.mu.RUnlock()
 
 	publicKey, err := s.accountClient.GetPublicKey(ctx, &emptypb.Empty{})
 	if err != nil {
-		return "", s.handleGRPCErr(err)
+		return nil, s.handleGRPCErr(err)
 	}
 
 	s.publicKeyCache.mu.Lock()
@@ -125,5 +95,5 @@ func (s *service) getPublicKey(ctx context.Context) (string, error) {
 	s.publicKeyCache.ttl = time.Now().Add(config.RSAPublicKeyDefaultTTL)
 	s.publicKeyCache.mu.Unlock()
 
-	return publicKey.PublicKey, nil
+	return &publicKey.PublicKey, nil
 }

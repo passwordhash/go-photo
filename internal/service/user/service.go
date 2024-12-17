@@ -2,6 +2,7 @@ package user
 
 import (
 	def "go-photo/internal/service"
+	"go-photo/internal/utils"
 	desc "go-photo/pkg/account_v1"
 	"sync"
 	"time"
@@ -14,11 +15,15 @@ type service struct {
 	accountClient desc.AccountServiceClient
 
 	publicKeyCache publicKeyCache
+
+	utils utils.Inteface
 }
 
 func NewService(accountClient desc.AccountServiceClient) *service {
-
-	return &service{accountClient: accountClient}
+	return &service{
+		accountClient: accountClient,
+		utils:         utils.NewUtils(),
+	}
 }
 
 type publicKeyCache struct {

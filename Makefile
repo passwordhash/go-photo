@@ -1,9 +1,9 @@
 include .env
 
-SERVICE_MOCKDIR = internal/service/mocks
-SERVICE_MOCKGEN_SRC = internal/service/service.go
-REPO_MOCKDIR = internal/repository/mocks
-REPO_MOCKGEN_SRC = internal/repository/repository.go
+SERVICE_DIR = internal/service/
+REPO_DIR = internal/repository/
+UTILS_DIR = internal/utils/
+PB_DIR = pkg/account_v1
 
 DOCS_DIR = ./docs
 
@@ -15,16 +15,17 @@ compose-up:
 generate: swagger generate-pb  go-generate-mock
 
 generate-pb:
-	mkdir -p pkg/account_v1
+	mkdir -p $(PB_DIR)
 	protoc --proto_path api/account_v1 \
-	--go_out=pkg/account_v1 --go_opt=paths=source_relative \
-	--go-grpc_out=pkg/account_v1 --go-grpc_opt=paths=source_relative \
+	--go_out=$(PB_DIR) --go_opt=paths=source_relative \
+	--go-grpc_out=$(PB_DIR) --go-grpc_opt=paths=source_relative \
 	api/account_v1/account.proto
 
 go-generate-mock:
-	$(GOPATH)/bin/mockgen -destination=$(SERVICE_MOCKDIR)/mock.go -source=$(SERVICE_MOCKGEN_SRC)
-	$(GOPATH)/bin/mockgen -destination=$(REPO_MOCKDIR)/mock.go -source=$(REPO_MOCKGEN_SRC)
-	$(GOPATH)/bin/mockgen -destination=pkg/account_v1/mocks/mock.go -source=pkg/account_v1/account_grpc.pb.go AccountServiceServer
+	$(GOPATH)/bin/mockgen -destination=$(SERVICE_DIR)/mock/mocks.go -source=$(SERVICE_DIR)/service.go
+	$(GOPATH)/bin/mockgen -destination=$(REPO_DIR)/mock/mocks.go -source=$(REPO_DIR)/repository.go
+	$(GOPATH)/bin/mockgen -destination=$(PB_DIR)/mock/mocks.go -source=$(PB_DIR)/account_grpc.pb.go AccountServiceServer
+	$(GOPATH)/bin/mockgen -destination=$(UTILS_DIR)/mock/mocks.go -source=$(UTILS_DIR)/utils.go
 
 
 migrate-down:

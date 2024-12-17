@@ -203,7 +203,7 @@ func TestService_getPublicKey(t *testing.T) {
 				assert.ErrorIs(t, err, tt.expectedError)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, PublicKey, key)
+				assert.Equal(t, PublicKey, *key)
 			}
 		})
 	}

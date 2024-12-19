@@ -6,6 +6,8 @@ import (
 )
 
 type PhotoRepository interface {
+	DeletePhoto(ctx context.Context, photoID int) (error, error)
+
 	// CreateOriginalPhoto создает новую запись repoModel.Photo в БД и к ней repoModel.PhotoVersion.
 	// Гарантируется, что у фото будет original версия.
 	CreateOriginalPhoto(ctx context.Context, photo *repoModel.CreateOriginalPhotoParams) (int, error)

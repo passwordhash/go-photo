@@ -10,6 +10,7 @@ import (
 	def "go-photo/internal/repository"
 	repoErr "go-photo/internal/repository/error"
 	repoModel "go-photo/internal/repository/photo/model"
+	"os"
 )
 
 var _ def.PhotoRepository = (*repository)(nil)
@@ -22,6 +23,67 @@ func NewRepository(db *sqlx.DB) *repository {
 	return &repository{
 		db: db,
 	}
+}
+
+func (r *repository) DeletePhoto(ctx context.Context, photoID int) (error, error) {
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("%w: %v", repoErr.BeginTxError, err), nil
+	}
+
+	defer func() {
+		if err != nil {
+			err = tx.Rollback()
+			log.Errorf("failed to rollback transaction: %v\ncontext: %v", err, ctx)
+		}
+	}()
+
+	pathQuery := `
+		SELECT filepath	FROM photo_versions
+		WHERE photo_id = $1`
+	rows, err := tx.QueryContext(ctx, pathQuery, photoID)
+	if err != nil {
+		return fmt.Errorf("failed to get photo path: %w", err), nil
+	}
+	defer rows.Close()
+
+	var filepaths []string
+	for rows.Next() {
+		var filepath string
+		if err := rows.Scan(&filepath); err != nil {
+			log.Fatalf("failed to scan photo path: %v", err)
+		}
+		filepaths = append(filepaths, filepath)
+	}
+
+	versionsDeleteQuery := `
+		DELETE FROM photo_versions
+		WHERE photo_id = $1`
+	_, err = tx.ExecContext(ctx, versionsDeleteQuery, photoID)
+	if err != nil {
+		return fmt.Errorf("failed to delete photo versions: %w", err), nil
+	}
+
+	photosDeleteQuery := `
+		DELETE FROM photos
+		WHERE id = $1`
+	_, err = tx.ExecContext(ctx, photosDeleteQuery, photoID)
+	if err != nil {
+		return fmt.Errorf("failed to delete photo: %w", err), nil
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("%w: %v", repoErr.CommitTxError, err), nil
+	}
+
+	for _, filepath := range filepaths {
+		if err := os.Remove(filepath); err != nil {
+			log.Printf("failed to remove file %s: %v", filepath, err)
+		}
+	}
+
+	return nil, nil
 }
 
 func (r *repository) CreateOriginalPhoto(ctx context.Context, params *repoModel.CreateOriginalPhotoParams) (int, error) {

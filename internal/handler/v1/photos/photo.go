@@ -20,6 +20,27 @@ const (
 	FormPhotoBatchFiles = "batch_photo_files"
 )
 
+func (h *Handler) deletePhoto(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
+	defer cancel()
+
+	paramID := c.Param("id")
+	photoID, err := strconv.Atoi(paramID)
+	if err != nil {
+		response.NewErrResponse(c, http.StatusBadRequest, "invalid id param", err)
+		return
+	}
+
+	err = h.photoService.DeletePhoto(ctx, photoID)
+	if response.HandleError(c, err) {
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"status": "ok",
+	})
+}
+
 func (h *Handler) uploadPhoto(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
@@ -97,6 +118,30 @@ func (h *Handler) uploadBatchPhotos(c *gin.Context) {
 	}
 
 	c.JSON(respStatus, body)
+}
+
+func (h Handler) getPhoto(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
+	defer cancel()
+
+	paramID := c.Param("id")
+	photoID, err := strconv.Atoi(paramID)
+	if err != nil {
+		response.NewErrResponse(c, http.StatusBadRequest, "invalid id param", err)
+		return
+	}
+
+	photo, err := h.photoService.GetPhoto(ctx, photoID)
+	if err != nil {
+		response.NewErrResponse(c, http.StatusInternalServerError, "failed to get photo", err)
+	}
+	if response.HandleError(c, err) {
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"photo": photo,
+	})
 }
 
 func (h *Handler) getPhotoVersions(c *gin.Context) {

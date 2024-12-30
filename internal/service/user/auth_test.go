@@ -10,7 +10,7 @@ import (
 	"go-photo/internal/utils"
 	mock_utils "go-photo/internal/utils/mock"
 	def "go-photo/pkg/account_v1"
-	mock_account_v1 "go-photo/pkg/account_v1/mocks"
+	mock_account_v1 "go-photo/pkg/account_v1/mock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"testing"

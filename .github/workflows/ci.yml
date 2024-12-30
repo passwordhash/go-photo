@@ -1,0 +1,34 @@
+name: Go CI
+
+on: push
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
+
+            - name: Checkout protobuf repository
+              uses: actions/checkout@v3
+              with:
+                  repository: passwordhash/protobuf-files
+                  path: api
+
+            - name: Set up Go
+              uses: actions/setup-go@v2
+              with:
+                  go-version: '1.22'
+
+            - name: Update PATH
+              run: echo "${{runner.workspace}}/bin" >> $GITHUB_PATH
+
+            - name: Install dependencies
+              run: go mod download
+
+            - name: Run build for tests
+              run: make tests-build
+
+            - name: Run make tests
+              run: make run-tests

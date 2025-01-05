@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go-photo/internal/config"
+	"go-photo/internal/handler/middleware"
 	"go-photo/internal/handler/response"
 	serviceErr "go-photo/internal/service/error"
 	"go-photo/internal/service/photo/model"
@@ -25,8 +26,10 @@ func (h *handler) uploadPhoto(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 
-	// TEMP
-	UUID := "123e4567-e89b-12d3-a456-426614174000"
+	uuid, ok := response.MustGetUUID(c, middleware.UserUUIDCtx)
+	if !ok {
+		return
+	}
 
 	fileHeader, err := c.FormFile(FormPhotoFile)
 	if err != nil {
@@ -40,7 +43,7 @@ func (h *handler) uploadPhoto(c *gin.Context) {
 		return
 	}
 
-	photoID, err := h.photoService.UploadPhoto(ctx, UUID, fileHeader)
+	photoID, err := h.photoService.UploadPhoto(ctx, uuid, fileHeader)
 	if response.HandleError(c, err) {
 		return
 	}
@@ -57,8 +60,10 @@ func (h *handler) uploadBatchPhotos(c *gin.Context) {
 
 	respStatus := http.StatusOK
 
-	// TEMP
-	UUID := "123e4567-e89b-12d3-a456-426614174000"
+	uuid, ok := response.MustGetUUID(c, middleware.UserUUIDCtx)
+	if !ok {
+		return
+	}
 
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -77,7 +82,7 @@ func (h *handler) uploadBatchPhotos(c *gin.Context) {
 		return
 	}
 
-	uploads, err := h.photoService.UploadBatchPhotos(ctx, UUID, files)
+	uploads, err := h.photoService.UploadBatchPhotos(ctx, uuid, files)
 	if errors.Is(err, serviceErr.AllFailedError) {
 		respStatus = http.StatusBadRequest
 	} else if errors.Is(err, serviceErr.ParticalSuccessError) {

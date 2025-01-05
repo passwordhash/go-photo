@@ -21,6 +21,7 @@ const (
 	AuthHeaderEmpty                 = "auth_header_empty"
 	AuthHeaderInvalid               = "auth_header_invalid"
 	AuthTokenInvalid                = "auth_token_invalid"
+	Unauthorized                    = "unauthorized"
 )
 
 type Error struct {
@@ -54,4 +55,20 @@ func HandleError(c *gin.Context, err error) bool {
 		return true
 	}
 	return false
+}
+
+func MustGetUUID(c *gin.Context, key string) (string, bool) {
+	val, exists := c.Get(key)
+	if !exists {
+		NewErr(c, http.StatusUnauthorized, Unauthorized, nil, "Try logging in again.")
+		return "", false
+	}
+
+	uuid, ok := val.(string)
+	if !ok {
+		NewErr(c, http.StatusInternalServerError, InternalServerError, nil, "Unexpected error occurred.")
+		return "", false
+	}
+
+	return uuid, true
 }

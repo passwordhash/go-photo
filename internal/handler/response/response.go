@@ -18,6 +18,8 @@ const (
 	UnsupportedFileType             = "unsupported_file_type"
 	InvalidCredentials              = "invalid_credentials"
 	UserAlreadyExists               = "user_already_exists"
+	AuthHeaderEmpty                 = "auth_header_empty"
+	AuthHeaderInvalid               = "auth_header_invalid"
 )
 
 type Error struct {

@@ -16,6 +16,7 @@ import (
 	desc "go-photo/pkg/account_v1"
 	"go-photo/pkg/repository"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	"os"
 	"time"
@@ -122,9 +123,21 @@ func (a *App) initPGConnection(_ context.Context) error {
 }
 
 func (a *App) initGRPCClient(_ context.Context) error {
-	conn, err := grpc.NewClient(a.sp.BaseConfig().GRPCAddr(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallSendMsgSize(100*1024*1024), // 10 MB
+			grpc.MaxCallRecvMsgSize(100*1024*1024), // 10 MB
+		),
+	}
+
+	conn, err := grpc.NewClient(a.sp.BaseConfig().GRPCAddr(), opts...)
 	if err != nil {
 		return fmt.Errorf("failed to create grpc client: %w", err)
+	}
+
+	if conn.GetState() == connectivity.TransientFailure || conn.GetState() == connectivity.Shutdown {
+		return fmt.Errorf("grpc connection is in invalid state: %v", conn.GetState())
 	}
 
 	a.grpcClient = desc.NewAccountServiceClient(conn)

@@ -15,6 +15,8 @@ type UserService interface {
 	Login(ctx context.Context, login string, password string) (string, error)
 	// Register регистрирует нового пользователя.
 	Register(ctx context.Context, input serviceUserModel.RegisterParams) (serviceUserModel.RegisterInfo, error)
+	// VerifyToken проверяет access token и возвращает payload из токена
+	VerifyToken(ctx context.Context, token string) (serviceUserModel.TokenPayload, error)
 
 	Get(ctx context.Context, uuid string) (model.User, error)
 	GetAll(ctx context.Context) ([]model.User, error)

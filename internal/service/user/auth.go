@@ -77,11 +77,11 @@ func (s *service) handleGRPCErr(err error) error {
 
 	switch st.Code() {
 	case codes.NotFound:
-		return serviceErr.UserNotFoundError
+		return fmt.Errorf("%w: %v", serviceErr.UserNotFoundError, err)
 	case codes.AlreadyExists:
 		return serviceErr.UserAlreadyExistsError
 	case codes.Unauthenticated:
-		return serviceErr.UserUnauthtenticatedError
+		return fmt.Errorf("%w: %v", serviceErr.UserUnauthtenticatedError, err)
 	}
 
 	return fmt.Errorf("%w: %v", serviceErr.ServiceError, err)

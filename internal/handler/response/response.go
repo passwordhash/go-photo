@@ -20,6 +20,7 @@ const (
 	UserAlreadyExists               = "user_already_exists"
 	AuthHeaderEmpty                 = "auth_header_empty"
 	AuthHeaderInvalid               = "auth_header_invalid"
+	AuthTokenInvalid                = "auth_token_invalid"
 )
 
 type Error struct {

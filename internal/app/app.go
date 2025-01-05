@@ -8,7 +8,7 @@ import (
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 	"go-photo/internal/config"
-	"go-photo/internal/handler"
+	"go-photo/internal/handler/middleware"
 	"go-photo/internal/handler/v1/auth"
 	"go-photo/internal/handler/v1/docs"
 	"go-photo/internal/handler/v1/photos"
@@ -159,7 +159,7 @@ func (a *App) initHTTPServer(_ context.Context) error {
 	router := gin.New()
 
 	router.Use(gin.Recovery())
-	router.Use(handler.Logger())
+	router.Use(middleware.Logger())
 
 	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
@@ -181,7 +181,7 @@ func (a *App) initHTTPServer(_ context.Context) error {
 	docsHandler := docs.NewHandler()
 	authHandler := auth.NewHandler(a.sp.UserService(a.grpcClient))
 	usersHandler := user.NewHandler(a.sp.UserService(a.grpcClient))
-	photosHandler := photos.NewHandler(a.sp.PhotoService(a.db))
+	photosHandler := photos.NewHandler(a.sp.PhotoService(a.db), a.sp.TokenService(a.grpcClient))
 
 	docsHandler.RegisterRoutes(v1)
 	authHandler.RegisterRoutes(v1)

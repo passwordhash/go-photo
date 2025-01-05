@@ -69,6 +69,10 @@ func (s *serviceProvider) UserService(accountClient desc.AccountServiceClient) s
 	return s.userSevice
 }
 
+func (s *serviceProvider) TokenService(accountClient desc.AccountServiceClient) service.TokenService {
+	return userService.NewService(accountClient, nil)
+}
+
 func (s *serviceProvider) PhotoService(db *sqlx.DB) service.PhotoService {
 	if s.photoService == nil {
 		deps := photoService.Deps{

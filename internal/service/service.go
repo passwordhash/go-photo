@@ -10,14 +10,16 @@ import (
 
 //go:generate mockgen -destination=mock/mocks.go -source=service.go
 
+type TokenService interface {
+	// VerifyToken проверяет токен и возвращает payload из токена
+	VerifyToken(ctx context.Context, token string) (serviceUserModel.TokenPayload, error)
+}
+
 type UserService interface {
 	// Login выполняет аутентификацию пользователя по логину и паролю. Возвращает JWT token
 	Login(ctx context.Context, login string, password string) (string, error)
 	// Register регистрирует нового пользователя.
 	Register(ctx context.Context, input serviceUserModel.RegisterParams) (serviceUserModel.RegisterInfo, error)
-	// VerifyToken проверяет access token и возвращает payload из токена
-	VerifyToken(ctx context.Context, token string) (serviceUserModel.TokenPayload, error)
-
 	Get(ctx context.Context, uuid string) (model.User, error)
 	GetAll(ctx context.Context) ([]model.User, error)
 }

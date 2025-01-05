@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"os"
 	"time"
 )
@@ -141,6 +142,11 @@ func (a *App) initGRPCClient(_ context.Context) error {
 	}
 
 	a.grpcClient = desc.NewAccountServiceClient(conn)
+
+	_, err = a.grpcClient.HealthCheck(context.Background(), &emptypb.Empty{})
+	if err != nil {
+		return fmt.Errorf("failed to health check grpc client: %w", err)
+	}
 
 	return nil
 }

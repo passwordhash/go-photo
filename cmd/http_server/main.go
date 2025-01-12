@@ -16,7 +16,7 @@ import (
 
 // @basePath /
 
-// @securityDefinitions.apikey ApiKeyAuth
+// @securityDefinitions.apikey JWTAuth
 // @in header
 // @name Authorization
 func main() {

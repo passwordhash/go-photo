@@ -1,10 +1,12 @@
 package user
 
 import (
+	"context"
 	"errors"
 	"github.com/golang/mock/gomock"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	serviceErr "go-photo/internal/service/error"
 	serviceUserModel "go-photo/internal/service/user/model"
 	"go-photo/internal/utils"
@@ -311,4 +313,49 @@ func TestService_getPublicKey(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestService_VerifyToken(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockAccountClient := mock_account_v1.NewMockAccountServiceClient(ctrl)
+
+	svc := NewService(mockAccountClient, nil)
+
+	ctx := context.Background()
+
+	t.Run("Valid token", func(t *testing.T) {
+		validToken := "valid-token"
+		expectedRequest := &def.VerifyTokenRequest{JwtToken: validToken}
+
+		fakeResponse := &def.VerifyTokenResponse{
+			Uuid: "12345",
+		}
+
+		mockAccountClient.EXPECT().
+			VerifyToken(gomock.Any(), expectedRequest).
+			Return(fakeResponse, nil).
+			Times(1)
+
+		payload, err := svc.VerifyToken(ctx, validToken)
+		require.NoError(t, err)
+		assert.Equal(t, "12345", payload.UserUUID)
+	})
+
+	t.Run("Invalid token", func(t *testing.T) {
+		invalidToken := "invalid-token"
+		expectedRequest := &def.VerifyTokenRequest{JwtToken: invalidToken}
+
+		grpcErr := status.Error(codes.NotFound, "user not found")
+		mockAccountClient.EXPECT().
+			VerifyToken(gomock.Any(), expectedRequest).
+			Return(nil, grpcErr).
+			Times(1)
+
+		payload, err := svc.VerifyToken(ctx, invalidToken)
+		require.Error(t, err)
+		assert.True(t, errors.Is(err, serviceErr.UserNotFoundError))
+		assert.Equal(t, serviceUserModel.TokenPayload{}, payload)
+	})
 }

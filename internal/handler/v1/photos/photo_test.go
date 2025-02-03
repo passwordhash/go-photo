@@ -2,15 +2,19 @@ package photos
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go-photo/internal/handler/middleware"
 	"go-photo/internal/handler/response"
 	serviceErr "go-photo/internal/service/error"
-	mock_service "go-photo/internal/service/mock"
+	mockservice "go-photo/internal/service/mock"
 	serviceModel "go-photo/internal/service/photo/model"
+	serviceUserModel "go-photo/internal/service/user/model"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http/httptest"
@@ -18,7 +22,7 @@ import (
 )
 
 func TestHandler_uploadPhoto(t *testing.T) {
-	type mockBehavior func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string)
+	type mockBehavior func(s *mockservice.MockPhotoService, userUUID string, file multipart.File, filename string)
 
 	tests := []struct {
 		name                 string
@@ -41,14 +45,14 @@ func TestHandler_uploadPhoto(t *testing.T) {
 				writer.Close()
 				return body, writer.FormDataContentType()
 			},
-			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, file multipart.File, filename string) {
 				s.EXPECT().
 					UploadPhoto(gomock.Any(), userUUID, gomock.Any()).
 					Return(123, nil).
 					Times(1)
 			},
 			expectedStatusCode:   200,
-			expectedResponseBody: `{"status":"ok","id":123}`,
+			expectedResponseBody: `{"photo_id":123}`,
 		},
 		{
 			name:     "File not found",
@@ -59,7 +63,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 				writer.Close()
 				return body, writer.FormDataContentType()
 			},
-			mockBehavior:       func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {},
+			mockBehavior:       func(s *mockservice.MockPhotoService, userUUID string, file multipart.File, filename string) {},
 			expectedStatusCode: 400,
 			expectedResponseBody: response.Error{
 				Error: response.ParamsMissing,
@@ -78,7 +82,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 				writer.Close()
 				return body, writer.FormDataContentType()
 			},
-			mockBehavior:       func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {},
+			mockBehavior:       func(s *mockservice.MockPhotoService, userUUID string, file multipart.File, filename string) {},
 			expectedStatusCode: 400,
 			expectedResponseBody: response.Error{
 				Error: response.UnsupportedFileType,
@@ -97,7 +101,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 				writer.Close()
 				return body, writer.FormDataContentType()
 			},
-			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, file multipart.File, filename string) {
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, file multipart.File, filename string) {
 				s.EXPECT().
 					UploadPhoto(gomock.Any(), userUUID, gomock.Any()).
 					Return(0, assert.AnError).
@@ -115,19 +119,29 @@ func TestHandler_uploadPhoto(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockPhotoService := mock_service.NewMockPhotoService(ctrl)
+			mockPhotoService := mockservice.NewMockPhotoService(ctrl)
 			tt.mockBehavior(mockPhotoService, tt.userUUID, nil, "tt.jpg")
 
-			h := NewHandler(mockPhotoService)
+			mockTokenService := mockservice.NewMockTokenService(ctrl)
+
+			h := NewHandler(mockPhotoService, mockTokenService)
 
 			r := gin.New()
 			gin.DefaultWriter = ioutil.Discard
+
+			r.Use(middleware.UserIdentity(func(ctx context.Context, token string) (serviceUserModel.TokenPayload, error) {
+				if token == "valid-token" {
+					return serviceUserModel.TokenPayload{UserUUID: tt.userUUID}, nil
+				}
+				return serviceUserModel.TokenPayload{}, errors.New("invalid token")
+			}))
 			r.POST("/upload", h.uploadPhoto)
 
 			w := httptest.NewRecorder()
 			body, contentType := tt.multipartBody()
 			req := httptest.NewRequest("POST", "/upload", body)
 			req.Header.Set("Content-Type", contentType)
+			req.Header.Set("Authorization", "Bearer valid-token")
 
 			r.ServeHTTP(w, req)
 
@@ -146,7 +160,7 @@ func TestHandler_uploadPhoto(t *testing.T) {
 }
 
 func TestHandler_uploadBatchPhotos(t *testing.T) {
-	type mockBehavior func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader)
+	type mockBehavior func(s *mockservice.MockPhotoService, userUUID string, files []*multipart.FileHeader)
 
 	defaultUploads := createDefaultUploads(3)
 
@@ -164,7 +178,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			multipartBody: func() (*bytes.Buffer, string) {
 				return createMultipartBody(3, "tt%d.jpg", "fake image data")
 			},
-			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader) {
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, files []*multipart.FileHeader) {
 				s.EXPECT().
 					UploadBatchPhotos(gomock.Any(), userUUID, gomock.Any()).
 					Return(&defaultUploads, nil).
@@ -186,7 +200,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 					[]string{"fake image data", "not an image"},
 				)
 			},
-			mockBehavior:       func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader) {},
+			mockBehavior:       func(s *mockservice.MockPhotoService, userUUID string, files []*multipart.FileHeader) {},
 			expectedStatusCode: 400,
 			expectedResponse: response.Error{
 				Error: response.UnsupportedFileType,
@@ -198,7 +212,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			multipartBody: func() (*bytes.Buffer, string) {
 				return createMultipartBody(3, "tt%d.jpg", "fake image data")
 			},
-			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader) {
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, files []*multipart.FileHeader) {
 				uploads := createPartialUploads()
 				s.EXPECT().
 					UploadBatchPhotos(gomock.Any(), userUUID, gomock.Any()).
@@ -218,7 +232,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			multipartBody: func() (*bytes.Buffer, string) {
 				return createMultipartBody(2, "tt%d.jpg", "fake image data")
 			},
-			mockBehavior: func(s *mock_service.MockPhotoService, userUUID string, files []*multipart.FileHeader) {
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, files []*multipart.FileHeader) {
 				uploads := createFailedUploads()
 				s.EXPECT().
 					UploadBatchPhotos(gomock.Any(), userUUID, gomock.Any()).
@@ -239,18 +253,27 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockPhotoService := mock_service.NewMockPhotoService(ctrl)
+			mockPhotoService := mockservice.NewMockPhotoService(ctrl)
 			tt.mockBehavior(mockPhotoService, tt.userUUID, nil)
 
-			h := NewHandler(mockPhotoService)
+			mockTokenService := mockservice.NewMockTokenService(ctrl)
+
+			h := NewHandler(mockPhotoService, mockTokenService)
 
 			r := gin.New()
+			r.Use(middleware.UserIdentity(func(ctx context.Context, token string) (serviceUserModel.TokenPayload, error) {
+				if token == "valid-token" {
+					return serviceUserModel.TokenPayload{UserUUID: tt.userUUID}, nil
+				}
+				return serviceUserModel.TokenPayload{}, errors.New("invalid token")
+			}))
 			r.POST("/uploadBatch", h.uploadBatchPhotos)
 
 			w := httptest.NewRecorder()
 			body, contentType := tt.multipartBody()
 			req := httptest.NewRequest("POST", "/uploadBatch", body)
 			req.Header.Set("Content-Type", contentType)
+			req.Header.Set("Authorization", "Bearer valid-token")
 
 			r.ServeHTTP(w, req)
 

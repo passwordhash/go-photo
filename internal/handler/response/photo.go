@@ -1,5 +1,9 @@
 package response
 
+type UploadPhotoResponse struct {
+	PhotoID int `json:"photo_id"`
+}
+
 type UploadBatchPhotosResponse struct {
 	TotalCount   int          `json:"total_count"`
 	SuccessCount int          `json:"success_count"`

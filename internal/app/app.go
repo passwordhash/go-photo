@@ -8,7 +8,7 @@ import (
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 	"go-photo/internal/config"
-	"go-photo/internal/handler"
+	"go-photo/internal/handler/middleware"
 	"go-photo/internal/handler/v1/auth"
 	"go-photo/internal/handler/v1/docs"
 	"go-photo/internal/handler/v1/photos"
@@ -16,6 +16,7 @@ import (
 	desc "go-photo/pkg/account_v1"
 	"go-photo/pkg/repository"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"os"
@@ -123,9 +124,21 @@ func (a *App) initPGConnection(_ context.Context) error {
 }
 
 func (a *App) initGRPCClient(_ context.Context) error {
-	conn, err := grpc.NewClient(a.sp.BaseConfig().GRPCAddr(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallSendMsgSize(100*1024*1024), // 10 MB
+			grpc.MaxCallRecvMsgSize(100*1024*1024), // 10 MB
+		),
+	}
+
+	conn, err := grpc.NewClient(a.sp.BaseConfig().GRPCAddr(), opts...)
 	if err != nil {
 		return fmt.Errorf("failed to create grpc client: %w", err)
+	}
+
+	if conn.GetState() == connectivity.TransientFailure || conn.GetState() == connectivity.Shutdown {
+		return fmt.Errorf("grpc connection is in invalid state: %v", conn.GetState())
 	}
 
 	a.grpcClient = desc.NewAccountServiceClient(conn)
@@ -146,7 +159,7 @@ func (a *App) initHTTPServer(_ context.Context) error {
 	router := gin.New()
 
 	router.Use(gin.Recovery())
-	router.Use(handler.Logger())
+	router.Use(middleware.Logger())
 
 	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
@@ -168,7 +181,7 @@ func (a *App) initHTTPServer(_ context.Context) error {
 	docsHandler := docs.NewHandler()
 	authHandler := auth.NewHandler(a.sp.UserService(a.grpcClient))
 	usersHandler := user.NewHandler(a.sp.UserService(a.grpcClient))
-	photosHandler := photos.NewHandler(a.sp.PhotoService(a.db))
+	photosHandler := photos.NewHandler(a.sp.PhotoService(a.db), a.sp.TokenService(a.grpcClient))
 
 	docsHandler.RegisterRoutes(v1)
 	authHandler.RegisterRoutes(v1)

@@ -3,8 +3,10 @@ package user
 import (
 	"context"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"go-photo/internal/config"
 	serviceErr "go-photo/internal/service/error"
+	"go-photo/internal/service/user/converter"
 	serviceUserModel "go-photo/internal/service/user/model"
 	def "go-photo/pkg/account_v1"
 	"google.golang.org/grpc/codes"
@@ -59,6 +61,14 @@ func (s *service) Register(ctx context.Context, input serviceUserModel.RegisterP
 	return info, nil
 }
 
+func (s *service) VerifyToken(ctx context.Context, token string) (serviceUserModel.TokenPayload, error) {
+	resp, err := s.accountClient.VerifyToken(ctx, &def.VerifyTokenRequest{JwtToken: token})
+	if err != nil {
+		return serviceUserModel.TokenPayload{}, s.handleGRPCErr(err)
+	}
+	return *converter.ToTokenPayloadFromProto(resp), nil
+}
+
 func (s *service) handleGRPCErr(err error) error {
 	st, ok := status.FromError(err)
 	if !ok {
@@ -67,12 +77,14 @@ func (s *service) handleGRPCErr(err error) error {
 
 	switch st.Code() {
 	case codes.NotFound:
-		return serviceErr.UserNotFoundError
+		return fmt.Errorf("%w: %v", serviceErr.UserNotFoundError, err)
 	case codes.AlreadyExists:
 		return serviceErr.UserAlreadyExistsError
+	case codes.Unauthenticated:
+		return fmt.Errorf("%w: %v", serviceErr.UserUnauthtenticatedError, err)
 	}
 
-	return fmt.Errorf("%w: %v", serviceErr.ServiceError, st.Message())
+	return fmt.Errorf("%w: %v", serviceErr.ServiceError, err)
 }
 
 func (s *service) getPublicKey(ctx context.Context) (*string, error) {
@@ -85,6 +97,7 @@ func (s *service) getPublicKey(ctx context.Context) (*string, error) {
 
 	publicKey, err := s.accountClient.GetPublicKey(ctx, &emptypb.Empty{})
 	if err != nil {
+		log.Warn("Error getting public key: ", err)
 		return nil, s.handleGRPCErr(err)
 	}
 

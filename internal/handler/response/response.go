@@ -11,13 +11,19 @@ import (
 type ErrMessage string
 
 const (
+	ErrorStatusExample ErrMessage = "some_error_status"
+
 	InternalServerError  ErrMessage = "internal_server_error"
-	TimedOut                        = "timed_out"
-	InvalidRequestParams            = "invalid_request_params"
-	ParamsMissing                   = "params_missing"
-	UnsupportedFileType             = "unsupported_file_type"
-	InvalidCredentials              = "invalid_credentials"
-	UserAlreadyExists               = "user_already_exists"
+	TimedOut             ErrMessage = "timed_out"
+	InvalidRequestParams ErrMessage = "invalid_request_params"
+	ParamsMissing        ErrMessage = "params_missing"
+	UnsupportedFileType  ErrMessage = "unsupported_file_type"
+	InvalidCredentials   ErrMessage = "invalid_credentials"
+	UserAlreadyExists    ErrMessage = "user_already_exists"
+	AuthHeaderEmpty      ErrMessage = "auth_header_empty"
+	AuthHeaderInvalid    ErrMessage = "auth_header_invalid"
+	AuthTokenInvalid     ErrMessage = "auth_token_invalid"
+	Unauthorized         ErrMessage = "unauthorized"
 )
 
 type Error struct {

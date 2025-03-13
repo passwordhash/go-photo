@@ -56,6 +56,14 @@ jobs:
                     repository: ${{ github.repository_owner }}/protobuf-files
                     path: proto
 
+            -   name: Set up Go
+                uses: actions/setup-go@v2
+                with:
+                    go-version: '1.22'
+
+            -   name: Install dependencies
+                run: make install-deps
+
             -   name: Set up QEMU
                 uses: docker/setup-qemu-action@v3
 
@@ -74,8 +82,8 @@ jobs:
 
     deploy:
         needs: build-and-push
-#        if: >-
-#            (github.event_name == 'push' && github.ref == 'refs/heads/master')|| (github.event_name == 'pull_request' && github.base_ref == 'master')
+        #        if: >-
+        #            (github.event_name == 'push' && github.ref == 'refs/heads/master')|| (github.event_name == 'pull_request' && github.base_ref == 'master')
         runs-on: ubuntu-latest
         env:
             VAULT_ADDR: http://vault.passwordhash.tech:8200

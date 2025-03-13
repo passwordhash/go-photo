@@ -83,10 +83,23 @@ migrate-up-remote:
 		echo "Файл .prod.env не найден!"; \
 		exit 1; \
 	fi
+
 	export $(shell grep -v '^#' .prod.env | xargs) && \
 	migrate -path ./schema \
-		-database "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable" \
-		up
+	-database "postgres://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$POSTGRES_HOST:$$POSTGRES_PORT/$$POSTGRES_DB?sslmode=disable" \
+	up
+
+migrate-down-remote:
+	@echo "Применение миграций к удалённой БД..."
+	@if [ ! -f .prod.env ]; then \
+		echo "Файл .prod.env не найден!"; \
+		exit 1; \
+	fi
+
+	export $(shell grep -v '^#' .prod.env | xargs) && \
+	migrate -path ./schema \
+	-database "postgres://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$POSTGRES_HOST:$$POSTGRES_PORT/$$POSTGRES_DB?sslmode=disable" \
+	down
 
 # ==========================
 # Миграции: локальная БД (через docker)

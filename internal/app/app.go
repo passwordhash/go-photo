@@ -105,6 +105,7 @@ func (a *App) initLogging(_ context.Context) error {
 	logLevel, err := log.ParseLevel(a.sp.BaseConfig().LogLevel())
 	if err != nil {
 		log.Printf("failed to parse log level: %v", err)
+		log.Printf("use default log level: %s", log.DebugLevel)
 		logLevel = log.DebugLevel
 	}
 

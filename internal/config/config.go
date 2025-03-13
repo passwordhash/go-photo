@@ -37,9 +37,9 @@ func NewConfig() (Config, error) {
 	}
 
 	logLever := os.Getenv(logLevelEnvName)
-	if len(logLever) == 0 {
-		return nil, errors.New("log level not found")
-	}
+	//if len(logLever) == 0 {
+	//return nil, errors.New("log level not found")
+	//}
 
 	grpcAddr := os.Getenv(grpcAddrEnvName)
 	if len(grpcAddr) == 0 {

@@ -71,7 +71,8 @@ func (a *App) initDeps(ctx context.Context) error {
 func (a *App) initConfig(_ context.Context) error {
 	err := config.Load(".env")
 	if err != nil {
-		return err
+		log.Warnf("failed to load config: %v", err)
+		log.Info("loading without .env")
 	}
 
 	return nil
@@ -108,6 +109,7 @@ func (a *App) initLogging(_ context.Context) error {
 	}
 
 	log.SetLevel(logLevel)
+
 	return nil
 }
 

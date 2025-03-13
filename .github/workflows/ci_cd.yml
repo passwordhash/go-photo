@@ -36,9 +36,9 @@ jobs:
 
     build-and-push:
         needs: test
-        #        if: >-
-        #            (github.event_name == 'push' && github.ref == 'refs/heads/master')
-        #            || (github.event_name == 'pull_request' && github.base_ref == 'master')
+#                if: >-
+#                    (github.event_name == 'push' && github.ref == 'refs/heads/master')
+#                    || (github.event_name == 'pull_request' && github.base_ref == 'master')
         runs-on: ubuntu-latest
         steps:
             -   name: Login to Docker Hub
@@ -74,11 +74,11 @@ jobs:
 
     deploy:
         needs: build-and-push
-        if: >-
-            (github.event_name == 'push' && github.ref == 'refs/heads/master')|| (github.event_name == 'pull_request' && github.base_ref == 'master')
+#        if: >-
+#            (github.event_name == 'push' && github.ref == 'refs/heads/master')|| (github.event_name == 'pull_request' && github.base_ref == 'master')
         runs-on: ubuntu-latest
         env:
-            VAULT_ADDR: http://127.0.0.1:8200
+            VAULT_ADDR: http://vault.passwordhash.tech:8200
             CONTAINER_NAME: go-photo
         steps:
             -   name: Run docker image
@@ -90,14 +90,14 @@ jobs:
                     passphrase: ${{ secrets.SSH_PASSPHRASE }}
                     script: |
                         export VAULT_ADDR=${{ env.VAULT_ADDR }}
-                        vault kv get -format=json -mount="kv" "account-microservice" | \
+                        vault kv get -format=json -mount="kv" "${{ env.CONTAINER_NAME }}" | \
                         jq -r '.data.data | to_entries[] | "\(.key)=\(.value)"' > .env
                         
                         docker pull ${{ github.repository }}:latest
                         docker stop ${{ env.CONTAINER_NAME }} || true
                         docker rm ${{ env.CONTAINER_NAME }} -f || true
                         docker run -d  \
-                          -p 50051:50051 \
+                          -p 2040:2040 \
                           --env-file .env \
                           --name ${{ env.CONTAINER_NAME }} \
                           ${{ github.repository }}:latest

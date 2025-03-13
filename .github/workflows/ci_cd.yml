@@ -121,5 +121,3 @@ jobs:
                           --env-file .env \
                           --name ${{ env.CONTAINER_NAME }} \
                           ${{ github.repository }}:latest
-                        
-                        rm -f .env

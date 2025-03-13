@@ -54,7 +54,7 @@ jobs:
                 uses: actions/checkout@v3
                 with:
                     repository: ${{ github.repository_owner }}/protobuf-files
-                    path: proto
+                    path: api
 
             -   name: Set up Go
                 uses: actions/setup-go@v2

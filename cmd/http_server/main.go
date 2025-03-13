@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	//_ "go-photo/docs"
+	_ "go-photo/docs"
 	"go-photo/internal/app"
 	"log"
 )

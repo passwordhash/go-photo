@@ -64,8 +64,10 @@ jobs:
             -   name: Install dependencies
                 run: make install-deps
 
-            -   name: Protobuf generation
-                run: make generate-pb
+            -   name: Protobuf&docs generation
+                run: |
+                    make generate-pb
+                    make generate-docs
 
             -   name: Set up QEMU
                 uses: docker/setup-qemu-action@v3

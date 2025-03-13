@@ -69,7 +69,7 @@ go-generate-mock:
 	$(BIN_DIR)/mockgen -destination=$(PB_DIR)/mock/mocks.go -source=$(PB_DIR)/account_grpc.pb.go AccountServiceServer
 	$(BIN_DIR)/mockgen -destination=$(UTILS_DIR)/mock/mocks.go -source=$(UTILS_DIR)/utils.go
 
-swagger:
+generate-docs:
 	swag init --output $(DOCS_DIR) --generalInfo ./cmd/http_server/main.go
 
 # ==========================

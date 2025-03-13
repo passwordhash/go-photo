@@ -26,7 +26,14 @@ jobs:
                 run: echo "${{ runner.workspace }}/bin" >> $GITHUB_PATH
 
             -   name: Install dependencies
-                run: go mod download
+                run: |
+                    go mod download
+                    make install-deps
+
+            -   name: Protobuf&docs generation
+                run: |
+                    make generate-pb
+                    make generate-docs
 
             -   name: Build tests
                 run: make tests-build

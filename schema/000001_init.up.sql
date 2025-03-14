@@ -5,8 +5,6 @@
 --     UNIQUE (folder_path, user_uuid)
 -- );
 
--- TODO: добавить пользователя в бд
-
 CREATE TABLE photos (
   id SERIAL PRIMARY KEY,
   user_uuid UUID not null ,

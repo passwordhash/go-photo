@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"go-photo/internal/config"
 	"go-photo/internal/handler/middleware"
 	"go-photo/internal/handler/response"
@@ -15,6 +14,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 const (

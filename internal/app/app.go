@@ -71,7 +71,8 @@ func (a *App) initDeps(ctx context.Context) error {
 func (a *App) initConfig(_ context.Context) error {
 	err := config.Load(".env")
 	if err != nil {
-		return err
+		log.Warnf("failed to load config: %v", err)
+		log.Info("loading without .env")
 	}
 
 	return nil
@@ -104,10 +105,12 @@ func (a *App) initLogging(_ context.Context) error {
 	logLevel, err := log.ParseLevel(a.sp.BaseConfig().LogLevel())
 	if err != nil {
 		log.Printf("failed to parse log level: %v", err)
+		log.Printf("use default log level: %s", log.DebugLevel)
 		logLevel = log.DebugLevel
 	}
 
 	log.SetLevel(logLevel)
+
 	return nil
 }
 

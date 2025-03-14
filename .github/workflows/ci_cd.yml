@@ -111,11 +111,9 @@ jobs:
                     passphrase: ${{ secrets.SSH_PASSPHRASE }}
                     script: |
                         export VAULT_ADDR=${{ env.VAULT_ADDR }}
-                        vault kv get -format=json -mount=kv go-photo | \
+                        vault kv get -format=json -mount=kv ${{ env.CONTAINER_NAME }} | \
                         jq -r '.data.data | to_entries[] | "\(.key)=\(.value)"' > .env
                         
-                        echo ".env:"
-                        cat .env
                         echo "vault addr: ${{ env.VAULT_ADDR }}"
                         echo "container name: ${{ env.CONTAINER_NAME }}"
                         
@@ -125,5 +123,7 @@ jobs:
                         docker run -d  \
                           --env-file .env \
                           -p 2040:${{ env.CONTAINER_PORT }} \
-                          --name go-photo \
+                          --name ${{ env.CONTAINER_NAME }} \
                           ${{ github.repository }}:latest
+                        
+                        rm -f .env

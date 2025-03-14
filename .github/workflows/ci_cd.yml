@@ -43,9 +43,9 @@ jobs:
 
     build-and-push:
         needs: test
-#                if: >-
-#                    (github.event_name == 'push' && github.ref == 'refs/heads/master')
-#                    || (github.event_name == 'pull_request' && github.base_ref == 'master')
+        if: >-
+            (github.event_name == 'push' && github.ref == 'refs/heads/master')
+            || (github.event_name == 'pull_request' && github.base_ref == 'master')
         runs-on: ubuntu-latest
         steps:
             -   name: Login to Docker Hub
@@ -94,8 +94,8 @@ jobs:
 
     deploy:
         needs: build-and-push
-        #        if: >-
-        #            (github.event_name == 'push' && github.ref == 'refs/heads/master')|| (github.event_name == 'pull_request' && github.base_ref == 'master')
+        if: >-
+            (github.event_name == 'push' && github.ref == 'refs/heads/master')|| (github.event_name == 'pull_request' && github.base_ref == 'master')
         runs-on: ubuntu-latest
         env:
             VAULT_ADDR: http://vault.passwordhash.tech

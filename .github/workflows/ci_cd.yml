@@ -100,6 +100,7 @@ jobs:
         env:
             VAULT_ADDR: http://vault.passwordhash.tech:8200
             CONTAINER_NAME: go-photo
+            CONTAINER_PORT: 2040
         steps:
             -   name: Run docker image
                 uses: appleboy/ssh-action@v1.2.0
@@ -110,14 +111,19 @@ jobs:
                     passphrase: ${{ secrets.SSH_PASSPHRASE }}
                     script: |
                         export VAULT_ADDR=${{ env.VAULT_ADDR }}
-                        vault kv get -format=json -mount="kv" "${{ env.CONTAINER_NAME }}" | \
+                        vault kv get -format=json -mount=kv go-photo | \
                         jq -r '.data.data | to_entries[] | "\(.key)=\(.value)"' > .env
+                        
+                        echo ".env:"
+                        cat .env
+                        echo "vault addr: ${{ env.VAULT_ADDR }}"
+                        echo "container name: ${{ env.CONTAINER_NAME }}"
                         
                         docker pull ${{ github.repository }}:latest
                         docker stop ${{ env.CONTAINER_NAME }} || true
                         docker rm ${{ env.CONTAINER_NAME }} -f || true
                         docker run -d  \
-                          -p 2040:2040 \
                           --env-file .env \
-                          --name ${{ env.CONTAINER_NAME }} \
+                          -p 2040:${{ env.CONTAINER_PORT }} \
+                          --name go-photo \
                           ${{ github.repository }}:latest

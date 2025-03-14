@@ -98,7 +98,7 @@ jobs:
         #            (github.event_name == 'push' && github.ref == 'refs/heads/master')|| (github.event_name == 'pull_request' && github.base_ref == 'master')
         runs-on: ubuntu-latest
         env:
-            VAULT_ADDR: http://vault.passwordhash.tech:8200
+            VAULT_ADDR: http://vault.passwordhash.tech
             CONTAINER_NAME: go-photo
             CONTAINER_PORT: 2040
         steps:

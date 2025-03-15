@@ -1,4 +1,5 @@
 # Go Photo
+[![Swagger UI](https://img.shields.io/badge/docs-Swagger-blue?logo=swagger)](https://go-photo.passwordhash.tech/api/v1/docs/index.html)
 
 ## Develop развертывание
 

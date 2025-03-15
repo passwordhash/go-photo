@@ -100,7 +100,9 @@ func (a *App) initFolders(_ context.Context) error {
 
 func (a *App) initLogging(_ context.Context) error {
 	log.SetOutput(os.Stdout)
-	log.SetFormatter(&log.TextFormatter{})
+	log.SetFormatter(&log.TextFormatter{
+		ForceColors: true,
+	})
 
 	logLevel, err := log.ParseLevel(a.sp.BaseConfig().LogLevel())
 	if err != nil {
@@ -150,6 +152,7 @@ func (a *App) initGRPCClient(_ context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to health check grpc client: %w", err)
 	}
+	log.Infof("grpc client is connected to %s", a.sp.BaseConfig().GRPCAddr())
 
 	return nil
 }

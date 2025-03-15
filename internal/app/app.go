@@ -100,8 +100,11 @@ func (a *App) initFolders(_ context.Context) error {
 
 func (a *App) initLogging(_ context.Context) error {
 	log.SetOutput(os.Stdout)
-	log.SetFormatter(&log.TextFormatter{
-		ForceColors: true,
+	//log.SetFormatter(&log.TextFormatter{
+	//	ForceColors: true,
+	//})
+	log.SetFormatter(&config.CustomFormatter{
+		TimestampFormat: time.DateTime,
 	})
 
 	logLevel, err := log.ParseLevel(a.sp.BaseConfig().LogLevel())

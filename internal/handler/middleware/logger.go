@@ -3,6 +3,7 @@ package middleware
 import (
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
+	"strings"
 	"time"
 )
 
@@ -10,6 +11,7 @@ func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		clientIP := c.ClientIP()
 		start := time.Now()
+		userAgent := c.Request.UserAgent()
 		path := c.Request.URL.Path
 		raw := c.Request.URL.RawQuery
 		if raw != "" {
@@ -21,6 +23,7 @@ func Logger() gin.HandlerFunc {
 			"method":     c.Request.Method,
 			"client_ip":  clientIP,
 			"start_time": start.Format(time.DateTime),
+			"user_agent": userAgent,
 		}
 
 		log.WithFields(fields).Info("Request started")
@@ -28,7 +31,8 @@ func Logger() gin.HandlerFunc {
 
 		latency := time.Since(start)
 		statusCode := c.Writer.Status()
-		errorMessage := c.Errors.ByType(gin.ErrorTypePrivate).String()
+		errorMessages := c.Errors.ByType(gin.ErrorTypePrivate).Errors()
+		errorMessage := strings.Join(errorMessages, "; ")
 
 		fields = log.Fields{
 			"status_code":  statusCode,
@@ -36,6 +40,7 @@ func Logger() gin.HandlerFunc {
 			"method":       c.Request.Method,
 			"client_ip":    clientIP,
 			"latency_time": latency,
+			"user_agent":   userAgent,
 		}
 
 		entry := log.WithFields(fields)

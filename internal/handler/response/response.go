@@ -35,14 +35,14 @@ func NewOk(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, data)
 }
 
-func NewErr(c *gin.Context, code int, respMsg ErrMessage, err error, clientMessage string) {
-	outErr := errors.New(string(respMsg))
+func NewErr(c *gin.Context, code int, errMessage ErrMessage, err error, clientMessage string) {
+	outErr := errors.New(string(errMessage))
 	if err != nil {
-		outErr = fmt.Errorf("%s: %w", respMsg, err)
+		outErr = fmt.Errorf("%s: %w", errMessage, err)
 	}
 	c.Error(outErr)
 	c.AbortWithStatusJSON(code, Error{
-		Error:   respMsg,
+		Error:   errMessage,
 		Message: clientMessage,
 	})
 }

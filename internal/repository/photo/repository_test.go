@@ -33,6 +33,9 @@ func TestRepository_CreateOriginalPhoto(t *testing.T) {
 		Filename: "test.png",
 		Filepath: "home/user-uuid/test.png",
 		Size:     12345,
+		Height:   100,
+		Width:    100,
+		SavedAt:  time.Now(),
 	}
 
 	tests := []struct {
@@ -49,12 +52,12 @@ func TestRepository_CreateOriginalPhoto(t *testing.T) {
 				mock.ExpectBegin()
 
 				mock.ExpectQuery("INSERT INTO photos").
-					WithArgs("user-uuid", "test.png").
+					WithArgs("user-uuid", "test.png", sqlmock.AnyArg()).
 					WillReturnRows(rowsWithIDColumn.
 						AddRow(1))
 
 				mock.ExpectExec("INSERT INTO photo_versions").
-					WithArgs(1, "home/user-uuid/test.png", 12345).
+					WithArgs(1, "home/user-uuid/test.png", 12345, 100, 100, sqlmock.AnyArg()).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 
 				mock.ExpectCommit()
@@ -78,12 +81,12 @@ func TestRepository_CreateOriginalPhoto(t *testing.T) {
 				mock.ExpectBegin()
 
 				mock.ExpectQuery("INSERT INTO photos").
-					WithArgs("user-uuid", "test.png").
+					WithArgs("user-uuid", "test.png", sqlmock.AnyArg()).
 					WillReturnRows(rowsWithIDColumn.
 						AddRow(1))
 
 				mock.ExpectExec("INSERT INTO photo_versions").
-					WithArgs(1, "home/user-uuid/test.png", 12345).
+					WithArgs(1, "home/user-uuid/test.png", 12345, 100, 100, sqlmock.AnyArg()).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 
 				mock.ExpectCommit().WillReturnError(def.CommitTxError)
@@ -98,7 +101,7 @@ func TestRepository_CreateOriginalPhoto(t *testing.T) {
 				mock.ExpectBegin()
 
 				mock.ExpectQuery("INSERT INTO photos").
-					WithArgs("user-uuid", "test.png").
+					WithArgs("user-uuid", "test.png", sqlmock.AnyArg()).
 					WillReturnError(def.InsertError)
 
 				mock.ExpectRollback()
@@ -113,12 +116,12 @@ func TestRepository_CreateOriginalPhoto(t *testing.T) {
 				mock.ExpectBegin()
 
 				mock.ExpectQuery("INSERT INTO photos").
-					WithArgs("user-uuid", "test.png").
+					WithArgs("user-uuid", "test.png", sqlmock.AnyArg()).
 					WillReturnRows(rowsWithIDColumn.
 						AddRow(1))
 
 				mock.ExpectExec("INSERT INTO photo_versions").
-					WithArgs(1, "home/user-uuid/test.png", 12345).
+					WithArgs(1, "home/user-uuid/test.png", 12345, 100, 100, sqlmock.AnyArg()).
 					WillReturnError(def.InsertError)
 
 				mock.ExpectRollback()
@@ -132,10 +135,10 @@ func TestRepository_CreateOriginalPhoto(t *testing.T) {
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
 				mock.ExpectQuery("INSERT INTO photos").
-					WithArgs("user-uuid", "test.png").
+					WithArgs("user-uuid", "test.png", sqlmock.AnyArg()).
 					WillReturnRows(rowsWithIDColumn.AddRow(123))
 				mock.ExpectExec("INSERT INTO photo_versions").
-					WithArgs(123, "home/user-uuid/test.png", 12345).
+					WithArgs(123, "home/user-uuid/test.png", 12345, 100, 100, sqlmock.AnyArg()).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 			},

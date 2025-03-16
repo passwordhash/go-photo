@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"time"
 )
 
 type Photo struct {
@@ -17,6 +18,9 @@ type PhotoVersion struct {
 	VersionType sql.NullString `db:"version_type"`
 	Filepath    string         `db:"filepath"`
 	Size        int64          `db:"size"`
+	Height      int            `db:"height"`
+	Width       int            `db:"width"`
+	SavedAt     *sql.NullTime  `db:"saved_at"`
 }
 
 type CreateOriginalPhotoParams struct {
@@ -24,8 +28,11 @@ type CreateOriginalPhotoParams struct {
 	Filename string
 	Filepath string
 	Size     int64
+	Height   int
+	Width    int
+	SavedAt  time.Time
 }
 
 func (p *CreateOriginalPhotoParams) IsValid() bool {
-	return p.UserUUID != "" && p.Filename != "" && p.Filepath != "" && p.Size > 0
+	return p.UserUUID != "" && p.Filename != "" && p.Filepath != "" && p.Size > 0 && p.Height > 0 && p.Width > 0 && !p.SavedAt.IsZero()
 }

@@ -25,7 +25,8 @@ type UserService interface {
 }
 
 type PhotoService interface {
-	// UploadPhoto загружает одну фотографию
+	// UploadPhoto загружает фотографию и сохраняет ее в файловой системе и базе данных.
+	// Возвращает ID загруженной фотографии.
 	UploadPhoto(ctx context.Context, userUUID string, photoFile *multipart.FileHeader) (int, error)
 	// UploadBatchPhotos загружает несколько фотографий конкурентно. Возвращает список информации о загруженных фотографиях.
 	// Если возникла ошибка во время загрузки фотографии, то прикрепляет информацию об ошибке.

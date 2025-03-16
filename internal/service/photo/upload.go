@@ -8,13 +8,26 @@ import (
 	serviceErr "go-photo/internal/service/error"
 	serviceModel "go-photo/internal/service/photo/model"
 	"go-photo/internal/utils"
+	_ "golang.org/x/image/webp"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
+	"time"
 )
+
+type saveToDiskInfo struct {
+	size    int64
+	height  int
+	width   int
+	savedAt time.Time
+}
 
 func (s *service) UploadPhoto(ctx context.Context, userUUID string, photoFile *multipart.FileHeader) (int, error) {
 	userFolder, err := ensureUserFolder(s.d.StorageFolderPath, userUUID)
@@ -136,26 +149,32 @@ func (s *service) saveFile(_ context.Context, file *multipart.FileHeader, destFo
 		Size:     file.Size,
 	}
 
-	if err := saveFileToDisk(file, destFolder); err != nil {
+	saveInfo, err := saveFileToDisk(file, destFolder)
+	if err != nil {
 		log.Errorf("Failed to save file %s: %v", file.Filename, err)
 		info.Error = fmt.Errorf("disk save error: %w", err)
 	}
+
+	info.Height = saveInfo.height
+	info.Width = saveInfo.width
+	info.SavedAt = saveInfo.savedAt
 
 	return info
 }
 
 // saveToDatabase сохраняет информацию о файле в базе данных. Если произошла ошибка, файл удаляется с диска
+// TODO: ? return upload info ??
 func (s *service) saveToDatabase(ctx context.Context, userUUID string, info serviceModel.UploadInfo) serviceModel.UploadInfo {
-	if info.Error != nil {
-		return info
-	}
-
 	id, err := s.photoRepository.CreateOriginalPhoto(ctx, &repoModel.CreateOriginalPhotoParams{
 		UserUUID: userUUID,
 		Filename: info.Filename,
 		Filepath: filepath.Join(s.d.StorageFolderPath, userUUID, info.Filename),
 		Size:     info.Size,
+		Height:   info.Height,
+		Width:    info.Width,
+		SavedAt:  info.SavedAt,
 	})
+
 	if err != nil {
 		log.Errorf("DB save error for file %s: %v", info.Filename, err)
 		info.Error = fmt.Errorf("db save error: %w", err)
@@ -183,24 +202,38 @@ func ensureUserFolder(storageFolderPath, userUUID string) (string, error) {
 	return userFolder, nil
 }
 
-func saveFileToDisk(file *multipart.FileHeader, destFolder string) error {
+func saveFileToDisk(file *multipart.FileHeader, destFolder string) (saveToDiskInfo, error) {
 	src, err := file.Open()
 	if err != nil {
-		return fmt.Errorf("failed to open file: %w", err)
+		return saveToDiskInfo{}, fmt.Errorf("failed to open file: %w", err)
 	}
 	defer src.Close()
 
 	filePath := filepath.Join(destFolder, file.Filename)
 	out, err := os.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
+		return saveToDiskInfo{}, fmt.Errorf("failed to create file: %w", err)
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, src)
 	if err != nil {
-		return fmt.Errorf("failed to write file to disk: %w", err)
+		return saveToDiskInfo{}, fmt.Errorf("failed to write file to disk: %w", err)
 	}
 
-	return nil
+	src.Seek(0, 0)
+
+	config, _, err := image.DecodeConfig(src)
+	if err != nil {
+		return saveToDiskInfo{}, fmt.Errorf("failed to decode image: %w", err)
+	}
+
+	info := saveToDiskInfo{
+		savedAt: time.Now(),
+		size:    file.Size,
+		height:  config.Height,
+		width:   config.Width,
+	}
+
+	return info, nil
 }

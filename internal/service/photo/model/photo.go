@@ -3,6 +3,7 @@ package model
 import (
 	"go-photo/internal/handler/response"
 	"sync"
+	"time"
 )
 
 type UploadInfoList struct {
@@ -16,6 +17,9 @@ type UploadInfo struct {
 	Filename string
 	Error    error
 	Size     int64
+	Height   int
+	Width    int
+	SavedAt  time.Time
 }
 
 func NewUploadInfoList(infos []UploadInfo) *UploadInfoList {

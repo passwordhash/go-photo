@@ -46,18 +46,28 @@ func (r *repository) CreateOriginalPhoto(ctx context.Context, params *repoModel.
 
 	var photoID int
 	photosQuery := `
-		INSERT INTO photos (user_uuid, filename)
-		VALUES ($1, $2)
+		INSERT INTO photos (user_uuid, filename, uploaded_at)
+		VALUES ($1, $2, $3)
 		RETURNING id`
-	err = tx.QueryRowContext(ctx, photosQuery, params.UserUUID, params.Filename).Scan(&photoID)
+	err = tx.QueryRowContext(ctx, photosQuery,
+		params.UserUUID,
+		params.Filename,
+		params.SavedAt).Scan(&photoID)
 	if err != nil {
 		return 0, fmt.Errorf("photo %w: %v", repoErr.InsertError, err)
 	}
 
 	photoVersionQuery := `
-		INSERT INTO photo_versions (photo_id, filepath, size)
-		VALUES ($1, $2, $3)`
-	_, err = tx.ExecContext(ctx, photoVersionQuery, photoID, params.Filepath, params.Size)
+		INSERT INTO photo_versions (photo_id, filepath, size, height, width, saved_at)
+		VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err = tx.ExecContext(ctx,
+		photoVersionQuery,
+		photoID,
+		params.Filepath,
+		params.Size,
+		params.Height,
+		params.Width,
+		params.SavedAt)
 	if err != nil {
 		return 0, fmt.Errorf("version %w: %v", repoErr.InsertError, err)
 	}

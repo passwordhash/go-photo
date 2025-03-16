@@ -111,7 +111,7 @@ func (r *repository) GetPhotoVersions(ctx context.Context, photoID int) ([]repoM
 	}
 
 	query := `
-		SELECT id, photo_id, version_type, filepath, size 
+		SELECT id, photo_id, version_type, filepath, size , height, width, saved_at
 		FROM photo_versions 
 		WHERE photo_id = $1
 		ORDER BY size`

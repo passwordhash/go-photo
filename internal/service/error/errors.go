@@ -24,4 +24,6 @@ var (
 	UserNotFoundError         = errors.New("user not found")
 	UserAlreadyExistsError    = errors.New("user already exists")
 	UserUnauthtenticatedError = errors.New("user unauthenticated")
+
+	PhotoNotFoundError = errors.New("photo not found")
 )

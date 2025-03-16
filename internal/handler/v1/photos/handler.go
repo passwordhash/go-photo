@@ -26,6 +26,6 @@ func (h *handler) RegisterRoutes(router *gin.RouterGroup) {
 	{
 		photosGroup.POST("/", h.uploadPhoto)
 		photosGroup.POST("/batch", h.uploadBatchPhotos)
-		photosGroup.GET("/:id", h.getPhotoVersions)
+		photosGroup.GET("/:id/versions", h.getPhotoVersions)
 	}
 }

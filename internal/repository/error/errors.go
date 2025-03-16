@@ -7,6 +7,7 @@ import (
 
 var (
 	NotFoundError = errors.New("not found")
+
 	PhotoNotFound = fmt.Errorf("photo %w", NotFoundError)
 
 	BeginTxError  = errors.New("failed to begin transaction")

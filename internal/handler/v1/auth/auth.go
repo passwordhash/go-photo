@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go-photo/internal/handler/request"
 	"go-photo/internal/handler/response"
+	"go-photo/internal/handler/response/auth"
 	serviceErr "go-photo/internal/service/error"
 	serviceUserModel "go-photo/internal/service/user/model"
 	"net/http"
@@ -38,7 +39,7 @@ func (h *handler) login(c *gin.Context) {
 		return
 	}
 
-	response.NewOk(c, response.Login{Token: token})
+	response.NewOk(c, auth.Login{Token: token})
 }
 
 // @Summary Register user
@@ -73,5 +74,5 @@ func (h *handler) register(c *gin.Context) {
 		return
 	}
 
-	response.NewOk(c, response.Register{UserUUID: info.UserUUID, Token: info.Token})
+	response.NewOk(c, auth.Register{UserUUID: info.UserUUID, Token: info.Token})
 }

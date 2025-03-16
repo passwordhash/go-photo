@@ -7,6 +7,8 @@ import (
 	"go-photo/internal/config"
 	"go-photo/internal/handler/middleware"
 	"go-photo/internal/handler/response"
+	"go-photo/internal/handler/response/auth"
+	"go-photo/internal/handler/response/photo"
 	serviceErr "go-photo/internal/service/error"
 	"go-photo/internal/service/photo/model"
 	"go-photo/internal/utils"
@@ -39,7 +41,7 @@ func (h *handler) uploadPhoto(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 
-	uuid, ok := response.MustGetUUID(c, middleware.UserUUIDCtx)
+	uuid, ok := auth.MustGetUUID(c, middleware.UserUUIDCtx)
 	if !ok {
 		return
 	}
@@ -61,7 +63,7 @@ func (h *handler) uploadPhoto(c *gin.Context) {
 		return
 	}
 
-	response.NewOk(c, response.UploadPhotoResponse{PhotoID: photoID})
+	response.NewOk(c, photo.UploadPhotoResponse{PhotoID: photoID})
 }
 
 // @Summary Upload batch photos
@@ -83,7 +85,7 @@ func (h *handler) uploadBatchPhotos(c *gin.Context) {
 
 	respStatus := http.StatusOK
 
-	uuid, ok := response.MustGetUUID(c, middleware.UserUUIDCtx)
+	uuid, ok := auth.MustGetUUID(c, middleware.UserUUIDCtx)
 	if !ok {
 		return
 	}
@@ -114,10 +116,10 @@ func (h *handler) uploadBatchPhotos(c *gin.Context) {
 		return
 	}
 
-	body := response.UploadBatchPhotosResponse{
+	body := photo.UploadBatchPhotosResponse{
 		TotalCount:   uploads.Total(),
 		SuccessCount: uploads.SuccessCount(),
-		UploadInfos:  append(make([]response.UploadInfo, 0), model.ToUploadsInfoFromService(uploads.Get())...),
+		UploadInfos:  append(make([]photo.UploadInfo, 0), model.ToUploadsInfoFromService(uploads.Get())...),
 	}
 
 	c.JSON(respStatus, body)
@@ -136,16 +138,16 @@ func (h *handler) getPhotoVersions(c *gin.Context) {
 		return
 	}
 
-	version, err := h.photoService.GetPhotoVersions(ctx, id)
-	if err != nil {
-		response.NewErr(c, http.StatusInternalServerError, response.InternalServerError, err, "Failed to get photo versions.")
+	versions, err := h.photoService.GetPhotoVersions(ctx, id)
+	if errors.Is(err, serviceErr.PhotoNotFoundError) {
+		response.NewErr(c, http.StatusNotFound, response.PhotoNotFound, err, "Photo not found.")
 		return
 	}
 	if response.HandleError(c, err) {
 		return
 	}
 
-	c.JSON(200, gin.H{
-		"versions": version,
+	response.NewOk(c, photo.GetPhotoVersionsResponse{
+		Versions: photo.ToPhotoVersionsFromModel(versions),
 	})
 }

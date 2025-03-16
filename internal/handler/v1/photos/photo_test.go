@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go-photo/internal/handler/middleware"
 	"go-photo/internal/handler/response"
+	"go-photo/internal/handler/response/photo"
 	serviceErr "go-photo/internal/service/error"
 	mockservice "go-photo/internal/service/mock"
 	serviceModel "go-photo/internal/service/photo/model"
@@ -185,7 +186,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 					Times(1)
 			},
 			expectedStatusCode: 200,
-			expectedResponse: response.UploadBatchPhotosResponse{
+			expectedResponse: photo.UploadBatchPhotosResponse{
 				TotalCount:   3,
 				SuccessCount: 3,
 				UploadInfos:  serviceModel.ToUploadsInfoFromService(defaultUploads.Get()),
@@ -220,7 +221,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 					Times(1)
 			},
 			expectedStatusCode: 206,
-			expectedResponse: response.UploadBatchPhotosResponse{
+			expectedResponse: photo.UploadBatchPhotosResponse{
 				TotalCount:   3,
 				SuccessCount: 2,
 				UploadInfos:  serviceModel.ToUploadsInfoFromService(createPartialUploads().Get()),
@@ -240,7 +241,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 					Times(1)
 			},
 			expectedStatusCode: 400,
-			expectedResponse: response.UploadBatchPhotosResponse{
+			expectedResponse: photo.UploadBatchPhotosResponse{
 				TotalCount:   2,
 				SuccessCount: 0,
 				UploadInfos:  serviceModel.ToUploadsInfoFromService(createFailedUploads().Get()),

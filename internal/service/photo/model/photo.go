@@ -1,7 +1,7 @@
 package model
 
 import (
-	"go-photo/internal/handler/response"
+	"go-photo/internal/handler/response/photo"
 	"sync"
 	"time"
 )
@@ -79,10 +79,10 @@ func (il *UploadInfoList) IsSomeError() bool {
 	return errCount > 0 && errCount < il.total
 }
 
-func ToUploadsInfoFromService(uploads []UploadInfo) []response.UploadInfo {
-	uploadsInfo := make([]response.UploadInfo, 0, len(uploads))
+func ToUploadsInfoFromService(uploads []UploadInfo) []photo.UploadInfo {
+	uploadsInfo := make([]photo.UploadInfo, 0, len(uploads))
 	for _, upload := range uploads {
-		uploadsInfo = append(uploadsInfo, response.UploadInfo{
+		uploadsInfo = append(uploadsInfo, photo.UploadInfo{
 			PhotoID:  upload.PhotoID,
 			Filename: upload.Filename,
 			Error:    upload.Error,

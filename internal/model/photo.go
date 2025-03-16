@@ -24,4 +24,7 @@ type PhotoVersion struct {
 	VersionType PhotoVersionType
 	Filepath    string
 	Size        int64
+	Height      int
+	Width       int
+	SavedAt     time.Time
 }

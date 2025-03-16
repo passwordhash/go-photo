@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go-photo/internal/handler/middleware"
 	"go-photo/internal/handler/response"
+	"go-photo/internal/handler/response/photo"
+	"go-photo/internal/model"
 	serviceErr "go-photo/internal/service/error"
 	mockservice "go-photo/internal/service/mock"
 	serviceModel "go-photo/internal/service/photo/model"
@@ -19,6 +21,7 @@ import (
 	"mime/multipart"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestHandler_uploadPhoto(t *testing.T) {
@@ -185,7 +188,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 					Times(1)
 			},
 			expectedStatusCode: 200,
-			expectedResponse: response.UploadBatchPhotosResponse{
+			expectedResponse: photo.UploadBatchPhotosResponse{
 				TotalCount:   3,
 				SuccessCount: 3,
 				UploadInfos:  serviceModel.ToUploadsInfoFromService(defaultUploads.Get()),
@@ -220,7 +223,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 					Times(1)
 			},
 			expectedStatusCode: 206,
-			expectedResponse: response.UploadBatchPhotosResponse{
+			expectedResponse: photo.UploadBatchPhotosResponse{
 				TotalCount:   3,
 				SuccessCount: 2,
 				UploadInfos:  serviceModel.ToUploadsInfoFromService(createPartialUploads().Get()),
@@ -240,7 +243,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 					Times(1)
 			},
 			expectedStatusCode: 400,
-			expectedResponse: response.UploadBatchPhotosResponse{
+			expectedResponse: photo.UploadBatchPhotosResponse{
 				TotalCount:   2,
 				SuccessCount: 0,
 				UploadInfos:  serviceModel.ToUploadsInfoFromService(createFailedUploads().Get()),
@@ -291,6 +294,137 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			default:
 				assert.JSONEq(t, string(content), w.Body.String())
 			}
+		})
+	}
+}
+
+func TestHandler_getPhotoVersions(t *testing.T) {
+	time := time.Now()
+	type mockBehavior func(s *mockservice.MockPhotoService, userUUID string, photoID int)
+
+	tests := []struct {
+		name               string
+		userUUID           string
+		photoID            int
+		mockBehavior       mockBehavior
+		expectedStatusCode int
+		expectedResponse   any
+	}{
+		{
+			name:     "Valid",
+			userUUID: "1abc4",
+			photoID:  123,
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, photoID int) {
+				s.EXPECT().
+					GetPhotoVersions(gomock.Any(), userUUID, photoID).
+					Return([]model.PhotoVersion{
+						{
+							ID:          1,
+							PhotoID:     123,
+							VersionType: model.Original,
+							Filepath:    "path/to/original.jpg",
+							Size:        1024,
+							Height:      1024,
+							Width:       1024,
+							SavedAt:     time,
+						},
+						{
+							ID:          2,
+							PhotoID:     123,
+							VersionType: model.Thumbnail,
+							Filepath:    "path/to/thumbnail.jpg",
+							Size:        512,
+							Height:      512,
+							Width:       512,
+							SavedAt:     time,
+						},
+					}, nil).
+					Times(1)
+			},
+			expectedStatusCode: 200,
+			expectedResponse: photo.GetPhotoVersionsResponse{
+				Versions: []photo.PhotoVersion{
+					{
+						PhotoID:     123,
+						VersionType: "original",
+						Filepath:    "path/to/original.jpg",
+						Height:      1024,
+						Width:       1024,
+						Size:        1024,
+						SavedAt:     time.GoString(),
+					},
+					{
+						PhotoID:     123,
+						VersionType: "thumbnail",
+						Filepath:    "path/to/thumbnail.jpg",
+						Height:      512,
+						Width:       512,
+						Size:        512,
+						SavedAt:     time.GoString(),
+					},
+				},
+			},
+		},
+		{
+			name:     "Photo not found",
+			userUUID: "1abc4",
+			photoID:  123,
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, photoID int) {
+				s.EXPECT().
+					GetPhotoVersions(gomock.Any(), userUUID, photoID).
+					Return(nil, serviceErr.PhotoNotFoundError).
+					Times(1)
+			},
+			expectedStatusCode: 404,
+			expectedResponse: response.Error{
+				Error: response.PhotoNotFound,
+			},
+		},
+		{
+			name:     "Access denied",
+			userUUID: "1abc4",
+			photoID:  123,
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, photoID int) {
+				s.EXPECT().
+					GetPhotoVersions(gomock.Any(), userUUID, photoID).
+					Return(nil, serviceErr.AccessDeniedError).
+					Times(1)
+			},
+			expectedStatusCode: 403,
+			expectedResponse: response.Error{
+				Error: response.Forbidden,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockPhotoService := mockservice.NewMockPhotoService(ctrl)
+			tt.mockBehavior(mockPhotoService, tt.userUUID, tt.photoID)
+
+			mockTokenService := mockservice.NewMockTokenService(ctrl)
+
+			h := NewHandler(mockPhotoService, mockTokenService)
+
+			r := gin.New()
+			r.Use(middleware.UserIdentity(func(ctx context.Context, token string) (serviceUserModel.TokenPayload, error) {
+				if token == "valid-token" {
+					return serviceUserModel.TokenPayload{UserUUID: tt.userUUID}, nil
+				}
+				return serviceUserModel.TokenPayload{}, errors.New("invalid token")
+			}))
+			r.GET("/photos/:id/versions", h.getPhotoVersions)
+
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest("GET", fmt.Sprintf("/photos/%d/versions", tt.photoID), nil)
+			req.Header.Set("Authorization", "Bearer valid-token")
+
+			r.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatusCode, w.Code)
 		})
 	}
 }

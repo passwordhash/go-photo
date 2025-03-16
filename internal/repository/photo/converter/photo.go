@@ -32,5 +32,8 @@ func ToPhotoVersionFromRepo(version repoModel.PhotoVersion) model.PhotoVersion {
 		VersionType: model.PhotoVersionType(version.VersionType.String),
 		Filepath:    version.Filepath,
 		Size:        version.Size,
+		Height:      version.Height,
+		Width:       version.Width,
+		SavedAt:     version.SavedAt.Time,
 	}
 }

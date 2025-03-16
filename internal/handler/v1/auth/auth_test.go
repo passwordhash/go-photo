@@ -7,6 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"go-photo/internal/handler/response"
+	"go-photo/internal/handler/response/auth"
 	serviceErr "go-photo/internal/service/error"
 	mock_service "go-photo/internal/service/mock"
 	serviceUserModel "go-photo/internal/service/user/model"
@@ -35,7 +36,7 @@ func TestHandler_login(t *testing.T) {
 				s.EXPECT().Login(gomock.Any(), email, password).Return("accessToken", nil).Times(1)
 			},
 			expectedStatusCode: 200,
-			expectedResponse: response.Login{
+			expectedResponse: auth.Login{
 				Token: "accessToken",
 			},
 		},
@@ -153,7 +154,7 @@ func TestHandler_register(t *testing.T) {
 				}, nil).Times(1)
 			},
 			expectedStatusCode: 200,
-			expectedResponse: response.Register{
+			expectedResponse: auth.Register{
 				UserUUID: "user-id",
 				Token:    "jwt-token",
 			},

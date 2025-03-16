@@ -28,8 +28,13 @@ type PhotoService interface {
 	// UploadPhoto загружает фотографию и сохраняет ее в файловой системе и базе данных.
 	// Возвращает ID загруженной фотографии.
 	UploadPhoto(ctx context.Context, userUUID string, photoFile *multipart.FileHeader) (int, error)
+
 	// UploadBatchPhotos загружает несколько фотографий конкурентно. Возвращает список информации о загруженных фотографиях.
 	// Если возникла ошибка во время загрузки фотографии, то прикрепляет информацию об ошибке.
 	UploadBatchPhotos(ctx context.Context, userUUID string, photoFiles []*multipart.FileHeader) (*servicePhotoModel.UploadInfoList, error)
-	GetPhotoVersions(ctx context.Context, photoID int) ([]model.PhotoVersion, error)
+
+	// GetPhotoVersions получает все версии фотографии по ее ID.
+	// Осуществляет проверку прав доступа к фотографии.
+	// Возвращает список версий фотографии.
+	GetPhotoVersions(ctx context.Context, userUUID string, photoID int) ([]model.PhotoVersion, error)
 }

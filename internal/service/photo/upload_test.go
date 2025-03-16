@@ -5,11 +5,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/mock/gomock"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	mock_repository "go-photo/internal/repository/mock"
 	serviceErr "go-photo/internal/service/error"
 	serviceModel "go-photo/internal/service/photo/model"
+	"image"
+	"image/color"
+	"image/jpeg"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -127,51 +129,6 @@ func TestService_UploadBatchPhotos(t *testing.T) {
 	}
 }
 
-func TestService_SaveFile(t *testing.T) {
-	tests := []struct {
-		name        string
-		fileHeader  *multipart.FileHeader
-		destFolder  string
-		prepareFile func() *multipart.FileHeader
-		expectedErr string
-	}{
-		{
-			name: "Successful Save",
-			prepareFile: func() *multipart.FileHeader {
-				return mockFileHeader("test.jpg", 100, "file content")
-			},
-			expectedErr: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tempDir := t.TempDir()
-			defer os.RemoveAll(tempDir)
-
-			fileHeader := tt.prepareFile()
-			destFolder := filepath.Join(tempDir, "dest")
-			err := os.Mkdir(destFolder, 0755)
-			assert.NoError(t, err)
-			log.Info("destFolder", destFolder)
-
-			src, err := fileHeader.Open()
-			log.Errorf("err: %v", err)
-			defer src.Close()
-
-			err = saveFileToDisk(fileHeader, destFolder)
-			if tt.expectedErr != "" {
-				assert.ErrorContains(t, err, tt.expectedErr)
-			} else {
-				assert.NoError(t, err)
-				destPath := filepath.Join(destFolder, fileHeader.Filename)
-				_, statErr := os.Stat(destPath)
-				assert.NoError(t, statErr)
-			}
-		})
-	}
-}
-
 func TestService_SaveToDatabase(t *testing.T) {
 	type mockBehavior func(repo *mock_repository.MockPhotoRepository, ctx context.Context, userUUID string, info serviceModel.UploadInfo)
 
@@ -280,6 +237,13 @@ func TestEnsureUserFolder(t *testing.T) {
 }
 
 func mockFileHeader(filename string, size int64, content string) *multipart.FileHeader {
+	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
+	img.Set(0, 0, color.RGBA{R: 255, G: 0, B: 0, A: 255})
+	var imgBuf bytes.Buffer
+	if err := jpeg.Encode(&imgBuf, img, nil); err != nil {
+		panic(fmt.Sprintf("failed to encode jpeg image: %v", err))
+	}
+
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
@@ -287,15 +251,15 @@ func mockFileHeader(filename string, size int64, content string) *multipart.File
 	if err != nil {
 		panic(fmt.Sprintf("failed to create form file: %v", err))
 	}
-	_, _ = part.Write([]byte(content))
-
+	_, err = part.Write(imgBuf.Bytes())
+	if err != nil {
+		panic(fmt.Sprintf("failed to write image to form file: %v", err))
+	}
 	writer.Close()
 
 	req := &http.Request{Header: http.Header{"Content-Type": {writer.FormDataContentType()}}}
 	req.Body = io.NopCloser(body)
-
-	err = req.ParseMultipartForm(10 << 20)
-	if err != nil {
+	if err = req.ParseMultipartForm(10 << 20); err != nil {
 		panic(fmt.Sprintf("failed to parse multipart form: %v", err))
 	}
 

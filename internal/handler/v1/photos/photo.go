@@ -32,7 +32,7 @@ const (
 // @Produce json
 // @Security JWTAuth
 // @Param photo_file formData file true "Photo file"
-// @Success 200 {object} response.UploadPhotoResponse
+// @Success 200 {object} photo.UploadPhotoResponse
 // @Failure 400 {object} response.Error "Bad Request."
 // @Failure 401 {object} response.Error "Unauthorized."
 // @Failure 500 {object} response.Error "Unexpected error occurred."
@@ -73,8 +73,8 @@ func (h *handler) uploadPhoto(c *gin.Context) {
 // @Produce json
 // @Security JWTAuth
 // @Param batch_photo_files formData file true "Batch photo files"
-// @Success 200 {object} response.UploadBatchPhotosResponse
-// @Failure 206 {object} response.UploadBatchPhotosResponse
+// @Success 200 {object} photo.UploadBatchPhotosResponse
+// @Failure 206 {object} photo.UploadBatchPhotosResponse
 // @Failure 400 {object} response.Error "Bad Request."
 // @Failure 401 {object} response.Error "Unauthorized."
 // @Failure 500 {object} response.Error "Unexpected error occurred."

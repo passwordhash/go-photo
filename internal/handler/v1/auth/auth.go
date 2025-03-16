@@ -17,7 +17,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param input body request.AuthLogin true "Login credentials"
-// @Success 200 {object} response.Login
+// @Success 200 {object} auth.Login
 // @Failure 400 {object} response.Error "Invalid request body format."
 // @Failure 401 {object} response.Error "Email or password is incorrect."
 // @Failure 500 {object} response.Error "Unexpected error occurred."
@@ -48,7 +48,7 @@ func (h *handler) login(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param input body request.AuthRegister true "Registration credentials"
-// @Success 200 {object} response.Register
+// @Success 200 {object} auth.Register
 // @Failure 400 {object} response.Error "Invalid request body format."
 // @Failure 409 {object} response.Error "User with this email already exists."
 // @Failure 500 {object} response.Error "Unexpected error occurred."

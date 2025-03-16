@@ -24,9 +24,9 @@ const (
 	AuthHeaderInvalid    ErrMessage = "auth_header_invalid"
 	AuthTokenInvalid     ErrMessage = "auth_token_invalid"
 	Unauthorized         ErrMessage = "unauthorized"
+	Forbidden            ErrMessage = "access_denied"
 
-	PhotoNotFound         ErrMessage = "photo_not_found"
-	PhotoVersionsNotFound ErrMessage = "photo_versions_not_found"
+	PhotoNotFound ErrMessage = "photo_not_found"
 )
 
 type Error struct {

@@ -18,6 +18,8 @@ var (
 	ServiceError = errors.New("service error")
 	DbError      = errors.New("db error")
 
+	AccessDeniedError = errors.New("access denied")
+
 	ParticalSuccessError = errors.New("partical success")
 	AllFailedError       = errors.New("all failed")
 

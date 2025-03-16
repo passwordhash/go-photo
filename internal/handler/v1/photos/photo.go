@@ -87,6 +87,7 @@ func (h *handler) uploadBatchPhotos(c *gin.Context) {
 
 	uuid, ok := auth.MustGetUUID(c, middleware.UserUUIDCtx)
 	if !ok {
+		response.NewErr(c, http.StatusUnauthorized, response.Unauthorized, nil, "Try logging in again.")
 		return
 	}
 
@@ -125,22 +126,43 @@ func (h *handler) uploadBatchPhotos(c *gin.Context) {
 	c.JSON(respStatus, body)
 }
 
-// TODO: documetation
+// @Summary Get photo versions
+// @Description Get all versions of a photo
+// @Tags photos
+// @Produce json
+// @Security JWTAuth
+// @Param id path int true "Photo ID"
+// @Success 200 {object} photo.GetPhotoVersionsResponse
+// @Failure 400 {object} response.Error "Bad Request."
+// @Failure 401 {object} response.Error "Unauthorized."
+// @Failure 403 {object} response.Error "Access denied."
+// @Failure 404 {object} response.Error "Photo not found."
+// @Failure 500 {object} response.Error "Unexpected error occurred."
+// @Router /api/v1/photos/{id}/versions [get]
 func (h *handler) getPhotoVersions(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 
-	// TODO: сделать проверку на права доступа к фото
+	uuid, ok := auth.MustGetUUID(c, middleware.UserUUIDCtx)
+	if !ok {
+		response.NewErr(c, http.StatusUnauthorized, response.Unauthorized, nil, "Try logging in again.")
+		return
+	}
+
 	idParam := c.Param("id")
-	id, err := strconv.Atoi(idParam)
+	photoID, err := strconv.Atoi(idParam)
 	if err != nil {
 		response.NewErr(c, http.StatusBadRequest, response.InvalidRequestParams, err, "Invalid photo id.")
 		return
 	}
 
-	versions, err := h.photoService.GetPhotoVersions(ctx, id)
+	versions, err := h.photoService.GetPhotoVersions(ctx, uuid, photoID)
 	if errors.Is(err, serviceErr.PhotoNotFoundError) {
 		response.NewErr(c, http.StatusNotFound, response.PhotoNotFound, err, "Photo not found.")
+		return
+	}
+	if errors.Is(err, serviceErr.AccessDeniedError) {
+		response.NewErr(c, http.StatusForbidden, response.Forbidden, err, "You do not have access to this photo.")
 		return
 	}
 	if response.HandleError(c, err) {

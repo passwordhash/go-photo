@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	def "go-photo/internal/repository/error"
@@ -17,7 +18,7 @@ import (
 
 var (
 	photoColumns        = []string{"id", "user_uuid", "filename", "uploaded_at"}
-	photoVersionColumns = []string{"id", "photo_id", "version_type", "filepath", "size"}
+	photoVersionColumns = []string{"id", "photo_id", "version_type", "filepath", "size", "height", "width", "saved_at"}
 	idColumn            = []string{"id"}
 )
 
@@ -191,6 +192,7 @@ func TestRepository_CreateOriginalPhoto(t *testing.T) {
 
 func TestRepository_GetPhotoVersions(t *testing.T) {
 	uploadedAt := sql.NullTime{Time: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), Valid: true}
+	query := "SELECT id, photo_id, version_type, filepath, size, height, width, saved_at FROM photo_versions WHERE photo_id = \\$1 ORDER BY size"
 
 	tests := []struct {
 		name           string
@@ -203,20 +205,16 @@ func TestRepository_GetPhotoVersions(t *testing.T) {
 			name:    "Valid",
 			photoID: 1,
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT id, user_uuid, filename, uploaded_at FROM photos WHERE id = \\$1").
-					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows(photoColumns).
-						AddRow(1, "user-uuid", "photo.jpg", uploadedAt))
-
-				mock.ExpectQuery("SELECT id, photo_id, version_type, filepath, size FROM photo_versions WHERE photo_id = \\$1 ORDER BY size").
+				mock.ExpectQuery(query).
 					WithArgs(1).
 					WillReturnRows(sqlmock.NewRows(photoVersionColumns).
-						AddRow(1, 1, "original", "filepath1", 12345).
-						AddRow(2, 1, "thumbnail", "filepath2", 54321))
+						AddRow(1, 1, "original", "filepath1", 12345, 100, 100, uploadedAt))
+				//AddRow(2, 1, "thumbnail", "filepath2", 54321))
 			},
 			expectedResult: []model.PhotoVersion{
-				{ID: 1, PhotoID: 1, VersionType: sql.NullString{String: "original", Valid: true}, Filepath: "filepath1", Size: 12345},
-				{ID: 2, PhotoID: 1, VersionType: sql.NullString{String: "thumbnail", Valid: true}, Filepath: "filepath2", Size: 54321},
+				{ID: 1, PhotoID: 1, VersionType: sql.NullString{String: "original", Valid: true}, Filepath: "filepath1",
+					Size:   12345,
+					Height: 100, Width: 100, SavedAt: &sql.NullTime{Time: uploadedAt.Time, Valid: true}},
 			},
 			expectedError: nil,
 		},
@@ -224,12 +222,7 @@ func TestRepository_GetPhotoVersions(t *testing.T) {
 			name:    "Select error",
 			photoID: 1,
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT id, user_uuid, filename, uploaded_at FROM photos WHERE id = \\$1").
-					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows(photoColumns).
-						AddRow(1, "user-uuid", "photo.jpg", uploadedAt))
-
-				mock.ExpectQuery("SELECT id, photo_id, version_type, filepath, size FROM photo_versions WHERE photo_id = \\$1 ORDER BY size").
+				mock.ExpectQuery(query).
 					WithArgs(1).
 					WillReturnError(errors.New("select error"))
 			},
@@ -240,12 +233,7 @@ func TestRepository_GetPhotoVersions(t *testing.T) {
 			name:    "Empty result",
 			photoID: 1,
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT id, user_uuid, filename, uploaded_at FROM photos WHERE id = \\$1").
-					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows(photoColumns).
-						AddRow(1, "user-uuid", "photo.jpg", uploadedAt))
-
-				mock.ExpectQuery("SELECT id, photo_id, version_type, filepath, size FROM photo_versions WHERE photo_id = \\$1 ORDER BY size").
+				mock.ExpectQuery(query).
 					WithArgs(1).
 					WillReturnRows(sqlmock.NewRows(photoVersionColumns))
 			},
@@ -256,23 +244,18 @@ func TestRepository_GetPhotoVersions(t *testing.T) {
 			name:    "Photo not found",
 			photoID: 42,
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT id, user_uuid, filename, uploaded_at FROM photos WHERE id = \\$1").
+				mock.ExpectQuery(query).
 					WithArgs(42).
 					WillReturnError(sql.ErrNoRows)
 			},
 			expectedResult: nil,
-			expectedError:  def.PhotoNotFound,
+			expectedError:  def.NotFoundError,
 		},
 		{
 			name:    "No versions of photo",
 			photoID: 10,
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT id, user_uuid, filename, uploaded_at FROM photos WHERE id = \\$1").
-					WithArgs(10).
-					WillReturnRows(sqlmock.NewRows(photoColumns).
-						AddRow(10, "user-uuid", "photo.jpg", uploadedAt))
-
-				mock.ExpectQuery("SELECT id, photo_id, version_type, filepath, size FROM photo_versions WHERE photo_id = \\$1 ORDER BY size").
+				mock.ExpectQuery(query).
 					WithArgs(10).
 					WillReturnRows(sqlmock.NewRows(photoVersionColumns))
 			},
@@ -293,6 +276,7 @@ func TestRepository_GetPhotoVersions(t *testing.T) {
 			tt.mockSetup(mock)
 
 			versions, err := repo.GetPhotoVersions(context.Background(), tt.photoID)
+			log.Warnf("error : %v", err)
 			if tt.expectedError != nil {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError.Error())

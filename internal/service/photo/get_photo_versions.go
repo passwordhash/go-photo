@@ -11,7 +11,7 @@ import (
 
 func (s *service) GetPhotoVersions(ctx context.Context, userUUID string, photoID int) ([]model.PhotoVersion, error) {
 	candidate, err := s.photoRepository.GetPhotoByID(ctx, photoID)
-	if errors.Is(err, repoErr.PhotoNotFound) {
+	if errors.Is(err, repoErr.NotFoundError) {
 		return nil, serviceErr.PhotoNotFoundError
 	}
 	if err != nil {
@@ -23,7 +23,7 @@ func (s *service) GetPhotoVersions(ctx context.Context, userUUID string, photoID
 	}
 
 	repoVersions, err := s.photoRepository.GetPhotoVersions(ctx, photoID)
-	if errors.Is(err, repoErr.PhotoNotFound) {
+	if errors.Is(err, repoErr.NotFoundError) {
 		return nil, serviceErr.PhotoNotFoundError
 	}
 	if err != nil {

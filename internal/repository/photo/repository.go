@@ -91,7 +91,7 @@ func (r *repository) GetPhotoByID(ctx context.Context, photoID int) (*repoModel.
 	err := r.db.GetContext(ctx, &photo, query, photoID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repoErr.PhotoNotFound
+			return nil, repoErr.NotFoundError
 		}
 		return nil, err
 	}
@@ -103,13 +103,16 @@ func (r *repository) GetPhotoVersions(ctx context.Context, photoID int) ([]repoM
 	var versions []repoModel.PhotoVersion
 
 	query := `
-		SELECT id, photo_id, version_type, filepath, size , height, width, saved_at
+		SELECT id, photo_id, version_type, filepath, size, height, width, saved_at
 		FROM photo_versions 
 		WHERE photo_id = $1
 		ORDER BY size`
 
 	err := r.db.SelectContext(ctx, &versions, query, photoID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, repoErr.NotFoundError
+		}
 		return nil, err
 	}
 

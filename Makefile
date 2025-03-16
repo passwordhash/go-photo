@@ -105,7 +105,17 @@ migrate-down-remote:
 # Миграции: локальная БД (через docker)
 # ==========================
 
+migrate-up:
+	@echo "Применение миграций к локальной БД..."
+	docker run --rm \
+		-v ./schema:/migrations \
+		--network host migrate/migrate \
+		-path=/migrations \
+		-database "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable" \
+		up
+
 migrate-down:
+	@echo "Откат миграций к локальной БД..."
 	docker run --rm \
 		-v ./schema:/migrations \
 		--network host migrate/migrate \

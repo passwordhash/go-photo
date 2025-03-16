@@ -13,7 +13,7 @@ func ToPhotoVersionFromModel(photoVersion model.PhotoVersion) PhotoVersion {
 		Size:        photoVersion.Size,
 		Height:      photoVersion.Height,
 		Width:       photoVersion.Width,
-		UploadedAt:  photoVersion.SavedAt.Format(time.DateTime),
+		SavedAt:     photoVersion.SavedAt.Format(time.DateTime),
 	}
 }
 

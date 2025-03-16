@@ -27,5 +27,5 @@ type PhotoVersion struct {
 	Size        int64  `json:"size"`
 	Height      int    `json:"height"`
 	Width       int    `json:"width"`
-	UploadedAt  string `json:"uploaded_at"`
+	SavedAt     string `json:"saved_at"`
 }

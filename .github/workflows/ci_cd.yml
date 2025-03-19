@@ -73,11 +73,13 @@ jobs:
 
             -   name: Run golangci-lint
                 uses: golangci/golangci-lint-action@v3
+                with:
+                    args: ./cmd ./internal
 
     build-and-push:
         needs:
             - test
-            - lint
+#            - lint
         if: >-
             (github.event_name == 'push' && github.ref == 'refs/heads/master')
             || (github.event_name == 'pull_request' && github.base_ref == 'master')

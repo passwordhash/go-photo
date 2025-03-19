@@ -18,4 +18,9 @@ type PhotoRepository interface {
 
 	// GetPhotoVersions возвращает все версии фото по его ID.
 	GetPhotoVersions(ctx context.Context, photoID int) ([]repoModel.PhotoVersion, error)
+
+	// CreatePhotoPublishedInfo создает новую запись repoModel.PublishedPhotoInfo в БД.
+	// Возвращает уникальный токен для доступа к фото.
+	// Если запись уже существует, возвращает ошибку.
+	CreatePhotoPublishedInfo(ctx context.Context, photoID int) (string, error)
 }

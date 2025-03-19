@@ -29,3 +29,7 @@ type PhotoVersion struct {
 	Width       int    `json:"width"`
 	SavedAt     string `json:"saved_at"`
 }
+
+type PublishPhotoResponse struct {
+	PublicToken string `json:"public_token"`	
+}

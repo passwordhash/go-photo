@@ -37,4 +37,8 @@ type PhotoService interface {
 	// Осуществляет проверку прав доступа к фотографии.
 	// Возвращает список версий фотографии.
 	GetPhotoVersions(ctx context.Context, userUUID string, photoID int) ([]model.PhotoVersion, error)
+
+	// PublicatePhoto публикует фотографию, делая ее доступной для других пользователей.
+	// Осуществляет проверку прав доступа к фотографии.
+	PublicatePhoto(ctx context.Context, userUUID string, photoID int) (string, error)
 }

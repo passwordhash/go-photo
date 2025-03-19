@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 	def "go-photo/internal/repository"
 	repoErr "go-photo/internal/repository/error"
 	repoModel "go-photo/internal/repository/photo/model"
+	pkgRepo "go-photo/pkg/repository"
 )
 
 var _ def.PhotoRepository = (*repository)(nil)
@@ -117,4 +119,24 @@ func (r *repository) GetPhotoVersions(ctx context.Context, photoID int) ([]repoM
 	}
 
 	return versions, nil
+}
+
+func (r *repository) CreatePhotoPublishedInfo(ctx context.Context, photoID int) (string, error) {
+	query := `
+		INSERT INTO published_photo_info (photo_id)
+		VALUES ($1)
+		RETURNING public_token`
+
+	var publicToken string
+	row := r.db.QueryRowContext(ctx, query, photoID)
+	err := row.Scan(&publicToken)
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == pkgRepo.UniqueViolationErrorCode {
+			return "", fmt.Errorf("create photo published info %w: %v", repoErr.ConflictError, err)
+		}
+		return "", fmt.Errorf("failed to insert published photo info: %w", err)
+	}
+
+	return publicToken, nil
 }

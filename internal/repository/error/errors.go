@@ -13,6 +13,8 @@ var (
 
 	InsertError = errors.New("failed to insert")
 
+	ConflictError = errors.New("conflict")
+
 	InvalidParamsError = errors.New("invalid params")
 	NilParamsError     = fmt.Errorf("%w: params are nil", InvalidParamsError)
 )

@@ -19,6 +19,7 @@ var (
 	DbError      = errors.New("db error")
 
 	AccessDeniedError = errors.New("access denied")
+	AlreadyExists     = errors.New("already exists")
 
 	ParticalSuccessError = errors.New("partical success")
 	AllFailedError       = errors.New("all failed")

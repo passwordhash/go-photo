@@ -23,6 +23,12 @@ type PhotoVersion struct {
 	SavedAt     *sql.NullTime  `db:"saved_at"`
 }
 
+type PublishedPhotoInfo struct {
+	ID          int          `db:"id"`
+	PublishedAt sql.NullTime `db:"published_at"`
+	PublicToken string       `db:"public_token"`
+}
+
 type CreateOriginalPhotoParams struct {
 	UserUUID string
 	Filename string

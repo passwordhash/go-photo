@@ -29,9 +29,19 @@ const (
 	PhotoNotFound ErrMessage = "photo_not_found"
 )
 
+type Message struct {
+	Message string `json:"message"`
+}
+
 type Error struct {
 	Error   ErrMessage `json:"error"`
 	Message string     `json:"message"`
+}
+
+func New(c *gin.Context, code int, clientMessage string) {
+	c.JSON(code, Message{
+		Message: clientMessage,
+	})
 }
 
 func NewOk(c *gin.Context, data interface{}) {

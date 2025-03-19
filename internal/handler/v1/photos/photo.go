@@ -1,7 +1,6 @@
 package photos
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -175,7 +174,7 @@ func (h *handler) getPhotoVersions(c *gin.Context) {
 	})
 }
 
-func (h *handler) downloadPhoto(c *gin.Context) {
+func (h *handler) publicatePhoto(c *gin.Context) {
 	_, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 
@@ -185,18 +184,12 @@ func (h *handler) downloadPhoto(c *gin.Context) {
 		return
 	}
 
-	buf := bytes.Buffer{}
-	buf.WriteString("Hello, this is a test file.")
-	file := buf.Bytes()
-	fileName := "test.txt"
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileName))
-	c.Header("Content-Type", "application/octet-stream")
-	c.Header("Content-Length", strconv.Itoa(len(file)))
-	c.Header("Accept-Ranges", "bytes")
+	idParam := c.Param("id")
+	photoID, err := strconv.Atoi(idParam)
+	if err != nil {
+		response.NewErr(c, http.StatusBadRequest, response.InvalidRequestParams, err, "Invalid photo id.")
+		return
+	}
 
-	//c.Data(http.StatusOK, "application/octet-stream", file)
-
-	c.FileAttachment("gopher.png", "1234234234.png")
-
-
+	response.NewOk(c, map[string]interface{}{"photoID": photoID})
 }

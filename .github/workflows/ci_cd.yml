@@ -42,22 +42,42 @@ jobs:
                 run: make run-tests
 
     lint:
-        name: Run golangci-lint
         runs-on: ubuntu-latest
         steps:
             -   name: Checkout code
+                uses: actions/checkout@v2
+
+            -   name: Checkout protobuf repository
                 uses: actions/checkout@v3
+                with:
+                    repository: passwordhash/protobuf-files
+                    path: api
 
             -   name: Set up Go
-                uses: actions/setup-go@v4
+                uses: actions/setup-go@v2
                 with:
                     go-version: '1.22'
+
+            -   name: Update PATH
+                run: echo "${{ runner.workspace }}/bin" >> $GITHUB_PATH
+
+            -   name: Install dependencies
+                run: |
+                    go mod download
+                    make install-deps
+
+            -   name: Protobuf&docs generation
+                run: |
+                    make generate-pb
+                    make generate-docs
 
             -   name: Run golangci-lint
                 uses: golangci/golangci-lint-action@v3
 
     build-and-push:
-        needs: test
+        needs:
+            - test
+            - lint
         if: >-
             (github.event_name == 'push' && github.ref == 'refs/heads/master')
             || (github.event_name == 'pull_request' && github.base_ref == 'master')

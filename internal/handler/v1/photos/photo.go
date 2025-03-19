@@ -1,6 +1,7 @@
 package photos
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -172,4 +173,30 @@ func (h *handler) getPhotoVersions(c *gin.Context) {
 	response.NewOk(c, photo.GetPhotoVersionsResponse{
 		Versions: photo.ToPhotoVersionsFromModel(versions),
 	})
+}
+
+func (h *handler) downloadPhoto(c *gin.Context) {
+	_, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
+	defer cancel()
+
+	_, ok := auth.MustGetUUID(c, middleware.UserUUIDCtx)
+	if !ok {
+		response.NewErr(c, http.StatusUnauthorized, response.Unauthorized, nil, "Try logging in again.")
+		return
+	}
+
+	buf := bytes.Buffer{}
+	buf.WriteString("Hello, this is a test file.")
+	file := buf.Bytes()
+	fileName := "test.txt"
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileName))
+	c.Header("Content-Type", "application/octet-stream")
+	c.Header("Content-Length", strconv.Itoa(len(file)))
+	c.Header("Accept-Ranges", "bytes")
+
+	//c.Data(http.StatusOK, "application/octet-stream", file)
+
+	c.FileAttachment("gopher.png", "1234234234.png")
+
+
 }

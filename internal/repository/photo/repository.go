@@ -140,3 +140,24 @@ func (r *repository) CreatePhotoPublishedInfo(ctx context.Context, photoID int) 
 
 	return publicToken, nil
 }
+
+func (r *repository) DeletePhotoPublishedInfo(ctx context.Context, photoID int) error {
+	query := `
+		DELETE FROM published_photo_info
+		WHERE photo_id=$(1)`
+
+	res, err := r.db.ExecContext(ctx, query, photoID)
+	if err != nil {
+		return fmt.Errorf("failed to delete published photo info: %w", err)
+	}
+
+	affectedCnt, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows count: %w", err)
+	}
+	if affectedCnt < 1 {
+		return fmt.Errorf("%w: no rows affected with id %d", repoErr.NotFoundError, photoID)
+	}
+
+	return nil
+}

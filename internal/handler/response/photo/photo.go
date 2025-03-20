@@ -31,5 +31,5 @@ type PhotoVersion struct {
 }
 
 type PublishPhotoResponse struct {
-	PublicToken string `json:"public_token"`	
+	PublicToken string `json:"public_token"`
 }

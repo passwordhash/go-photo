@@ -23,4 +23,8 @@ type PhotoRepository interface {
 	// Возвращает уникальный токен для доступа к фото.
 	// Если запись уже существует, возвращает ошибку.
 	CreatePhotoPublishedInfo(ctx context.Context, photoID int) (string, error)
+
+	// DeletePhotoPublishedInfo удаляет запись repoModel.PublishedPhotoInfo из БД.
+	// Если запись не найдена, возвращает ошибку.
+	DeletePhotoPublishedInfo(ctx context.Context, photoID int) error
 }

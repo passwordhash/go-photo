@@ -36,7 +36,7 @@ const (
 // @Failure 400 {object} response.Error "Bad Request."
 // @Failure 401 {object} response.Error "Unauthorized."
 // @Failure 500 {object} response.Error "Unexpected error occurred."
-// @Router /api/v1/photos/upload [post]
+// @Router /api/v1/photos/ [post]
 func (h *handler) uploadPhoto(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
@@ -78,7 +78,7 @@ func (h *handler) uploadPhoto(c *gin.Context) {
 // @Failure 400 {object} response.Error "Bad Request."
 // @Failure 401 {object} response.Error "Unauthorized."
 // @Failure 500 {object} response.Error "Unexpected error occurred."
-// @Router /api/v1/photos/upload/batch [post]
+// @Router /api/v1/photos/batch [post]
 func (h *handler) uploadBatchPhotos(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
@@ -174,7 +174,21 @@ func (h *handler) getPhotoVersions(c *gin.Context) {
 	})
 }
 
-func (h *handler) publicatePhoto(c *gin.Context) {
+// @Summary Publish photo
+// @Description Make a photo public
+// @Tags photos
+// @Produce json
+// @Security JWTAuth
+// @Param id path int true "Photo ID"
+// @Success 200 {object} photo.PublishPhotoResponse
+// @Failure 400 {object} response.Error "Bad Request."
+// @Failure 401 {object} response.Error "Unauthorized."
+// @Failure 403 {object} response.Error "Access denied."
+// @Failure 404 {object} response.Error "Photo not found."
+// @Failure 409 {object} response.Error "Photo already published."
+// @Failure 500 {object} response.Error "Unexpected error occurred."
+// @Router /api/v1/photos/{id}/publicate [post]
+func (h *handler) publishPhoto(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 
@@ -209,6 +223,19 @@ func (h *handler) publicatePhoto(c *gin.Context) {
 	})
 }
 
+// @Summary Unpublicate photo
+// @Description Unpublicate a photo by ID
+// @Tags photos
+// @Produce json
+// @Security JWTAuth
+// @Param id path int true "Photo ID"
+// @Success 200 {object} nil
+// @Failure 400 {object} response.Error "Bad Request."
+// @Failure 401 {object} response.Error "Unauthorized."
+// @Failure 403 {object} response.Error "Access denied."
+// @Failure 404 {object} response.Error "Photo not found or already unpublished."
+// @Failure 500 {object} response.Error "Unexpected error occurred."
+// @Router /api/v1/photos/{id}/unpublicate [delete]
 func (h *handler) unpublicatePhoto(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
@@ -228,7 +255,7 @@ func (h *handler) unpublicatePhoto(c *gin.Context) {
 
 	err = h.photoService.UnpublishPhoto(ctx, userUUID, photoID)
 	if errors.Is(err, serviceErr.PhotoNotFoundError) {
-		response.NewErr(c, http.StatusNotFound, response.PhotoNotFound, err, "Photo not found.")
+		response.NewErr(c, http.StatusNotFound, response.NotFound, err, "Photo not found or already unpublished.")
 		return
 	}
 	if response.HandleError(c, err) {

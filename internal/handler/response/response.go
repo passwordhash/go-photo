@@ -14,6 +14,7 @@ type ErrMessage string
 const (
 	ErrorStatusExample ErrMessage = "some_error_status"
 
+	NotFound            ErrMessage = "not_found"
 	InternalServerError  ErrMessage = "internal_server_error"
 	TimedOut             ErrMessage = "timed_out"
 	InvalidRequestParams ErrMessage = "invalid_request_params"

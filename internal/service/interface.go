@@ -38,11 +38,17 @@ type PhotoService interface {
 	// Возвращает список версий фотографии.
 	GetPhotoVersions(ctx context.Context, userUUID string, photoID int) ([]model.PhotoVersion, error)
 
-	// PublicatePhoto публикует фотографию, делая ее доступной для других пользователей.
+	// PublishPhoto публикует фотографию, делая ее доступной для других пользователей.
 	// Осуществляет проверку прав доступа к фотографии.
 	PublishPhoto(ctx context.Context, userUUID string, photoID int) (string, error)
 
 	// UnpublishPhoto отменяет публикацию фотографии, делая ее недоступной для других пользователей.
 	// Осуществляет проверку прав доступа к фотографии.
 	UnpublishPhoto(ctx context.Context, userUUID string, photoID int) error
+
+	// HandleRepoErr обрабатывает ошибки, возвращаемые репозиторием.
+	// Обрабатывает ошибки:
+	// - NotFoundError
+	// - ConflictError
+	HandleRepoErr(err error) error
 }

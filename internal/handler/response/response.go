@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	serviceErr "go-photo/internal/service/error"
 	"net/http"
 )
 
@@ -64,6 +65,9 @@ func HandleError(c *gin.Context, err error) bool {
 	if errors.Is(err, context.DeadlineExceeded) {
 		NewErr(c, http.StatusGatewayTimeout, TimedOut, err, "gateway timeout")
 		return true
+	}
+	if errors.Is(err, serviceErr.AccessDeniedError) {
+		NewErr(c, http.StatusForbidden, Forbidden, err, "access denied")
 	}
 	if err != nil {
 		NewErr(c, http.StatusInternalServerError, InternalServerError, err, "Unexpected error occurred.")

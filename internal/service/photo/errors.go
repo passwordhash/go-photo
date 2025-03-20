@@ -8,10 +8,7 @@ import (
 	serviceErr "go-photo/internal/service/error"
 )
 
-// HandleRepoErr обрабатывает ошибки, возвращаемые репозиторием.
-// Обрабатывает ошибки:
-// - NotFoundError
-// - ConflictError
+
 func (s *service) HandleRepoErr(err error) error {
 	if errors.Is(err, repoErr.NotFoundError) {
 		return fmt.Errorf("%w: %v", serviceErr.PhotoNotFoundError, err)

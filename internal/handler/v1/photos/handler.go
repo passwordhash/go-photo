@@ -31,6 +31,7 @@ func (h *handler) RegisterRoutes(router *gin.RouterGroup) {
 
 			photoGroup.POST("/versions", h.getPhotoVersions)
 			photoGroup.POST("/publicate", h.publicatePhoto)
+			photoGroup.DELETE("/unpublicate", h.unpublicatePhoto)
 		}
 
 	}

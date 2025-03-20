@@ -175,7 +175,7 @@ func (h *handler) getPhotoVersions(c *gin.Context) {
 }
 
 func (h *handler) publicatePhoto(c *gin.Context) {
-	_, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
+	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 
 	userUUID, ok := auth.MustGetUUID(c, middleware.UserUUIDCtx)
@@ -191,7 +191,7 @@ func (h *handler) publicatePhoto(c *gin.Context) {
 		return
 	}
 
-	publicToken, err := h.photoService.PublishPhoto(c, userUUID, photoID)
+	publicToken, err := h.photoService.PublishPhoto(ctx, userUUID, photoID)
 	if errors.Is(err, serviceErr.PhotoNotFoundError) {
 		response.NewErr(c, http.StatusNotFound, response.PhotoNotFound, err, "Photo not found.")
 		return
@@ -207,4 +207,33 @@ func (h *handler) publicatePhoto(c *gin.Context) {
 	response.NewOk(c, photoResp.PublishPhotoResponse{
 		PublicToken: publicToken,
 	})
+}
+
+func (h *handler) unpublicatePhoto(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
+	defer cancel()
+
+	userUUID, ok := auth.MustGetUUID(c, middleware.UserUUIDCtx)
+	if !ok {
+		response.NewErr(c, http.StatusUnauthorized, response.Unauthorized, nil, "Try logging in again.")
+		return
+	}
+
+	idParam := c.Param("id")
+	photoID, err := strconv.Atoi(idParam)
+	if err != nil {
+		response.NewErr(c, http.StatusBadRequest, response.InvalidRequestParams, err, "Invalid photo id.")
+		return
+	}
+
+	err = h.photoService.UnpublishPhoto(ctx, userUUID, photoID)
+	if errors.Is(err, serviceErr.PhotoNotFoundError) {
+		response.NewErr(c, http.StatusNotFound, response.PhotoNotFound, err, "Photo not found.")
+		return
+	}
+	if response.HandleError(c, err) {
+		return
+	}
+
+	response.NewOk(c, nil)
 }

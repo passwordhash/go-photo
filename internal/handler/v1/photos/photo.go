@@ -191,7 +191,7 @@ func (h *handler) publicatePhoto(c *gin.Context) {
 		return
 	}
 
-	publicToken, err := h.photoService.PublicatePhoto(c, userUUID, photoID)
+	publicToken, err := h.photoService.PublishPhoto(c, userUUID, photoID)
 	if errors.Is(err, serviceErr.PhotoNotFoundError) {
 		response.NewErr(c, http.StatusNotFound, response.PhotoNotFound, err, "Photo not found.")
 		return

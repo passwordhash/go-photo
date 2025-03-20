@@ -11,7 +11,6 @@ func (s *service) UnpublishPhoto(ctx context.Context, userUUID string, photoID i
 	}
 
 	err = s.photoRepository.DeletePhotoPublishedInfo(ctx, photo.ID)
-	handledErr := s.HandleError(err)
 
-	return handledErr
+	return s.HandleRepoErr(err)
 }

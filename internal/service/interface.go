@@ -40,7 +40,7 @@ type PhotoService interface {
 
 	// PublicatePhoto публикует фотографию, делая ее доступной для других пользователей.
 	// Осуществляет проверку прав доступа к фотографии.
-	PublicatePhoto(ctx context.Context, userUUID string, photoID int) (string, error)
+	PublishPhoto(ctx context.Context, userUUID string, photoID int) (string, error)
 
 	// UnpublishPhoto отменяет публикацию фотографии, делая ее недоступной для других пользователей.
 	// Осуществляет проверку прав доступа к фотографии.

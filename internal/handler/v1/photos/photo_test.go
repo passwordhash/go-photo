@@ -479,6 +479,6 @@ func createPartialUploads() *serviceModel.UploadInfoList {
 func createFailedUploads() *serviceModel.UploadInfoList {
 	return serviceModel.NewUploadInfoList([]serviceModel.UploadInfo{
 		{PhotoID: 0, Filename: "tt1.jpg", Error: serviceErr.DbError},
-		{PhotoID: 0, Filename: "tt2.jpg", Error: serviceErr.ServiceError},
+		{PhotoID: 0, Filename: "tt2.jpg", Error: serviceErr.UnexpectedError},
 	})
 }

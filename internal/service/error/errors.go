@@ -15,8 +15,8 @@ func (e *FileAlreadyExistsError) Error() string {
 }
 
 var (
-	ServiceError = errors.New("service error")
-	DbError      = errors.New("db error")
+	UnexpectedError = errors.New("unexpected error")
+	DbError         = errors.New("db error")
 
 	AccessDeniedError = errors.New("access denied")
 	AlreadyExists     = errors.New("already exists")

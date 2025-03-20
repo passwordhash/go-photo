@@ -23,7 +23,7 @@ func (s *service) Login(ctx context.Context, email string, password string) (str
 
 	encryptedPassword, err := s.utils.EncryptPassword(publicKey, password)
 	if err != nil {
-		return "", fmt.Errorf("%w: %s", serviceErr.ServiceError, err)
+		return "", fmt.Errorf("%w: %s", serviceErr.UnexpectedError, err)
 	}
 
 	resp, err := s.accountClient.Login(ctx, &def.LoginRequest{Email: email, EncryptedPassword: encryptedPassword})
@@ -42,7 +42,7 @@ func (s *service) Register(ctx context.Context, input serviceUserModel.RegisterP
 
 	encryptedPassword, err := s.utils.EncryptPassword(publickKey, input.Password)
 	if err != nil {
-		return serviceUserModel.RegisterInfo{}, fmt.Errorf("%w: %v", serviceErr.ServiceError, err)
+		return serviceUserModel.RegisterInfo{}, fmt.Errorf("%w: %v", serviceErr.UnexpectedError, err)
 	}
 
 	resp, err := s.accountClient.Signup(ctx, &def.CreateRequest{
@@ -72,7 +72,7 @@ func (s *service) VerifyToken(ctx context.Context, token string) (serviceUserMod
 func (s *service) handleGRPCErr(err error) error {
 	st, ok := status.FromError(err)
 	if !ok {
-		return serviceErr.ServiceError
+		return serviceErr.UnexpectedError
 	}
 
 	switch st.Code() {
@@ -84,7 +84,7 @@ func (s *service) handleGRPCErr(err error) error {
 		return fmt.Errorf("%w: %v", serviceErr.UserUnauthtenticatedError, err)
 	}
 
-	return fmt.Errorf("%w: %v", serviceErr.ServiceError, err)
+	return fmt.Errorf("%w: %v", serviceErr.UnexpectedError, err)
 }
 
 func (s *service) getPublicKey(ctx context.Context) (*string, error) {

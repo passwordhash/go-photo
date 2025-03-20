@@ -78,7 +78,7 @@ func TestService_Login(t *testing.T) {
 					Times(1)
 			},
 			expectedToken: "",
-			expectedError: serviceErr.ServiceError,
+			expectedError: serviceErr.UnexpectedError,
 		},
 		{
 			name:     "Enrypt password error",
@@ -91,7 +91,7 @@ func TestService_Login(t *testing.T) {
 					Times(1)
 			},
 			expectedToken: "",
-			expectedError: serviceErr.ServiceError,
+			expectedError: serviceErr.UnexpectedError,
 		},
 		{
 			name:     "GRPC internal error",
@@ -108,7 +108,7 @@ func TestService_Login(t *testing.T) {
 					Times(1)
 			},
 			expectedToken: "",
-			expectedError: serviceErr.ServiceError,
+			expectedError: serviceErr.UnexpectedError,
 		},
 	}
 
@@ -204,7 +204,7 @@ func TestService_Register(t *testing.T) {
 					Times(1)
 			},
 			expectedInfo:  serviceUserModel.RegisterInfo{},
-			expectedError: serviceErr.ServiceError,
+			expectedError: serviceErr.UnexpectedError,
 		},
 		{
 			name: "Invalid public key",
@@ -219,7 +219,7 @@ func TestService_Register(t *testing.T) {
 					Times(1)
 			},
 			expectedInfo:  serviceUserModel.RegisterInfo{},
-			expectedError: serviceErr.ServiceError,
+			expectedError: serviceErr.UnexpectedError,
 		},
 		{
 			name: "GRPC internal error",
@@ -238,7 +238,7 @@ func TestService_Register(t *testing.T) {
 					Times(1)
 			},
 			expectedInfo:  serviceUserModel.RegisterInfo{},
-			expectedError: serviceErr.ServiceError,
+			expectedError: serviceErr.UnexpectedError,
 		},
 	}
 
@@ -289,7 +289,7 @@ func TestService_getPublicKey(t *testing.T) {
 			mockBehavior: func(m *mock_account_v1.MockAccountServiceClient) {
 				m.EXPECT().GetPublicKey(gomock.Any(), gomock.Any()).Return(nil, status.Error(codes.Internal, "internal error"))
 			},
-			expectedError: serviceErr.ServiceError,
+			expectedError: serviceErr.UnexpectedError,
 		},
 	}
 

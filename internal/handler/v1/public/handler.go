@@ -18,6 +18,10 @@ func (h *handler) getPublicPhoto(c *gin.Context) {
 	versionQuery := c.Query("version")
 
 	imgData, err := h.photoService.GetPhotoFileByVersionAndToken(c, tokenParam, versionQuery)
+	if errors.Is(err, serviceErr.PhotoNotFoundError) {
+		response.NewErr(c, http.StatusNotFound, response.PhotoNotFound, err, "Photo not found by token and version")
+		return
+	}
 	if errors.Is(err, serviceErr.InvalidVersionTypeError) {
 		response.NewErr(c, http.StatusBadRequest, response.InvalidReqestsQueryParams, err, "Invalid version type")
 		return

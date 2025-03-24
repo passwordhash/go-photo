@@ -71,6 +71,9 @@ func HandleError(c *gin.Context, err error) bool {
 	if errors.Is(err, serviceErr.AccessDeniedError) {
 		NewErr(c, http.StatusForbidden, Forbidden, err, "access denied")
 	}
+	if errors.Is(err, serviceErr.AccessDeniedError) {
+		NewErr(c, http.StatusForbidden, Forbidden, err, "access denied")
+	}
 	if err != nil {
 		NewErr(c, http.StatusInternalServerError, InternalServerError, err, "Unexpected error occurred.")
 		return true

@@ -29,4 +29,5 @@ var (
 	UserUnauthtenticatedError = errors.New("user unauthenticated")
 
 	PhotoNotFoundError = errors.New("photo not found")
+	InvalidVersionTypeError = errors.New("invalid version type")
 )

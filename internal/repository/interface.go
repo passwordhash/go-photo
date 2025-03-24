@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"go-photo/internal/model"
 	repoModel "go-photo/internal/repository/photo/model"
 )
 
@@ -25,7 +26,7 @@ type PhotoRepository interface {
 	GetPhotoVersions(ctx context.Context, photoID int) ([]repoModel.PhotoVersion, error)
 
 	// GetPhotoVersionByToken возвращает версию фото по токену и версии.
-	GetPhotoVersionByToken(ctx context.Context, token, version string) (*repoModel.PhotoVersion, error)
+	GetPhotoVersionByToken(ctx context.Context, token string, version model.PhotoVersionType) (*repoModel.PhotoVersion, error)
 
 	// DeletePhotoPublishedInfo удаляет запись repoModel.PublishedPhotoInfo из БД.
 	// Если запись не найдена, возвращает ошибку.

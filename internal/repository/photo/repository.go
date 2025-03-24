@@ -8,6 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
+	"go-photo/internal/model"
 	def "go-photo/internal/repository"
 	repoErr "go-photo/internal/repository/error"
 	repoModel "go-photo/internal/repository/photo/model"
@@ -121,7 +122,7 @@ func (r *repository) GetPhotoByID(ctx context.Context, photoID int) (*repoModel.
 	return &photo, nil
 }
 
-func (r *repository) GetPhotoVersionByToken(ctx context.Context, token, version string) (*repoModel.PhotoVersion, error) {
+func (r *repository) GetPhotoVersionByToken(ctx context.Context, token string, version model.PhotoVersionType) (*repoModel.PhotoVersion, error) {
 	var photoVersion repoModel.PhotoVersion
 
 	query := `
@@ -130,7 +131,7 @@ func (r *repository) GetPhotoVersionByToken(ctx context.Context, token, version 
 		JOIN photo_versions pv ON ppi.photo_id = pv.photo_id
 		WHERE ppi.public_token = $1 AND pv.version_type = $2`
 
-	err := r.db.GetContext(ctx, &photoVersion, query, token, version)
+	err := r.db.GetContext(ctx, &photoVersion, query, token, string(version))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, repoErr.NotFoundError

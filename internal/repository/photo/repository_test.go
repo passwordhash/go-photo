@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	domainModel "go-photo/internal/model"
 	def "go-photo/internal/repository/error"
 	"go-photo/internal/repository/photo/model"
 	"testing"
@@ -298,7 +299,7 @@ func TestRepository_GetPhotoVersionByToken(t *testing.T) {
 	tests := []struct {
 		name           string
 		token          string
-		version        string
+		version        domainModel.PhotoVersionType
 		mockSetup      func(mock sqlmock.Sqlmock)
 		expectedResult *model.PhotoVersion
 		expectedError  error
@@ -306,7 +307,7 @@ func TestRepository_GetPhotoVersionByToken(t *testing.T) {
 		{
 			name:    "Valid",
 			token:   "token",
-			version: "original",
+			version: domainModel.Original,
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(query).
 					WithArgs("token", "original").
@@ -328,7 +329,7 @@ func TestRepository_GetPhotoVersionByToken(t *testing.T) {
 		{
 			name:    "Select error",
 			token:   "token",
-			version: "original",
+			version: domainModel.Original,
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(query).
 					WithArgs("token", "original").
@@ -340,7 +341,7 @@ func TestRepository_GetPhotoVersionByToken(t *testing.T) {
 		{
 			name:    "Empty result",
 			token:   "token",
-			version: "original",
+			version: domainModel.Original,
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(query).
 					WithArgs("token", "original").

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"github.com/golang/mock/gomock"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	serviceErr "go-photo/internal/service/error"
@@ -129,7 +128,6 @@ func TestService_Login(t *testing.T) {
 
 			token, err := s.Login(nil, tt.email, tt.password)
 			if tt.expectedError != nil {
-				log.Errorf(err.Error())
 				assert.ErrorIs(t, err, tt.expectedError)
 			} else {
 				assert.NoError(t, err)
@@ -259,7 +257,6 @@ func TestService_Register(t *testing.T) {
 
 			info, err := s.Register(nil, tt.params)
 			if tt.expectedError != nil {
-				log.Errorf(err.Error())
 				assert.ErrorIs(t, err, tt.expectedError)
 			} else {
 				assert.NoError(t, err)

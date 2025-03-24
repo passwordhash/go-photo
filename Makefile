@@ -64,8 +64,8 @@ generate-pb:
 	api/account_v1/account.proto
 
 go-generate-mock:
-	$(BIN_DIR)/mockgen -destination=$(SERVICE_DIR)/mock/mocks.go -source=$(SERVICE_DIR)/service.go
-	$(BIN_DIR)/mockgen -destination=$(REPO_DIR)/mock/mocks.go -source=$(REPO_DIR)/repository.go
+	$(BIN_DIR)/mockgen -destination=$(SERVICE_DIR)/mock/mocks.go -source=$(SERVICE_DIR)/interface.go
+	$(BIN_DIR)/mockgen -destination=$(REPO_DIR)/mock/mocks.go -source=$(REPO_DIR)/interface.go
 	$(BIN_DIR)/mockgen -destination=$(PB_DIR)/mock/mocks.go -source=$(PB_DIR)/account_grpc.pb.go AccountServiceServer
 	$(BIN_DIR)/mockgen -destination=$(UTILS_DIR)/mock/mocks.go -source=$(UTILS_DIR)/utils.go
 

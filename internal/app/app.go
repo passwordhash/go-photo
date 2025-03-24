@@ -12,6 +12,7 @@ import (
 	"go-photo/internal/handler/v1/auth"
 	"go-photo/internal/handler/v1/docs"
 	"go-photo/internal/handler/v1/photos"
+	"go-photo/internal/handler/v1/public"
 	"go-photo/internal/handler/v1/user"
 	desc "go-photo/pkg/account_v1"
 	"go-photo/pkg/repository"
@@ -169,6 +170,11 @@ func (a *App) initHTTPServer(_ context.Context) error {
 
 	router.Use(gin.Recovery())
 	router.Use(middleware.Logger())
+
+	base := router.Group("/")
+
+	publicHandler := public.NewHandler(a.sp.PhotoService(a.db))
+	publicHandler.RegisterRoutes(base)
 
 	api := router.Group("/api")
 	v1 := api.Group("/v1")

@@ -290,3 +290,89 @@ func TestRepository_GetPhotoVersions(t *testing.T) {
 		})
 	}
 }
+
+func TestRepository_GetPhotoVersionByToken(t *testing.T) {
+	uploadedAt := sql.NullTime{Time: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), Valid: true}
+	query := "SELECT pv.id, pv.photo_id, pv.version_type, pv.filepath, pv.size, pv.height, pv.width, pv.saved_at FROM published_photo_info ppi JOIN photo_versions pv ON ppi.photo_id = pv.photo_id WHERE ppi.public_token = \\$1 AND pv.version_type = \\$2"
+
+	tests := []struct {
+		name           string
+		token          string
+		version        string
+		mockSetup      func(mock sqlmock.Sqlmock)
+		expectedResult *model.PhotoVersion
+		expectedError  error
+	}{
+		{
+			name:    "Valid",
+			token:   "token",
+			version: "original",
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(query).
+					WithArgs("token", "original").
+					WillReturnRows(sqlmock.NewRows(photoVersionColumns).
+						AddRow(1, 1, "original", "filepath1", 12345, 100, 100, uploadedAt))
+			},
+			expectedResult: &model.PhotoVersion{
+				ID:          1,
+				PhotoID:     1,
+				VersionType: sql.NullString{String: "original", Valid: true},
+				Filepath:    "filepath1",
+				Size:        12345,
+				Height:      100,
+				Width:       100,
+				SavedAt:     &sql.NullTime{Time: uploadedAt.Time, Valid: true},
+			},
+			expectedError: nil,
+		},
+		{
+			name:    "Select error",
+			token:   "token",
+			version: "original",
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(query).
+					WithArgs("token", "original").
+					WillReturnError(errors.New("select error"))
+			},
+			expectedResult: nil,
+			expectedError:  errors.New("select error"),
+		},
+		{
+			name:    "Empty result",
+			token:   "token",
+			version: "original",
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(query).
+					WithArgs("token", "original").
+					WillReturnRows(sqlmock.NewRows(photoVersionColumns))
+			},
+			expectedResult: nil,
+			expectedError:  def.NotFoundError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			sqlxDB := sqlx.NewDb(db, "sqlmock")
+			repo := NewRepository(sqlxDB)
+
+			tt.mockSetup(mock)
+
+			version, err := repo.GetPhotoVersionByToken(context.Background(), tt.token, tt.version)
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResult, version)
+			}
+
+			err = mock.ExpectationsWereMet()
+			assert.NoError(t, err)
+		})
+	}
+}

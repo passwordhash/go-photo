@@ -82,6 +82,26 @@ func (r *repository) CreateOriginalPhoto(ctx context.Context, params *repoModel.
 	return photoID, nil
 }
 
+func (r *repository) CreatePhotoPublishedInfo(ctx context.Context, photoID int) (string, error) {
+	query := `
+		INSERT INTO published_photo_info (photo_id)
+		VALUES ($1)
+		RETURNING public_token`
+
+	var publicToken string
+	row := r.db.QueryRowContext(ctx, query, photoID)
+	err := row.Scan(&publicToken)
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == pkgRepo.UniqueViolationErrorCode {
+			return "", fmt.Errorf("create photo published info %w: %v", repoErr.ConflictError, err)
+		}
+		return "", fmt.Errorf("failed to insert published photo info: %w", err)
+	}
+
+	return publicToken, nil
+}
+
 func (r *repository) GetPhotoByID(ctx context.Context, photoID int) (*repoModel.Photo, error) {
 	var photo repoModel.Photo
 
@@ -99,6 +119,26 @@ func (r *repository) GetPhotoByID(ctx context.Context, photoID int) (*repoModel.
 	}
 
 	return &photo, nil
+}
+
+func (r *repository) GetPhotoVersionByToken(ctx context.Context, token, version string) (*repoModel.PhotoVersion, error) {
+	var photoVersion repoModel.PhotoVersion
+
+	query := `
+		SELECT pv.id, pv.photo_id, pv.version_type, pv.filepath, pv.size, pv.height, pv.width, pv.saved_at
+		FROM published_photo_info ppi
+		JOIN photo_versions pv ON ppi.photo_id = pv.photo_id
+		WHERE ppi.public_token = $1 AND pv.version_type = $2`
+
+	err := r.db.GetContext(ctx, &photoVersion, query, token, version)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, repoErr.NotFoundError
+		}
+		return nil, err
+	}
+
+	return &photoVersion, nil
 }
 
 func (r *repository) GetPhotoVersions(ctx context.Context, photoID int) ([]repoModel.PhotoVersion, error) {
@@ -119,26 +159,6 @@ func (r *repository) GetPhotoVersions(ctx context.Context, photoID int) ([]repoM
 	}
 
 	return versions, nil
-}
-
-func (r *repository) CreatePhotoPublishedInfo(ctx context.Context, photoID int) (string, error) {
-	query := `
-		INSERT INTO published_photo_info (photo_id)
-		VALUES ($1)
-		RETURNING public_token`
-
-	var publicToken string
-	row := r.db.QueryRowContext(ctx, query, photoID)
-	err := row.Scan(&publicToken)
-	if err != nil {
-		var pqErr *pq.Error
-		if errors.As(err, &pqErr) && pqErr.Code == pkgRepo.UniqueViolationErrorCode {
-			return "", fmt.Errorf("create photo published info %w: %v", repoErr.ConflictError, err)
-		}
-		return "", fmt.Errorf("failed to insert published photo info: %w", err)
-	}
-
-	return publicToken, nil
 }
 
 func (r *repository) DeletePhotoPublishedInfo(ctx context.Context, photoID int) error {

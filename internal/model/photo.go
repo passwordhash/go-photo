@@ -6,7 +6,7 @@ type PhotoVersionType string
 
 const (
 	Original  PhotoVersionType = "original"
-	Thumbnail                  = "thumbnail"
+	Thumbnail PhotoVersionType = "thumbnail"
 	Preview                    = "preview"
 )
 

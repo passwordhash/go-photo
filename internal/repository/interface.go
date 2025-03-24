@@ -12,6 +12,11 @@ type PhotoRepository interface {
 	// Гарантируется, что у фото будет original версия.
 	CreateOriginalPhoto(ctx context.Context, photo *repoModel.CreateOriginalPhotoParams) (int, error)
 
+	// CreatePhotoPublishedInfo создает новую запись repoModel.PublishedPhotoInfo в БД.
+	// Возвращает уникальный токен для доступа к фото.
+	// Если запись уже существует, возвращает ошибку.
+	CreatePhotoPublishedInfo(ctx context.Context, photoID int) (string, error)
+
 	// GetPhotoByID возвращает фото по его ID.
 	// Если фото не найдено, возвращает ошибку PhotoNotFound.
 	GetPhotoByID(ctx context.Context, photoID int) (*repoModel.Photo, error)
@@ -19,10 +24,8 @@ type PhotoRepository interface {
 	// GetPhotoVersions возвращает все версии фото по его ID.
 	GetPhotoVersions(ctx context.Context, photoID int) ([]repoModel.PhotoVersion, error)
 
-	// CreatePhotoPublishedInfo создает новую запись repoModel.PublishedPhotoInfo в БД.
-	// Возвращает уникальный токен для доступа к фото.
-	// Если запись уже существует, возвращает ошибку.
-	CreatePhotoPublishedInfo(ctx context.Context, photoID int) (string, error)
+	// GetPhotoVersionByToken возвращает версию фото по токену и версии.
+	GetPhotoVersionByToken(ctx context.Context, token, version string) (*repoModel.PhotoVersion, error)
 
 	// DeletePhotoPublishedInfo удаляет запись repoModel.PublishedPhotoInfo из БД.
 	// Если запись не найдена, возвращает ошибку.

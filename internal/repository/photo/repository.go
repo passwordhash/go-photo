@@ -122,7 +122,7 @@ func (r *repository) GetPhotoByID(ctx context.Context, photoID int) (*repoModel.
 	return &photo, nil
 }
 
-func (r *repository) GetPhotoVersionByToken(ctx context.Context, token string, version model.PhotoVersionType) (*repoModel.PhotoVersion, error) {
+func (r *repository) GetPhotoVersionByVersionAndToken(ctx context.Context, token string, version model.PhotoVersionType) (*repoModel.PhotoVersion, error) {
 	var photoVersion repoModel.PhotoVersion
 
 	query := `
@@ -140,6 +140,45 @@ func (r *repository) GetPhotoVersionByToken(ctx context.Context, token string, v
 	}
 
 	return &photoVersion, nil
+}
+
+func (r *repository) GetPublicPhotosByTokenPrefix(ctx context.Context, tokenPrefix string, filterParams *repoModel.FilterParams) ([]repoModel.PhotoWithPhotoVersion, error) {
+	var rows []repoModel.PhotoWithPhotoVersion
+
+	query := `
+	SELECT
+    	p.id AS photo_id,
+    	p.user_uuid,
+    	p.filename,
+    	p.uploaded_at,
+    	pv.id AS version_id,
+    	pv.version_type,
+    	pv.size,
+    	pv.width,
+    	pv.height,
+    	pv.saved_at
+	FROM photos p
+	INNER JOIN published_photo_info pi
+    	ON p.id = pi.photo_id
+	INNER JOIN photo_versions pv
+        ON p.id = pv.photo_id
+	WHERE pi.public_token LIKE :tokenPrefix
+	`
+
+	addFilterQuery, params := filterParams.MapToArgs()
+	query += addFilterQuery
+	params["tokenPrefix"] = tokenPrefix + "%"
+
+	finalQuery, args, err := sqlx.Named(query, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare query: %w", err)
+	}
+
+	finalQuery = r.db.Rebind(finalQuery)
+
+	err = r.db.SelectContext(ctx, &rows, finalQuery, args...)
+
+	return rows, err
 }
 
 func (r *repository) GetPhotoVersions(ctx context.Context, photoID int) ([]repoModel.PhotoVersion, error) {

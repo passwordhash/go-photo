@@ -8,7 +8,6 @@ import (
 	serviceErr "go-photo/internal/service/error"
 )
 
-
 func (s *service) HandleRepoErr(err error) error {
 	if errors.Is(err, repoErr.NotFoundError) {
 		return fmt.Errorf("%w: %v", serviceErr.PhotoNotFoundError, err)
@@ -23,4 +22,3 @@ func (s *service) HandleRepoErr(err error) error {
 
 	return nil
 }
-

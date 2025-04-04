@@ -25,8 +25,13 @@ type PhotoRepository interface {
 	// GetPhotoVersions возвращает все версии фото по его ID.
 	GetPhotoVersions(ctx context.Context, photoID int) ([]repoModel.PhotoVersion, error)
 
-	// GetPhotoVersionByToken возвращает версию фото по токену и версии.
-	GetPhotoVersionByToken(ctx context.Context, token string, version model.PhotoVersionType) (*repoModel.PhotoVersion, error)
+	// GetPhotoVersionByVersionAndToken возвращает версию фото по токену и версии.
+	// TODO: tests
+	GetPhotoVersionByVersionAndToken(ctx context.Context, token string, version model.PhotoVersionType) (*repoModel.PhotoVersion, error)
+
+	// GetPublicPhotosByTokenPrefix возвращает все публичные фото, которые начинаются с заданного токена.
+	// TODO: tests
+	GetPublicPhotosByTokenPrefix(ctx context.Context, tokenPrefix string, filterParams *repoModel.FilterParams) ([]repoModel.PhotoWithPhotoVersion, error)
 
 	// DeletePhotoPublishedInfo удаляет запись repoModel.PublishedPhotoInfo из БД.
 	// Если запись не найдена, возвращает ошибку.

@@ -36,7 +36,21 @@ func (s *service) GetPhotoFileByVersionAndToken(ctx context.Context, token strin
 		return nil, serviceErr.InvalidVersionTypeError
 	}
 
-	photoVersion, err := s.photoRepository.GetPhotoVersionByToken(ctx, token, versionType)
+	// TODO: размаппить на ...
+	rows, err := s.photoRepository.GetPublicPhotosByTokenPrefix(ctx, token, &repoModel.FilterParams{
+		VerstionType: versionType,
+	})
+	if err := s.HandleRepoErr(err); err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return nil, serviceErr.PhotoNotFoundError
+	}
+
+	fmt.Printf("rows: %v\n", rows)
+
+	return nil, nil
+	photoVersion, err := s.photoRepository.GetPhotoVersionByVersionAndToken(ctx, token, versionType)
 	if err := s.HandleRepoErr(err); err != nil {
 		return nil, err
 	}

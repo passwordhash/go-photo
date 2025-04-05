@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"go-photo/internal/model"
 	repoModel "go-photo/internal/repository/photo/model"
 )
 
@@ -25,9 +24,9 @@ type PhotoRepository interface {
 	// GetPhotoVersions возвращает все версии фото по его ID.
 	GetPhotoVersions(ctx context.Context, photoID int) ([]repoModel.PhotoVersion, error)
 
-	// GetPhotoVersionByVersionAndToken возвращает версию фото по токену и версии.
+	// GetPhotoVersionByToken возвращает версию фото по токену и версии.
 	// TODO: tests
-	GetPhotoVersionByVersionAndToken(ctx context.Context, token string, version model.PhotoVersionType) (*repoModel.PhotoVersion, error)
+	GetPhotoVersionByToken(ctx context.Context, token string, filterParams *repoModel.FilterParams) (*repoModel.PhotoVersion, error)
 
 	// GetPublicPhotosByTokenPrefix возвращает все публичные фото, которые начинаются с заданного токена.
 	// TODO: tests

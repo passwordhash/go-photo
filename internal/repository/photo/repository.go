@@ -8,7 +8,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
-	"go-photo/internal/model"
 	def "go-photo/internal/repository"
 	repoErr "go-photo/internal/repository/error"
 	repoModel "go-photo/internal/repository/photo/model"
@@ -122,16 +121,29 @@ func (r *repository) GetPhotoByID(ctx context.Context, photoID int) (*repoModel.
 	return &photo, nil
 }
 
-func (r *repository) GetPhotoVersionByVersionAndToken(ctx context.Context, token string, version model.PhotoVersionType) (*repoModel.PhotoVersion, error) {
+func (r *repository) GetPhotoVersionByToken(
+	ctx context.Context,
+	token string,
+	filterParams *repoModel.FilterParams,
+) (*repoModel.PhotoVersion, error) {
 	var photoVersion repoModel.PhotoVersion
 
 	query := `
 		SELECT pv.id, pv.photo_id, pv.version_type, pv.filepath, pv.size, pv.height, pv.width, pv.saved_at
 		FROM published_photo_info ppi
 		JOIN photo_versions pv ON ppi.photo_id = pv.photo_id
-		WHERE ppi.public_token = $1 AND pv.version_type = $2`
+		WHERE ppi.public_token = :token`
 
-	err := r.db.GetContext(ctx, &photoVersion, query, token, string(version))
+	addFilterQuery, params := filterParams.MapToArgs()
+	query += addFilterQuery
+	params["token"] = token
+
+	finalQuery, args, err := sqlx.Named(query, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare query: %w", err)
+	}
+
+	err = r.db.GetContext(ctx, &photoVersion, finalQuery, args)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, repoErr.NotFoundError
@@ -142,7 +154,11 @@ func (r *repository) GetPhotoVersionByVersionAndToken(ctx context.Context, token
 	return &photoVersion, nil
 }
 
-func (r *repository) GetPublicPhotosByTokenPrefix(ctx context.Context, tokenPrefix string, filterParams *repoModel.FilterParams) ([]repoModel.PhotoWithPhotoVersion, error) {
+func (r *repository) GetPublicPhotosByTokenPrefix(
+	ctx context.Context,
+	tokenPrefix string,
+	filterParams *repoModel.FilterParams,
+) ([]repoModel.PhotoWithPhotoVersion, error) {
 	var rows []repoModel.PhotoWithPhotoVersion
 
 	query := `
@@ -166,7 +182,9 @@ func (r *repository) GetPublicPhotosByTokenPrefix(ctx context.Context, tokenPref
 	`
 
 	addFilterQuery, params := filterParams.MapToArgs()
+
 	query += addFilterQuery
+
 	params["tokenPrefix"] = tokenPrefix + "%"
 
 	finalQuery, args, err := sqlx.Named(query, params)

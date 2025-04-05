@@ -8,6 +8,7 @@ import (
 	repoModel "go-photo/internal/repository/photo/model"
 	serviceErr "go-photo/internal/service/error"
 	"os"
+	"path/filepath"
 )
 
 func (s *service) GetPhotoVersions(ctx context.Context, userUUID string, photoID int) ([]model.PhotoVersion, error) {
@@ -36,21 +37,9 @@ func (s *service) GetPhotoFileByVersionAndToken(ctx context.Context, token strin
 		return nil, serviceErr.InvalidVersionTypeError
 	}
 
-	// TODO: размаппить на ...
-	rows, err := s.photoRepository.GetPublicPhotosByTokenPrefix(ctx, token, &repoModel.FilterParams{
+	photoVersion, err := s.photoRepository.GetPhotoVersionByToken(ctx, token, &repoModel.FilterParams{
 		VerstionType: versionType,
 	})
-	if err := s.HandleRepoErr(err); err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, serviceErr.PhotoNotFoundError
-	}
-
-	fmt.Printf("rows: %v\n", rows)
-
-	return nil, nil
-	photoVersion, err := s.photoRepository.GetPhotoVersionByVersionAndToken(ctx, token, versionType)
 	if err := s.HandleRepoErr(err); err != nil {
 		return nil, err
 	}
@@ -60,7 +49,7 @@ func (s *service) GetPhotoFileByVersionAndToken(ctx context.Context, token strin
 		return nil, fmt.Errorf("%w: failed to get working directory", serviceErr.UnexpectedError)
 	}
 
-	fullPath := fmt.Sprintf("%s/%s", wd, photoVersion.Filepath)
+	fullPath := filepath.Join(wd, photoVersion.Filepath)
 
 	file, err := os.Open(fullPath)
 	if err != nil {

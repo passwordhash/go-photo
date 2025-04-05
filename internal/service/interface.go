@@ -42,7 +42,7 @@ type PhotoService interface {
 	// Возвращает список версий фотографии.
 	GetPhotoVersions(ctx context.Context, userUUID string, photoID int) ([]model.PhotoVersion, error)
 
-	// GetPhotoFileByVersionAndToken получает файл фотографии по ее версии и токену.
+	// GetPhotoFileByVersionAndToken получает файл публичной фотографии по ее версии и токену.
 	GetPhotoFileByVersionAndToken(ctx context.Context, token string, version string) ([]byte, error)
 
 	// UnpublishPhoto отменяет публикацию фотографии, делая ее недоступной для других пользователей.
@@ -53,5 +53,6 @@ type PhotoService interface {
 	// Обрабатывает ошибки:
 	// - NotFoundError
 	// - ConflictError
+	// Если ошибка не распознана, возвращает UnexpectedError.
 	HandleRepoErr(err error) error
 }

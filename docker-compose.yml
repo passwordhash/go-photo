@@ -37,6 +37,9 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
+        volumes:
+            - app_storage:/app/storage
 
 volumes:
     db_data:
+    app_storage:

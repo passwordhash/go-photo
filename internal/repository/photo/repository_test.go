@@ -13,6 +13,7 @@ import (
 	domainModel "go-photo/internal/model"
 	def "go-photo/internal/repository/error"
 	"go-photo/internal/repository/photo/model"
+	"regexp"
 	"testing"
 	"time"
 )
@@ -294,7 +295,11 @@ func TestRepository_GetPhotoVersions(t *testing.T) {
 
 func TestRepository_GetPhotoVersionByToken(t *testing.T) {
 	uploadedAt := sql.NullTime{Time: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), Valid: true}
-	query := "SELECT pv.id, pv.photo_id, pv.version_type, pv.filepath, pv.size, pv.height, pv.width, pv.saved_at FROM published_photo_info ppi JOIN photo_versions pv ON ppi.photo_id = pv.photo_id WHERE ppi.public_token = \\$1 AND pv.version_type = \\$2"
+	query := `
+	SELECT pv.id, pv.photo_id, pv.version_type, pv.filepath, pv.size, pv.height, pv.width, pv.saved_at
+	FROM published_photo_info ppi
+	JOIN photo_versions pv ON ppi.photo_id = pv.photo_id
+	WHERE ppi.public_token = ? AND version_type = ?`
 
 	tests := []struct {
 		name           string
@@ -309,10 +314,11 @@ func TestRepository_GetPhotoVersionByToken(t *testing.T) {
 			token:   "token",
 			version: domainModel.Original,
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(query).
+				mock.ExpectQuery(regexp.QuoteMeta(query)).
 					WithArgs("token", "original").
-					WillReturnRows(sqlmock.NewRows(photoVersionColumns).
-						AddRow(1, 1, "original", "filepath1", 12345, 100, 100, uploadedAt))
+						WillReturnRows(sqlmock.NewRows(photoVersionColumns).AddRow(
+							1, 1, "original", "filepath1", int64(12345), 100, 100, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+						))
 			},
 			expectedResult: &model.PhotoVersion{
 				ID:          1,
@@ -331,7 +337,7 @@ func TestRepository_GetPhotoVersionByToken(t *testing.T) {
 			token:   "token",
 			version: domainModel.Original,
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(query).
+				mock.ExpectQuery(regexp.QuoteMeta(query)).
 					WithArgs("token", "original").
 					WillReturnError(errors.New("select error"))
 			},
@@ -343,7 +349,7 @@ func TestRepository_GetPhotoVersionByToken(t *testing.T) {
 			token:   "token",
 			version: domainModel.Original,
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(query).
+				mock.ExpectQuery(regexp.QuoteMeta(query)).
 					WithArgs("token", "original").
 					WillReturnRows(sqlmock.NewRows(photoVersionColumns))
 			},
@@ -363,7 +369,9 @@ func TestRepository_GetPhotoVersionByToken(t *testing.T) {
 
 			tt.mockSetup(mock)
 
-			version, err := repo.GetPhotoVersionByToken(context.Background(), tt.token, tt.version)
+			version, err := repo.GetPhotoVersionByToken(context.Background(), tt.token, &model.FilterParams{
+				VersionType: tt.version,
+			})
 			if tt.expectedError != nil {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError.Error())

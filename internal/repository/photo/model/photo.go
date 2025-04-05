@@ -55,20 +55,19 @@ type CreateOriginalPhotoParams struct {
 }
 
 type FilterParams struct {
-	VerstionType model.PhotoVersionType `db:"version_type"`
+	VersionType model.PhotoVersionType `db:"version_type"`
 }
 
 // TODO: сделать обход по полям с помощью reflect
-func (f *FilterParams) MapToArgs() (string, map[string]interface{}) {
+func (f *FilterParams) MapToArgs(params map[string]interface{}) string {
 	addQuery := ""
-	params := map[string]interface{}{}
 
-	if f.VerstionType != "" {
+	if f.VersionType != "" {
 		addQuery += " AND version_type = :version_type"
-		params["version_type"] = f.VerstionType
+		params["version_type"] = f.VersionType
 	}
 
-	return addQuery, params
+	return addQuery
 }
 
 func (p *CreateOriginalPhotoParams) IsValid() bool {

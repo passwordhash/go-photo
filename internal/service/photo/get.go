@@ -38,7 +38,7 @@ func (s *service) GetPhotoFileByVersionAndToken(ctx context.Context, token strin
 	}
 
 	photoVersion, err := s.photoRepository.GetPhotoVersionByToken(ctx, token, &repoModel.FilterParams{
-		VerstionType: versionType,
+		VersionType: versionType,
 	})
 	if err := s.HandleRepoErr(err); err != nil {
 		return nil, err

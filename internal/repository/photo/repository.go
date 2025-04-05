@@ -134,16 +134,20 @@ func (r *repository) GetPhotoVersionByToken(
 		JOIN photo_versions pv ON ppi.photo_id = pv.photo_id
 		WHERE ppi.public_token = :token`
 
-	addFilterQuery, params := filterParams.MapToArgs()
-	query += addFilterQuery
-	params["token"] = token
+	params := map[string]interface{}{
+		"token": token,
+	}
+	if filterParams != nil {
+		query += filterParams.MapToArgs(params)
+	}
 
-	finalQuery, args, err := sqlx.Named(query, params)
+	namedQuery, args, err := sqlx.Named(query, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare query: %w", err)
 	}
 
-	err = r.db.GetContext(ctx, &photoVersion, finalQuery, args)
+	rebindedQuery := r.db.Rebind(namedQuery)
+	err = r.db.GetContext(ctx, &photoVersion, rebindedQuery, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, repoErr.NotFoundError
@@ -181,20 +185,20 @@ func (r *repository) GetPublicPhotosByTokenPrefix(
 	WHERE pi.public_token LIKE :tokenPrefix
 	`
 
-	addFilterQuery, params := filterParams.MapToArgs()
+	params := map[string]interface{}{
+		"tokenPrefix": tokenPrefix + "%",
+	}
+	if filterParams != nil {
+		query += filterParams.MapToArgs(params)
+	}
 
-	query += addFilterQuery
-
-	params["tokenPrefix"] = tokenPrefix + "%"
-
-	finalQuery, args, err := sqlx.Named(query, params)
+	namedQuery, args, err := sqlx.Named(query, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare query: %w", err)
 	}
 
-	finalQuery = r.db.Rebind(finalQuery)
-
-	err = r.db.SelectContext(ctx, &rows, finalQuery, args...)
+	rebindedQuery := r.db.Rebind(namedQuery)
+	err = r.db.SelectContext(ctx, &rows, rebindedQuery, args...)
 
 	return rows, err
 }

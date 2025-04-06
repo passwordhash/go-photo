@@ -2,12 +2,14 @@ package photo
 
 import (
 	"context"
+	"errors"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go-photo/internal/model"
 	mock_repository "go-photo/internal/repository/mock"
 	repoModel "go-photo/internal/repository/photo/model"
+	serviceErr "go-photo/internal/service/error"
 	"os"
 	"path/filepath"
 	"testing"
@@ -41,6 +43,96 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 			expectedBytes: []byte("test"),
 			expectedError: nil,
 		},
+		{
+			name:         "Valid - small thumbnail version",
+			inputToken:   "thumb_token",
+			inputVersion: "thumbnail",
+			mockBehavior: func(repo *mock_repository.MockPhotoRepository, token string, version string) {
+				photoVersion := &repoModel.PhotoVersion{
+					Filepath: "test.png",
+					Size:     4,
+				}
+				versionType, _ := model.ParseVersionType(version)
+				repo.EXPECT().GetPhotoVersionByToken(gomock.Any(), token, &repoModel.FilterParams{
+					VersionType: versionType,
+				}).Return(photoVersion, nil)
+			},
+			expectedBytes: []byte("test"),
+			expectedError: nil,
+		},
+		{
+			name:         "Valid - preview version",
+			inputToken:   "preview_token",
+			inputVersion: "preview",
+			mockBehavior: func(repo *mock_repository.MockPhotoRepository, token string, version string) {
+				photoVersion := &repoModel.PhotoVersion{
+					Filepath: "test.png",
+					Size:     4,
+				}
+				versionType, _ := model.ParseVersionType(version)
+				repo.EXPECT().GetPhotoVersionByToken(gomock.Any(), token, &repoModel.FilterParams{
+					VersionType: versionType,
+				}).Return(photoVersion, nil)
+			},
+			expectedBytes: []byte("test"),
+			expectedError: nil,
+		},
+		{
+			name:         "Invalid Version",
+			inputToken:   "token",
+			inputVersion: "unknown_version",
+			mockBehavior: func(repo *mock_repository.MockPhotoRepository, token string, version string) {
+			},
+			expectedBytes: nil,
+			expectedError: serviceErr.InvalidVersionTypeError,
+		},
+		{
+			name:         "Repo returns error",
+			inputToken:   "token",
+			inputVersion: "original",
+			mockBehavior: func(repo *mock_repository.MockPhotoRepository, token string, version string) {
+				versionType, _ := model.ParseVersionType(version)
+				repo.EXPECT().GetPhotoVersionByToken(gomock.Any(), token, &repoModel.FilterParams{
+					VersionType: versionType,
+				}).Return(nil, errors.New("db error"))
+			},
+			expectedBytes: nil,
+			expectedError: serviceErr.UnexpectedError,
+		},
+		{
+			name:         "File not found",
+			inputToken:   "token",
+			inputVersion: "original",
+			mockBehavior: func(repo *mock_repository.MockPhotoRepository, token string, version string) {
+				photoVersion := &repoModel.PhotoVersion{
+					Filepath: "nonexistent.png",
+					Size:     10,
+				}
+				versionType, _ := model.ParseVersionType(version)
+				repo.EXPECT().GetPhotoVersionByToken(gomock.Any(), token, &repoModel.FilterParams{
+					VersionType: versionType,
+				}).Return(photoVersion, nil)
+			},
+			expectedBytes: nil,
+			expectedError: serviceErr.UnexpectedError,
+		},
+		{
+			name:         "Error reading file",
+			inputToken:   "token",
+			inputVersion: "original",
+			mockBehavior: func(repo *mock_repository.MockPhotoRepository, token string, version string) {
+				versionType, _ := model.ParseVersionType(version)
+				photoVersion := &repoModel.PhotoVersion{
+					Filepath: "truncated_file.png",
+					Size:     1000, // deliberately large size
+				}
+				repo.EXPECT().GetPhotoVersionByToken(gomock.Any(), token, &repoModel.FilterParams{
+					VersionType: versionType,
+				}).Return(photoVersion, nil)
+			},
+			expectedBytes: nil,
+			expectedError: serviceErr.UnexpectedError,
+		},
 	}
 
 	for _, tt := range tests {
@@ -65,8 +157,7 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 
 			bytes, err := s.GetPhotoFileByVersionAndToken(context.TODO(), tt.inputToken, tt.inputVersion)
 			if tt.expectedError != nil {
-				assert.Error(t, err)
-				assert.Equal(t, tt.expectedError, err)
+				assert.ErrorIs(t, err, tt.expectedError)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedBytes, bytes)

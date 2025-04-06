@@ -26,7 +26,6 @@ RUN go build -o main.exe cmd/http_server/main.go
 # ==========================
 FROM base
 
-# Только исполняемый файл
 COPY --from=build /app/main.exe /app/main.exe
 
 CMD ["./main.exe"]

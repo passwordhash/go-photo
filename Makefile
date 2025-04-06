@@ -23,7 +23,7 @@ DOCS_DIR = ./docs
 # Локальная разработка / Тесты
 # ==========================
 
-build: generate
+build: install-deps generate
 	docker-compose up -d
 
 tests-build: install-deps generate-pb generate-mock generate-mock

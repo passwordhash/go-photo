@@ -92,3 +92,16 @@ migrate-down:
 		-path=/migrations \
 		-database "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable" \
 		down 1
+
+# ===========================
+# Dockerfile build
+# ===========================
+
+docker-install-deps:
+	echo "Установка зависимостей внутрь docker контейнера..."
+	apk add git make protobuf protobuf-dev
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.33.0
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
+	go install github.com/golang/mock/mockgen@latest
+	go install github.com/swaggo/swag/cmd/swag@latest
+	echo "Установка зависимостей завершена"

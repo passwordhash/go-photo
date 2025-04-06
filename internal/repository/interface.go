@@ -25,7 +25,6 @@ type PhotoRepository interface {
 	GetPhotoVersions(ctx context.Context, photoID int) ([]repoModel.PhotoVersion, error)
 
 	// GetPhotoVersionByToken возвращает версию фото по токену и версии.
-	// TODO: tests
 	GetPhotoVersionByToken(ctx context.Context, token string, filterParams *repoModel.FilterParams) (*repoModel.PhotoVersion, error)
 
 	// GetPublicPhotosByTokenPrefix возвращает все публичные фото, которые начинаются с заданного токена.

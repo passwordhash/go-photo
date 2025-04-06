@@ -43,6 +43,7 @@ type PhotoService interface {
 	GetPhotoVersions(ctx context.Context, userUUID string, photoID int) ([]model.PhotoVersion, error)
 
 	// GetPhotoFileByVersionAndToken получает файл публичной фотографии по ее версии и токену.
+	// TODO: tests
 	GetPhotoFileByVersionAndToken(ctx context.Context, token string, version string) ([]byte, error)
 
 	// UnpublishPhoto отменяет публикацию фотографии, делая ее недоступной для других пользователей.

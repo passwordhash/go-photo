@@ -21,7 +21,7 @@ import (
 var PublicKey = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqv7uJc+0TqvV9uFPOQeV\nQ/VoDYuYVztUlB5whWxtwRbX4YczgHf77V04QIC5LEuE5+Vo+3eDXgUO43gUb6i7\ntggx3x8n8F6bZgApsrF+uPnNlTHx8p4/uxQWXfrB4IaRG4Xrr9G/KFfjt3+RpQlX\nFlLQKZmHRR5PpOkBKGPvl5ew7NfBGNR4Peexz84WY2Im+DN/zVvENPLSMY4BqGjQ\n8EzlgF5XFFJX6bQ0BXIbMR7+iAed5y9ahLciJbWNVPaOjyHOf1Rv3TOktU91ZnDX\nx0gZIHgDQCQHclURIVSYFZSvx5W8keQ/XsWr5jP/Y44gpzPiGJQchRtYT4/GPj4t\nXQIDAQAB\n-----END PUBLIC KEY-----"
 
 func TestService_Login(t *testing.T) {
-	type mockBehavior func(*mock_utils.MockInteface, *mock_account_v1.MockAccountServiceClient, string, string)
+	type mockBehavior func(*mock_utils.MockInterface, *mock_account_v1.MockAccountServiceClient, string, string)
 
 	tests := []struct {
 		name          string
@@ -35,7 +35,7 @@ func TestService_Login(t *testing.T) {
 			name:     "Valid",
 			email:    "john@doe.ru",
 			password: "password",
-			mockBehavior: func(u *mock_utils.MockInteface, a *mock_account_v1.MockAccountServiceClient, email, password string) {
+			mockBehavior: func(u *mock_utils.MockInterface, a *mock_account_v1.MockAccountServiceClient, email, password string) {
 				u.EXPECT().
 					EncryptPassword(&PublicKey, password).
 					Return("encrypted-password", nil).
@@ -53,7 +53,7 @@ func TestService_Login(t *testing.T) {
 			name:     "Bad credentials",
 			email:    "john@doe.ru",
 			password: "password",
-			mockBehavior: func(u *mock_utils.MockInteface, a *mock_account_v1.MockAccountServiceClient, email, password string) {
+			mockBehavior: func(u *mock_utils.MockInterface, a *mock_account_v1.MockAccountServiceClient, email, password string) {
 				u.EXPECT().
 					EncryptPassword(&PublicKey, password).
 					Return("encrypted-password", nil).
@@ -70,7 +70,7 @@ func TestService_Login(t *testing.T) {
 			name:     "Invalid public key",
 			email:    "john@doe.ru",
 			password: "password",
-			mockBehavior: func(u *mock_utils.MockInteface, a *mock_account_v1.MockAccountServiceClient, email, password string) {
+			mockBehavior: func(u *mock_utils.MockInterface, a *mock_account_v1.MockAccountServiceClient, email, password string) {
 				u.EXPECT().
 					EncryptPassword(&PublicKey, password).
 					Return("", utils.InvalidPublicKeyError).
@@ -83,7 +83,7 @@ func TestService_Login(t *testing.T) {
 			name:     "Enrypt password error",
 			email:    "john@doe.ru",
 			password: "password",
-			mockBehavior: func(u *mock_utils.MockInteface, a *mock_account_v1.MockAccountServiceClient, email, password string) {
+			mockBehavior: func(u *mock_utils.MockInterface, a *mock_account_v1.MockAccountServiceClient, email, password string) {
 				u.EXPECT().
 					EncryptPassword(&PublicKey, password).
 					Return("", errors.New("some encrypt password func error")).
@@ -96,7 +96,7 @@ func TestService_Login(t *testing.T) {
 			name:     "GRPC internal error",
 			email:    "john@doe.ru",
 			password: "password",
-			mockBehavior: func(u *mock_utils.MockInteface, a *mock_account_v1.MockAccountServiceClient, email, password string) {
+			mockBehavior: func(u *mock_utils.MockInterface, a *mock_account_v1.MockAccountServiceClient, email, password string) {
 				u.EXPECT().
 					EncryptPassword(&PublicKey, password).
 					Return("encrypted-password", nil).
@@ -116,7 +116,7 @@ func TestService_Login(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockUtils := mock_utils.NewMockInteface(ctrl)
+			mockUtils := mock_utils.NewMockInterface(ctrl)
 			mockAccountClient := mock_account_v1.NewMockAccountServiceClient(ctrl)
 			s := NewService(mockAccountClient, mockUtils)
 			s.publicKeyCache = publicKeyCache{
@@ -138,7 +138,7 @@ func TestService_Login(t *testing.T) {
 }
 
 func TestService_Register(t *testing.T) {
-	type mockBehavior func(*mock_utils.MockInteface, *mock_account_v1.MockAccountServiceClient, serviceUserModel.RegisterParams)
+	type mockBehavior func(*mock_utils.MockInterface, *mock_account_v1.MockAccountServiceClient, serviceUserModel.RegisterParams)
 
 	tests := []struct {
 		name          string
@@ -153,7 +153,7 @@ func TestService_Register(t *testing.T) {
 				Email:    "john@doe.ru",
 				Password: "password",
 			},
-			mockBehavior: func(u *mock_utils.MockInteface, a *mock_account_v1.MockAccountServiceClient, params serviceUserModel.RegisterParams) {
+			mockBehavior: func(u *mock_utils.MockInterface, a *mock_account_v1.MockAccountServiceClient, params serviceUserModel.RegisterParams) {
 				u.EXPECT().
 					EncryptPassword(&PublicKey, params.Password).
 					Return("encrypted-password", nil).
@@ -176,7 +176,7 @@ func TestService_Register(t *testing.T) {
 				Email:    "john@doe.ru",
 				Password: "password",
 			},
-			mockBehavior: func(u *mock_utils.MockInteface, a *mock_account_v1.MockAccountServiceClient, params serviceUserModel.RegisterParams) {
+			mockBehavior: func(u *mock_utils.MockInterface, a *mock_account_v1.MockAccountServiceClient, params serviceUserModel.RegisterParams) {
 				u.EXPECT().
 					EncryptPassword(&PublicKey, params.Password).
 					Return("encrypted-password", nil).
@@ -195,7 +195,7 @@ func TestService_Register(t *testing.T) {
 				Email:    "john@doe.ru",
 				Password: "password",
 			},
-			mockBehavior: func(u *mock_utils.MockInteface, a *mock_account_v1.MockAccountServiceClient, params serviceUserModel.RegisterParams) {
+			mockBehavior: func(u *mock_utils.MockInterface, a *mock_account_v1.MockAccountServiceClient, params serviceUserModel.RegisterParams) {
 				u.EXPECT().
 					EncryptPassword(&PublicKey, params.Password).
 					Return("", errors.New("some encrypt password func error")).
@@ -210,7 +210,7 @@ func TestService_Register(t *testing.T) {
 				Email:    "john@doe.ru",
 				Password: "password",
 			},
-			mockBehavior: func(u *mock_utils.MockInteface, a *mock_account_v1.MockAccountServiceClient, params serviceUserModel.RegisterParams) {
+			mockBehavior: func(u *mock_utils.MockInterface, a *mock_account_v1.MockAccountServiceClient, params serviceUserModel.RegisterParams) {
 				u.EXPECT().
 					EncryptPassword(&PublicKey, params.Password).
 					Return("", utils.InvalidPublicKeyError).
@@ -225,7 +225,7 @@ func TestService_Register(t *testing.T) {
 				Email:    "john@doe.ru",
 				Password: "password",
 			},
-			mockBehavior: func(u *mock_utils.MockInteface, a *mock_account_v1.MockAccountServiceClient, params serviceUserModel.RegisterParams) {
+			mockBehavior: func(u *mock_utils.MockInterface, a *mock_account_v1.MockAccountServiceClient, params serviceUserModel.RegisterParams) {
 				u.EXPECT().
 					EncryptPassword(&PublicKey, params.Password).
 					Return("encrypted-password", nil).
@@ -245,7 +245,7 @@ func TestService_Register(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockUtils := mock_utils.NewMockInteface(ctrl)
+			mockUtils := mock_utils.NewMockInterface(ctrl)
 			mockAccountClient := mock_account_v1.NewMockAccountServiceClient(ctrl)
 			tt.mockBehavior(mockUtils, mockAccountClient, tt.params)
 
@@ -296,7 +296,7 @@ func TestService_getPublicKey(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockAccountClient := mock_account_v1.NewMockAccountServiceClient(ctrl)
-			mockUtils := mock_utils.NewMockInteface(ctrl)
+			mockUtils := mock_utils.NewMockInterface(ctrl)
 			s := NewService(mockAccountClient, mockUtils)
 
 			tt.mockBehavior(mockAccountClient)

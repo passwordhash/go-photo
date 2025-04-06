@@ -44,12 +44,7 @@ func (s *service) GetPhotoFileByVersionAndToken(ctx context.Context, token strin
 		return nil, err
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("%w: failed to get working directory", serviceErr.UnexpectedError)
-	}
-
-	fullPath := filepath.Join(wd, photoVersion.Filepath)
+	fullPath := filepath.Join(s.d.StorageFolderPath, photoVersion.Filepath)
 
 	file, err := os.Open(fullPath)
 	if err != nil {

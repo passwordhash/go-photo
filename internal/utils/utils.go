@@ -2,7 +2,7 @@ package utils
 
 //go:generate mockgen -destination=mock/mocks.go -source=utils.go
 
-type Inteface interface {
+type Interface interface {
 	EncryptPassword(publicKey *string, password string) (string, error)
 }
 

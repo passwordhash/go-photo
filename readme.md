@@ -5,7 +5,17 @@
 
 ---
 
+## Зависимости проекта
+
+- [Go](https://golang.org/) версии 1.24 или выше
+- Упомянутый выше account-microservice по gRPC
+- [Репозиторий](https://github.com/passwordhash/protobuf-files) с моими protobuf файлами
+- БД: PostgreSQL версии 15 или выше и миграции с Migrate 
+- Генерация: protoc, protoc-gen-go, protoc-gen-go-grpc, swagger, mockgen
+
 ## Develop развертывание в Docker
+
+> Установка всех зависимостей происходит в отдельном `build stage` в [Dockerfile](Dockerfile), что позволяет избежать установки зависимостей на локальной машине. Также в [Makefile](Makefile) прописаны команды для генерации кода, миграций, сборки проекта, запуска тестов и др.
 
 - Склонировать репозиторий
     ```
@@ -13,7 +23,7 @@
     cd go-photo
     ```
   
-- Заполнить файл `.env` на основе `.env.example`
+- Заполнить файл `.env` на основе [.env.example](.env.example)
     ```
     cp .env.example .env
     ```

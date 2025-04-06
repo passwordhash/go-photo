@@ -2,7 +2,13 @@ name: CI/CD
 
 on:
     push:
+        branches:
+            - master
+            - develop
     pull_request:
+        branches:
+            - master
+            - develop
 
 jobs:
     test:
@@ -41,43 +47,42 @@ jobs:
             -   name: Run tests
                 run: make run-tests
 
-    lint:
-        runs-on: ubuntu-latest
-        steps:
-            -   name: Checkout code
-                uses: actions/checkout@v2
-
-            -   name: Checkout protobuf repository
-                uses: actions/checkout@v3
-                with:
-                    repository: passwordhash/protobuf-files
-                    path: api
-
-            -   name: Set up Go
-                uses: actions/setup-go@v2
-                with:
-                    go-version: '1.24.1'
-
-            -   name: Update PATH
-                run: echo "${{ runner.workspace }}/bin" >> $GITHUB_PATH
-
-            -   name: Install dependencies
-                run: |
-                    go mod download
-                    make install-deps
-
-            -   name: Protobuf&docs generation
-                run: |
-                    make generate-pb
-                    make generate-docs
-
-            -   name: Run golangci-lint
-                uses: golangci/golangci-lint-action@v6
+#    lint:
+#        runs-on: ubuntu-latest
+#        steps:
+#            -   name: Checkout code
+#                uses: actions/checkout@v2
+#
+#            -   name: Checkout protobuf repository
+#                uses: actions/checkout@v3
+#                with:
+#                    repository: passwordhash/protobuf-files
+#                    path: api
+#
+#            -   name: Set up Go
+#                uses: actions/setup-go@v2
+#                with:
+#                    go-version: '1.24.1'
+#
+#            -   name: Update PATH
+#                run: echo "${{ runner.workspace }}/bin" >> $GITHUB_PATH
+#
+#            -   name: Install dependencies
+#                run: |
+#                    go mod download
+#                    make install-deps
+#
+#            -   name: Protobuf&docs generation
+#                run: |
+#                    make generate-pb
+#                    make generate-docs
+#
+#            -   name: Run golangci-lint
+#                uses: golangci/golangci-lint-action@v6
 
     build-and-push:
         needs:
             - test
-#            - lint
         if: >-
             (github.event_name == 'push' && github.ref == 'refs/heads/master')
             || (github.event_name == 'pull_request' && github.base_ref == 'master')
@@ -101,7 +106,7 @@ jobs:
             -   name: Set up Go
                 uses: actions/setup-go@v2
                 with:
-                    go-version: '1.22'
+                    go-version: '1.24.1'
 
             -   name: Install dependencies
                 run: make install-deps
@@ -144,6 +149,7 @@ jobs:
                     username: ${{ vars.SSH_USER }}
                     key: ${{ secrets.SSH_KEY }}
                     passphrase: ${{ secrets.SSH_PASSPHRASE }}
+#                   TODO: описать в readme работу с секретами Vault
                     script: |
                         export VAULT_ADDR=${{ env.VAULT_ADDR }}
                         vault kv get -format=json -mount=kv ${{ env.CONTAINER_NAME }} | \

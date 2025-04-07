@@ -29,6 +29,7 @@ type saveToDiskInfo struct {
 	savedAt time.Time
 }
 
+// TODO: сохранение и запись абсолютного пути в БД
 func (s *service) UploadPhoto(ctx context.Context, userUUID string, photoFile *multipart.FileHeader) (int, error) {
 	userFolder, err := ensureUserFolder(s.d.StorageFolderPath, userUUID)
 	if err != nil {
@@ -142,7 +143,7 @@ func (s *service) UploadBatchPhotos(ctx context.Context, userUUID string, photoF
 	return uploaded, nil
 }
 
-// saveFile - сохраняет файл на диск
+// saveFile сохраняет файл на диск и возвращает информацию о нем
 func (s *service) saveFile(_ context.Context, file *multipart.FileHeader, destFolder string) serviceModel.UploadInfo {
 	info := serviceModel.UploadInfo{
 		Filename: file.Filename,
@@ -163,7 +164,6 @@ func (s *service) saveFile(_ context.Context, file *multipart.FileHeader, destFo
 }
 
 // saveToDatabase сохраняет информацию о файле в базе данных. Если произошла ошибка, файл удаляется с диска
-// TODO: ? return upload info ??
 func (s *service) saveToDatabase(ctx context.Context, userUUID string, info serviceModel.UploadInfo) serviceModel.UploadInfo {
 	id, err := s.photoRepository.CreateOriginalPhoto(ctx, &repoModel.CreateOriginalPhotoParams{
 		UserUUID: userUUID,

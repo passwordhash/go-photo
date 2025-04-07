@@ -52,6 +52,7 @@ func (a *App) initDeps(ctx context.Context) error {
 	inits := []func(context.Context) error{
 		a.initConfig,
 		a.initServiceProvider,
+		// TODO: см. ниже
 		a.initFolders,
 		a.initLogging,
 		a.initPGConnection,
@@ -84,6 +85,7 @@ func (a *App) initServiceProvider(_ context.Context) error {
 	return nil
 }
 
+// TODO: решить нужно ли это
 func (a *App) initFolders(_ context.Context) error {
 	folders := []string{a.sp.BaseConfig().StorageFolder(), config.LogsDir}
 

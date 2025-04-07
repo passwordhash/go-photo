@@ -8,7 +8,6 @@ import (
 	repoModel "go-photo/internal/repository/photo/model"
 	serviceErr "go-photo/internal/service/error"
 	"os"
-	"path/filepath"
 )
 
 func (s *service) GetPhotoVersions(ctx context.Context, userUUID string, photoID int) ([]model.PhotoVersion, error) {
@@ -44,9 +43,9 @@ func (s *service) GetPhotoFileByVersionAndToken(ctx context.Context, token strin
 		return nil, err
 	}
 
-	fullPath := filepath.Join(s.d.StorageFolderPath, photoVersion.Filepath)
+	//fullPath := filepath.Join(s.d.StorageFolderPath, photoVersion.Filepath)
 
-	file, err := os.Open(fullPath)
+	file, err := os.Open(photoVersion.Filepath)
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to open file: %v", serviceErr.UnexpectedError, err)
 	}

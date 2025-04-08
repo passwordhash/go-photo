@@ -83,7 +83,7 @@ func TestHandler_login(t *testing.T) {
 			email:     "test@mail.ru",
 			password:  "password",
 			mockBehavior: func(s *mock_service.MockUserService, email, password string) {
-				s.EXPECT().Login(gomock.Any(), email, password).Return("", serviceErr.ServiceError).Times(1)
+				s.EXPECT().Login(gomock.Any(), email, password).Return("", serviceErr.UnexpectedError).Times(1)
 			},
 			expectedStatusCode: 500,
 			expectedResponse: response.Error{
@@ -200,7 +200,7 @@ func TestHandler_register(t *testing.T) {
 				Password: "password",
 			},
 			mockBehavior: func(s *mock_service.MockUserService, params serviceUserModel.RegisterParams) {
-				s.EXPECT().Register(gomock.Any(), params).Return(serviceUserModel.RegisterInfo{}, serviceErr.ServiceError).Times(1)
+				s.EXPECT().Register(gomock.Any(), params).Return(serviceUserModel.RegisterInfo{}, serviceErr.UnexpectedError).Times(1)
 			},
 			expectedStatusCode: 500,
 			expectedResponse: response.Error{

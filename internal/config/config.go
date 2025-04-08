@@ -3,8 +3,10 @@ package config
 import (
 	"errors"
 	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
 	"net"
 	"os"
+	"path/filepath"
 )
 
 const (
@@ -37,9 +39,6 @@ func NewConfig() (Config, error) {
 	}
 
 	logLever := os.Getenv(logLevelEnvName)
-	//if len(logLever) == 0 {
-	//return nil, errors.New("log level not found")
-	//}
 
 	grpcAddr := os.Getenv(grpcAddrEnvName)
 	if len(grpcAddr) == 0 {
@@ -81,5 +80,11 @@ func (c *baseConfig) LogLevel() string {
 }
 
 func (c *baseConfig) StorageFolder() string {
-	return c.storageFolderPath
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Panicf("failed to get working directory: %v", err)
+	}
+
+	// TODO: решить как правильно хранить путь к папке
+	return filepath.Join(wd, c.storageFolderPath)
 }

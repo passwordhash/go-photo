@@ -15,10 +15,11 @@ func (e *FileAlreadyExistsError) Error() string {
 }
 
 var (
-	ServiceError = errors.New("service error")
-	DbError      = errors.New("db error")
+	UnexpectedError = errors.New("unexpected error")
+	DbError         = errors.New("db error")
 
 	AccessDeniedError = errors.New("access denied")
+	AlreadyExists     = errors.New("already exists")
 
 	ParticalSuccessError = errors.New("partical success")
 	AllFailedError       = errors.New("all failed")
@@ -27,5 +28,6 @@ var (
 	UserAlreadyExistsError    = errors.New("user already exists")
 	UserUnauthtenticatedError = errors.New("user unauthenticated")
 
-	PhotoNotFoundError = errors.New("photo not found")
+	PhotoNotFoundError      = errors.New("photo not found")
+	InvalidVersionTypeError = errors.New("invalid version type")
 )

@@ -16,10 +16,10 @@ type service struct {
 
 	publicKeyCache publicKeyCache
 
-	utils utils.Inteface
+	utils utils.Interface
 }
 
-func NewService(accountClient desc.AccountServiceClient, u utils.Inteface) *service {
+func NewService(accountClient desc.AccountServiceClient, u utils.Interface) *service {
 	if u == nil {
 		u = utils.New()
 	}

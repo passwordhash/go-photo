@@ -12,6 +12,7 @@ import (
 	"go-photo/internal/handler/v1/auth"
 	"go-photo/internal/handler/v1/docs"
 	"go-photo/internal/handler/v1/photos"
+	"go-photo/internal/handler/v1/public"
 	"go-photo/internal/handler/v1/user"
 	desc "go-photo/pkg/account_v1"
 	"go-photo/pkg/repository"
@@ -51,6 +52,7 @@ func (a *App) initDeps(ctx context.Context) error {
 	inits := []func(context.Context) error{
 		a.initConfig,
 		a.initServiceProvider,
+		// TODO: см. ниже
 		a.initFolders,
 		a.initLogging,
 		a.initPGConnection,
@@ -83,6 +85,7 @@ func (a *App) initServiceProvider(_ context.Context) error {
 	return nil
 }
 
+// TODO: решить нужно ли это
 func (a *App) initFolders(_ context.Context) error {
 	folders := []string{a.sp.BaseConfig().StorageFolder(), config.LogsDir}
 
@@ -169,6 +172,11 @@ func (a *App) initHTTPServer(_ context.Context) error {
 
 	router.Use(gin.Recovery())
 	router.Use(middleware.Logger())
+
+	base := router.Group("/")
+
+	publicHandler := public.NewHandler(a.sp.PhotoService(a.db))
+	publicHandler.RegisterRoutes(base)
 
 	api := router.Group("/api")
 	v1 := api.Group("/v1")

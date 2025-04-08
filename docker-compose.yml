@@ -30,13 +30,14 @@ services:
     app:
         container_name: app
         env_file: .env
-        environment:
-            - HTTP_PORT=${HTTP_PORT:-8080}
         ports:
-            - ${HTTP_PORT:-8080}:${HTTP_PORT:-8080}
+            - ${HTTP_PORT}:${HTTP_PORT}
         build:
             context: .
             dockerfile: Dockerfile
+        volumes:
+            - app_storage:/app/storage
 
 volumes:
     db_data:
+    app_storage:

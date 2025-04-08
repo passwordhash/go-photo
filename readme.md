@@ -1,39 +1,48 @@
 # Go Photo
 [![Swagger UI](https://img.shields.io/badge/docs-Swagger-blue?logo=swagger)](https://go-photo.passwordhash.tech/api/v1/docs/index.html)
 
-## Develop развертывание
+Микросервис для загрузки, обработки и хранения фотографий, написанный на языке *Go*. Он предоставляет *RESTful API* для загрузки, получения и удаления фотографий. Микросервис использует [внешний Auth-сервис](https://github.com/passwordhash/account-microservice) по *gRPC* для выполнения аутентификации и авторизации пользователей.
+
+---
+
+## Зависимости проекта
+
+- [Go](https://golang.org/) версии 1.24 или выше
+- Упомянутый выше account-microservice по gRPC
+- [Репозиторий](https://github.com/passwordhash/protobuf-files) с моими protobuf файлами
+- БД: PostgreSQL версии 15 или выше и миграции с Migrate 
+- Генерация: protoc, protoc-gen-go, protoc-gen-go-grpc, swagger, mockgen
+
+## Develop развертывание в Docker
+
+> Установка всех зависимостей происходит в отдельном `build stage` в [Dockerfile](Dockerfile), что позволяет избежать установки зависимостей на локальной машине. Также в [Makefile](Makefile) прописаны команды для генерации кода, миграций, сборки проекта, запуска тестов и др.
 
 - Склонировать репозиторий
     ```
-    git clone git@github.com:passwordhash/go-photo.git
+    git clone https://github.com/passwordhash/go-photo.git ./go-photo
     cd go-photo
     ```
   
-- Установить зависимости
+- Заполнить файл `.env` на основе [.env.example](.env.example)
     ```
-    go mod tidy
-    ```
-
-- Склонировать репозиторий с proto-файлами
-    ```
-    git clone https://github.com/passwordhash/protobuf-files.git api/
+    cp .env.example .env
     ```
 
-- Собрать проект и запустить
+- Поднять проект
     ```
-    make build 
-    go run cmd/server/main.go 
+    docker-compose up -d
     ```
   
 ## Описание CI/CD 
 
 ### Непрерывная интеграция (CI)
 
-При разработке проекта go-photo я научился настраивать и использовать процессы непрерывной интеграции (CI). 
+При разработке этого проекта я научился настраивать и использовать процессы непрерывной интеграции (CI). 
 
 При любом push/pull request запускается GitHub Actions, который выполняет следующие шаги:
 1. Сборка проекта на удаленном сервере.
 2. Запуск тестов.
+3. Публикация в Docker Hub.
 
 [//]: # (3. Проверка кода на соответствие стандартам Go.)
 
@@ -41,41 +50,9 @@
 
 Кроме того, я освоил принципы непрерывной доставки (CD), которые позволяют автоматически развертывать приложение после успешного прохождения всех этапов CI. Это обеспечивает более быстрый и надежный процесс доставки новых версий приложения на сервер.
 
-    Настройка автоматического развертывания:
-        Я настроил рабочие процессы для автоматического развертывания приложения на сервер после успешного прохождения всех тестов.
-        Пример конфигурационного файла для автоматического развертывания:
-        YAML
+При каждом push/pull request в master запускается GitHub Actions, который выполняет следующие шаги:
+1. Подключение к удаленному серверу по SSH.
+2. Получение секретов из развернутого `HashiCorp Vault`.
+3. Получение Docker образа из Docker Hub и его запуск с переменными окружения.
 
-name: CD
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.16
-
-      - name: Build application
-        run: go build -o go-photo ./cmd/go-photo
-
-      - name: Deploy to server
-        run: |
-          scp go-photo user@server:/path/to/deploy
-          ssh user@server 'systemctl restart go-photo'
-
-Public code references from 2 repositories
-
-Эти навыки позволили мне автоматизировать весь процесс разработки, начиная от написания кода и заканчивая его развертыванием, что значительно повысило эффективность и качество работы над проектом.
-
-Если у вас есть еще какие-либо аспекты проекта, которые вы хотели бы описать, пожалуйста, сообщите мне!
+> Для работы с секретами используеются `Github Secrets` и `HashiCorp Vault`, что обеспечивает безопасность и конфиденциальность данных.

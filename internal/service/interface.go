@@ -8,7 +8,7 @@ import (
 	"mime/multipart"
 )
 
-//go:generate mockgen -destination=mock/mocks.go -source=service.go
+//go:generate mockgen -destination=mock/mocks.go -source=interface.go
 
 type TokenService interface {
 	// VerifyToken проверяет токен и возвращает payload из токена

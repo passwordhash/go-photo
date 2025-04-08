@@ -5,7 +5,9 @@ package utils
 type Interface interface {
 	EncryptPassword(publicKey *string, password string) (string, error)
 
-	UUID() string
+	// UUIDFilename возвращает имя файла, сгенерированное с помощью UUID,
+	// сохраняя расширение оригинального файла.
+	UUIDFilename(filename string) string
 }
 
 type Utils struct {

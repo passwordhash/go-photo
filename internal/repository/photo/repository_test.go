@@ -316,9 +316,9 @@ func TestRepository_GetPhotoVersionByToken(t *testing.T) {
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(regexp.QuoteMeta(query)).
 					WithArgs("token", "original").
-						WillReturnRows(sqlmock.NewRows(photoVersionColumns).AddRow(
-							1, 1, "original", "filepath1", int64(12345), 100, 100, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
-						))
+					WillReturnRows(sqlmock.NewRows(photoVersionColumns).AddRow(
+						1, 1, "original", "filepath1", int64(12345), 100, 100, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+					))
 			},
 			expectedResult: &model.PhotoVersion{
 				ID:          1,

@@ -78,7 +78,7 @@ func (s *serviceProvider) PhotoService(db *sqlx.DB) service.PhotoService {
 		deps := photoService.Deps{
 			StorageFolderPath: s.BaseConfig().StorageFolder(),
 		}
-		s.photoService = photoService.NewService(deps, s.PhotoRepository(db))
+		s.photoService = photoService.NewService(deps, s.PhotoRepository(db), nil)
 	}
 
 	return s.photoService

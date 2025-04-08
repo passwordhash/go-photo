@@ -126,7 +126,7 @@ func TestService_Login(t *testing.T) {
 
 			tt.mockBehavior(mockUtils, mockAccountClient, tt.email, tt.password)
 
-			token, err := s.Login(nil, tt.email, tt.password)
+			token, err := s.Login(context.TODO(), tt.email, tt.password)
 			if tt.expectedError != nil {
 				assert.ErrorIs(t, err, tt.expectedError)
 			} else {
@@ -255,7 +255,7 @@ func TestService_Register(t *testing.T) {
 				ttl: time.Now().Add(time.Minute),
 			}
 
-			info, err := s.Register(nil, tt.params)
+			info, err := s.Register(context.TODO(), tt.params)
 			if tt.expectedError != nil {
 				assert.ErrorIs(t, err, tt.expectedError)
 			} else {

@@ -14,14 +14,14 @@ type Photo struct {
 }
 
 type PhotoVersion struct {
-	ID          int            `db:"id"`
-	PhotoID     int            `db:"photo_id"`
+	ID           int            `db:"id"`
+	PhotoID      int            `db:"photo_id"`
 	VersionType  sql.NullString `db:"version_type"`
 	UUIDFilename string         `db:"uuid_filename"`
 	Size         int64          `db:"size"`
-	Height      int            `db:"height"`
-	Width       int            `db:"width"`
-	SavedAt     *sql.NullTime  `db:"saved_at"`
+	Height       int            `db:"height"`
+	Width        int            `db:"width"`
+	SavedAt      *sql.NullTime  `db:"saved_at"`
 }
 
 type PublishedPhotoInfo struct {
@@ -45,13 +45,13 @@ type PhotoWithPhotoVersion struct {
 }
 
 type CreateOriginalPhotoParams struct {
-	UserUUID string
+	UserUUID     string
 	Filename     string
 	UUIDFilename string
 	Size         int64
-	Height   int
-	Width    int
-	SavedAt  time.Time
+	Height       int
+	Width        int
+	SavedAt      time.Time
 }
 
 type FilterParams struct {

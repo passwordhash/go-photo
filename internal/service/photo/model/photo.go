@@ -13,14 +13,14 @@ type UploadInfoList struct {
 }
 
 type UploadInfo struct {
-	PhotoID  int
-	Filename string
+	PhotoID      int
+	Filename     string
 	UUIDFilename string
-	Error    error
-	Size     int64
-	Height   int
-	Width    int
-	SavedAt  time.Time
+	Error        error
+	Size         int64
+	Height       int
+	Width        int
+	SavedAt      time.Time
 }
 
 func NewUploadInfoList(infos []UploadInfo) *UploadInfoList {

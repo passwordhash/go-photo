@@ -113,7 +113,7 @@ func (r *repository) GetPhotoByID(ctx context.Context, photoID int) (*repoModel.
 	err := r.db.GetContext(ctx, &photo, query, photoID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repoErr.NotFoundError
+			return nil, fmt.Errorf("%w: no photo found with id %d", repoErr.NotFoundError, photoID)
 		}
 		return nil, err
 	}
@@ -150,7 +150,7 @@ func (r *repository) GetPhotoVersionByToken(
 	err = r.db.GetContext(ctx, &photoVersion, rebindedQuery, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repoErr.NotFoundError
+			return nil, fmt.Errorf("%w: no photo version found with token %s", repoErr.NotFoundError, token)
 		}
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func (r *repository) GetPhotoVersions(ctx context.Context, photoID int) ([]repoM
 	err := r.db.SelectContext(ctx, &versions, query, photoID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repoErr.NotFoundError
+			return nil, fmt.Errorf("%w: no photo versions found with id %d", repoErr.NotFoundError, photoID)
 		}
 		return nil, err
 	}

@@ -35,12 +35,12 @@ type Photo struct {
 }
 
 type PhotoVersion struct {
-	ID          int
-	PhotoID     int
+	ID           int
+	PhotoID      int
 	VersionType  PhotoVersionType
 	UUIDFilename string
 	Size         int64
-	Height      int
-	Width       int
-	SavedAt     time.Time
+	Height       int
+	Width        int
+	SavedAt      time.Time
 }

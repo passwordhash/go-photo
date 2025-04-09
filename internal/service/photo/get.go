@@ -43,8 +43,6 @@ func (s *service) GetPhotoFileByVersionAndToken(ctx context.Context, token strin
 		return nil, err
 	}
 
-	//fullPath := filepath.Join(s.d.StorageFolderPath, photoVersion.UUIDFilename)
-
 	file, err := os.Open(photoVersion.UUIDFilename)
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to open file: %v", serviceErr.UnexpectedError, err)

@@ -163,12 +163,12 @@ func (s *service) saveFile(_ context.Context, file *multipart.FileHeader, destFo
 	}
 
 	return serviceModel.UploadInfo{
-		Filename: originalFilename,
+		Filename:     originalFilename,
 		UUIDFilename: uuidFilename,
-		Size: file.Size,
-		Height: saveInfo.height,
-		Width: saveInfo.width,
-		SavedAt: saveInfo.savedAt,
+		Size:         file.Size,
+		Height:       saveInfo.height,
+		Width:        saveInfo.width,
+		SavedAt:      saveInfo.savedAt,
 	}
 }
 

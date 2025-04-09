@@ -35,7 +35,7 @@ func (s *service) UploadPhoto(ctx context.Context, userUUID string, photoFile *m
 		return 0, fmt.Errorf("failed to ensure user's photos folder exists: %w", err)
 	}
 
-	log.Printf("User folder: %s", userFolder)
+	log.Tracef("User folder: %s", userFolder)
 
 	info := s.saveFile(ctx, photoFile, userFolder)
 	if info.Error != nil {
@@ -43,7 +43,7 @@ func (s *service) UploadPhoto(ctx context.Context, userUUID string, photoFile *m
 		return 0, info.Error
 	}
 
-	log.Infof("info after saveFile: %+v", info)
+	log.Tracef("info after saveFile: %+v", info)
 
 	info = s.saveToDatabase(ctx, userUUID, info)
 	if info.Error != nil {
@@ -149,24 +149,27 @@ func (s *service) UploadBatchPhotos(ctx context.Context, userUUID string, photoF
 // saveFile сохраняет файл на диск и возвращает информацию о нем
 // Название файла генерируется с помощью UUID
 func (s *service) saveFile(_ context.Context, file *multipart.FileHeader, destFolder string) serviceModel.UploadInfo {
-	file.Filename = s.utils.UUIDFilename(file.Filename)
+	originalFilename := file.Filename
+	uuidFilename := s.utils.UUIDFilename(originalFilename)
 
-	info := serviceModel.UploadInfo{
-		Filename: file.Filename,
-		Size:     file.Size,
-	}
+	file.Filename = uuidFilename
 
 	saveInfo, err := saveFileToDisk(file, destFolder)
 	if err != nil {
 		log.Errorf("Failed to save file %s: %v", file.Filename, err)
-		info.Error = fmt.Errorf("disk save error: %w", err)
+		return serviceModel.UploadInfo{
+			Error: fmt.Errorf("disk save error: %w", err),
+		}
 	}
 
-	info.Height = saveInfo.height
-	info.Width = saveInfo.width
-	info.SavedAt = saveInfo.savedAt
-
-	return info
+	return serviceModel.UploadInfo{
+		Filename: originalFilename,
+		UUIDFilename: uuidFilename,
+		Size: file.Size,
+		Height: saveInfo.height,
+		Width: saveInfo.width,
+		SavedAt: saveInfo.savedAt,
+	}
 }
 
 // saveToDatabase сохраняет информацию о файле в базе данных. Если произошла ошибка, файл удаляется с диска
@@ -174,7 +177,7 @@ func (s *service) saveToDatabase(ctx context.Context, userUUID string, info serv
 	id, err := s.photoRepository.CreateOriginalPhoto(ctx, &repoModel.CreateOriginalPhotoParams{
 		UserUUID:     userUUID,
 		Filename:     info.Filename,
-		UUIDFilename: filepath.Join(s.d.StorageFolderPath, userUUID, info.Filename),
+		UUIDFilename: info.UUIDFilename,
 		Size:         info.Size,
 		Height:       info.Height,
 		Width:        info.Width,

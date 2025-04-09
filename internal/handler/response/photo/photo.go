@@ -22,9 +22,9 @@ type GetPhotoVersionsResponse struct {
 
 type PhotoVersion struct {
 	PhotoID     int    `json:"photo_id"`
-	VersionType string `json:"version_type"`
-	Filepath    string `json:"filepath"`
-	Size        int64  `json:"size"`
+	VersionType  string `json:"version_type"`
+	UUIDFilename string `json:"uuid_filename"`
+	Size         int64  `json:"size"`
 	Height      int    `json:"height"`
 	Width       int    `json:"width"`
 	SavedAt     string `json:"saved_at"`

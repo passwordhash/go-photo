@@ -15,6 +15,7 @@ type UploadInfoList struct {
 type UploadInfo struct {
 	PhotoID  int
 	Filename string
+	UUIDFilename string
 	Error    error
 	Size     int64
 	Height   int

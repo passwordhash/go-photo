@@ -7,13 +7,13 @@ import (
 
 func ToPhotoVersionFromModel(photoVersion model.PhotoVersion) PhotoVersion {
 	return PhotoVersion{
-		PhotoID:     photoVersion.PhotoID,
-		VersionType: string(photoVersion.VersionType),
-		Filepath:    photoVersion.UUIDFilename,
-		Size:        photoVersion.Size,
-		Height:      photoVersion.Height,
-		Width:       photoVersion.Width,
-		SavedAt:     photoVersion.SavedAt.Format(time.DateTime),
+		PhotoID:      photoVersion.PhotoID,
+		VersionType:  string(photoVersion.VersionType),
+		UUIDFilename: photoVersion.UUIDFilename,
+		Size:         photoVersion.Size,
+		Height:       photoVersion.Height,
+		Width:        photoVersion.Width,
+		SavedAt:      photoVersion.SavedAt.Format(time.DateTime),
 	}
 }
 

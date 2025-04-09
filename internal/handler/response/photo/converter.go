@@ -9,7 +9,7 @@ func ToPhotoVersionFromModel(photoVersion model.PhotoVersion) PhotoVersion {
 	return PhotoVersion{
 		PhotoID:     photoVersion.PhotoID,
 		VersionType: string(photoVersion.VersionType),
-		Filepath:    photoVersion.Filepath,
+		Filepath:    photoVersion.UUIDFilename,
 		Size:        photoVersion.Size,
 		Height:      photoVersion.Height,
 		Width:       photoVersion.Width,

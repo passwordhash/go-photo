@@ -76,7 +76,6 @@ generate-docs:
 # ==========================
 
 migrate-up:
-	@echo "Применение миграций к локальной БД..."
 	docker run --rm \
 		-v ./schema:/migrations \
 		--network host migrate/migrate \
@@ -85,7 +84,6 @@ migrate-up:
 		up
 
 migrate-down:
-	@echo "Откат миграций к локальной БД..."
 	docker run --rm \
 		-v ./schema:/migrations \
 		--network host migrate/migrate \

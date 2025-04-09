@@ -32,13 +32,13 @@ var (
 
 func TestRepository_CreateOriginalPhoto(t *testing.T) {
 	defaultParams := model.CreateOriginalPhotoParams{
-		UserUUID: "user-uuid",
-		Filename: "test.png",
-		Filepath: "home/user-uuid/test.png",
-		Size:     12345,
-		Height:   100,
-		Width:    100,
-		SavedAt:  time.Now(),
+		UserUUID:     "user-uuid",
+		Filename:     "test.png",
+		UUIDFilename: "home/user-uuid/test.png",
+		Size:         12345,
+		Height:       100,
+		Width:        100,
+		SavedAt:      time.Now(),
 	}
 
 	tests := []struct {
@@ -211,10 +211,9 @@ func TestRepository_GetPhotoVersions(t *testing.T) {
 					WithArgs(1).
 					WillReturnRows(sqlmock.NewRows(photoVersionColumns).
 						AddRow(1, 1, "original", "filepath1", 12345, 100, 100, uploadedAt))
-				//AddRow(2, 1, "thumbnail", "filepath2", 54321))
 			},
 			expectedResult: []model.PhotoVersion{
-				{ID: 1, PhotoID: 1, VersionType: sql.NullString{String: "original", Valid: true}, Filepath: "filepath1",
+				{ID: 1, PhotoID: 1, VersionType: sql.NullString{String: "original", Valid: true}, UUIDFilename: "filepath1",
 					Size:   12345,
 					Height: 100, Width: 100, SavedAt: &sql.NullTime{Time: uploadedAt.Time, Valid: true}},
 			},
@@ -321,14 +320,14 @@ func TestRepository_GetPhotoVersionByToken(t *testing.T) {
 					))
 			},
 			expectedResult: &model.PhotoVersion{
-				ID:          1,
-				PhotoID:     1,
-				VersionType: sql.NullString{String: "original", Valid: true},
-				Filepath:    "filepath1",
-				Size:        12345,
-				Height:      100,
-				Width:       100,
-				SavedAt:     &sql.NullTime{Time: uploadedAt.Time, Valid: true},
+				ID:           1,
+				PhotoID:      1,
+				VersionType:  sql.NullString{String: "original", Valid: true},
+				UUIDFilename: "filepath1",
+				Size:         12345,
+				Height:       100,
+				Width:        100,
+				SavedAt:      &sql.NullTime{Time: uploadedAt.Time, Valid: true},
 			},
 			expectedError: nil,
 		},

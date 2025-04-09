@@ -172,13 +172,13 @@ func (s *service) saveFile(_ context.Context, file *multipart.FileHeader, destFo
 // saveToDatabase сохраняет информацию о файле в базе данных. Если произошла ошибка, файл удаляется с диска
 func (s *service) saveToDatabase(ctx context.Context, userUUID string, info serviceModel.UploadInfo) serviceModel.UploadInfo {
 	id, err := s.photoRepository.CreateOriginalPhoto(ctx, &repoModel.CreateOriginalPhotoParams{
-		UserUUID: userUUID,
-		Filename: info.Filename,
-		Filepath: filepath.Join(s.d.StorageFolderPath, userUUID, info.Filename),
-		Size:     info.Size,
-		Height:   info.Height,
-		Width:    info.Width,
-		SavedAt:  info.SavedAt,
+		UserUUID:     userUUID,
+		Filename:     info.Filename,
+		UUIDFilename: filepath.Join(s.d.StorageFolderPath, userUUID, info.Filename),
+		Size:         info.Size,
+		Height:       info.Height,
+		Width:        info.Width,
+		SavedAt:      info.SavedAt,
 	})
 
 	if err != nil {

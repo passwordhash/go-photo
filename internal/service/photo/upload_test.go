@@ -111,7 +111,7 @@ func TestService_UploadBatchPhotos(t *testing.T) {
 			mockRepo := mock_repository.NewMockPhotoRepository(c)
 			tt.mockBehavior(mockRepo, tt.userUUID, tt.files())
 
-			s := NewService(Deps{StorageFolderPath: storageDir}, mockRepo)
+			s := NewService(Deps{StorageFolderPath: storageDir}, mockRepo, nil)
 
 			uploaded, err := s.UploadBatchPhotos(context.Background(), tt.userUUID, tt.files())
 
@@ -193,7 +193,7 @@ func TestService_SaveToDatabase(t *testing.T) {
 			mockRepo := mock_repository.NewMockPhotoRepository(c)
 			tt.mockBehavior(mockRepo, context.Background(), tt.userUUID, tt.uploadInfo)
 
-			s := NewService(Deps{StorageFolderPath: storageDir}, mockRepo)
+			s := NewService(Deps{StorageFolderPath: storageDir}, mockRepo, nil)
 
 			// Вызываем тестируемый метод
 			info := s.saveToDatabase(context.Background(), tt.userUUID, tt.uploadInfo)

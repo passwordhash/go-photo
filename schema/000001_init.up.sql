@@ -13,7 +13,7 @@ CREATE TABLE photo_versions
     id           SERIAL PRIMARY KEY,
     photo_id     INTEGER      not null,
     version_type version_type_enum default 'original',
-    filepath     VARCHAR(255) not null,
+    uuid_filename     VARCHAR(255) not null,
     size         INTEGER      not null,
     width        INTEGER      not null,
     height       INTEGER      not null,

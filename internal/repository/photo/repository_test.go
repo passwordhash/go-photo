@@ -20,14 +20,8 @@ import (
 
 var (
 	photoColumns        = []string{"id", "user_uuid", "filename", "uploaded_at"}
-	photoVersionColumns = []string{"id", "photo_id", "version_type", "filepath", "size", "height", "width", "saved_at"}
+	photoVersionColumns = []string{"id", "photo_id", "version_type", "uuid_filename", "size", "height", "width", "saved_at"}
 	idColumn            = []string{"id"}
-)
-
-var (
-	rowsWithPhotoColumns        = sqlmock.NewRows(photoColumns)
-	rowsWithPhotoVersionColumns = sqlmock.NewRows(photoVersionColumns)
-	rowsWithIDColumn            = sqlmock.NewRows(idColumn)
 )
 
 func TestRepository_CreateOriginalPhoto(t *testing.T) {
@@ -56,7 +50,7 @@ func TestRepository_CreateOriginalPhoto(t *testing.T) {
 
 				mock.ExpectQuery("INSERT INTO photos").
 					WithArgs("user-uuid", "test.png", sqlmock.AnyArg()).
-					WillReturnRows(rowsWithIDColumn.
+					WillReturnRows(sqlmock.NewRows(idColumn).
 						AddRow(1))
 
 				mock.ExpectExec("INSERT INTO photo_versions").
@@ -85,7 +79,7 @@ func TestRepository_CreateOriginalPhoto(t *testing.T) {
 
 				mock.ExpectQuery("INSERT INTO photos").
 					WithArgs("user-uuid", "test.png", sqlmock.AnyArg()).
-					WillReturnRows(rowsWithIDColumn.
+					WillReturnRows(sqlmock.NewRows(idColumn).
 						AddRow(1))
 
 				mock.ExpectExec("INSERT INTO photo_versions").
@@ -120,7 +114,7 @@ func TestRepository_CreateOriginalPhoto(t *testing.T) {
 
 				mock.ExpectQuery("INSERT INTO photos").
 					WithArgs("user-uuid", "test.png", sqlmock.AnyArg()).
-					WillReturnRows(rowsWithIDColumn.
+					WillReturnRows(sqlmock.NewRows(idColumn).
 						AddRow(1))
 
 				mock.ExpectExec("INSERT INTO photo_versions").
@@ -139,7 +133,7 @@ func TestRepository_CreateOriginalPhoto(t *testing.T) {
 				mock.ExpectBegin()
 				mock.ExpectQuery("INSERT INTO photos").
 					WithArgs("user-uuid", "test.png", sqlmock.AnyArg()).
-					WillReturnRows(rowsWithIDColumn.AddRow(123))
+					WillReturnRows(sqlmock.NewRows(idColumn).AddRow(123))
 				mock.ExpectExec("INSERT INTO photo_versions").
 					WithArgs(123, "home/user-uuid/test.png", 12345, 100, 100, sqlmock.AnyArg()).
 					WillReturnResult(sqlmock.NewResult(1, 1))
@@ -194,7 +188,7 @@ func TestRepository_CreateOriginalPhoto(t *testing.T) {
 
 func TestRepository_GetPhotoVersions(t *testing.T) {
 	uploadedAt := sql.NullTime{Time: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), Valid: true}
-	query := "SELECT id, photo_id, version_type, filepath, size, height, width, saved_at FROM photo_versions WHERE photo_id = \\$1 ORDER BY size"
+	query := "SELECT id, photo_id, version_type, uuid_filename, size, height, width, saved_at FROM photo_versions WHERE photo_id = \\$1 ORDER BY size"
 
 	tests := []struct {
 		name           string
@@ -210,12 +204,15 @@ func TestRepository_GetPhotoVersions(t *testing.T) {
 				mock.ExpectQuery(query).
 					WithArgs(1).
 					WillReturnRows(sqlmock.NewRows(photoVersionColumns).
-						AddRow(1, 1, "original", "filepath1", 12345, 100, 100, uploadedAt))
+						AddRow(1, 1, "original", "uuid_filename", 12345, 100, 100, uploadedAt))
 			},
 			expectedResult: []model.PhotoVersion{
-				{ID: 1, PhotoID: 1, VersionType: sql.NullString{String: "original", Valid: true}, UUIDFilename: "filepath1",
+				{ID: 1, PhotoID: 1,
+					VersionType: sql.NullString{String: "original", Valid: true},
+					UUIDFilename: "uuid_filename",
 					Size:   12345,
-					Height: 100, Width: 100, SavedAt: &sql.NullTime{Time: uploadedAt.Time, Valid: true}},
+					Height: 100, Width: 100, SavedAt: &sql.NullTime{Time: uploadedAt.Time, Valid: true},
+				},
 			},
 			expectedError: nil,
 		},
@@ -295,7 +292,7 @@ func TestRepository_GetPhotoVersions(t *testing.T) {
 func TestRepository_GetPhotoVersionByToken(t *testing.T) {
 	uploadedAt := sql.NullTime{Time: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), Valid: true}
 	query := `
-	SELECT pv.id, pv.photo_id, pv.version_type, pv.filepath, pv.size, pv.height, pv.width, pv.saved_at
+	SELECT pv.id, pv.photo_id, pv.version_type, pv.uuid_filename, pv.size, pv.height, pv.width, pv.saved_at
 	FROM published_photo_info ppi
 	JOIN photo_versions pv ON ppi.photo_id = pv.photo_id
 	WHERE ppi.public_token = ? AND version_type = ?`
@@ -316,14 +313,14 @@ func TestRepository_GetPhotoVersionByToken(t *testing.T) {
 				mock.ExpectQuery(regexp.QuoteMeta(query)).
 					WithArgs("token", "original").
 					WillReturnRows(sqlmock.NewRows(photoVersionColumns).AddRow(
-						1, 1, "original", "filepath1", int64(12345), 100, 100, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+						1, 1, "original", "uuid_filename1", int64(12345), 100, 100, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 					))
 			},
 			expectedResult: &model.PhotoVersion{
 				ID:           1,
 				PhotoID:      1,
 				VersionType:  sql.NullString{String: "original", Valid: true},
-				UUIDFilename: "filepath1",
+				UUIDFilename: "uuid_filename1",
 				Size:         12345,
 				Height:       100,
 				Width:        100,

@@ -44,9 +44,12 @@ func (s *service) GetPhotoFileByVersionAndToken(ctx context.Context, token strin
 		return nil, err
 	}
 
-	// TODO: получить uuid пользователя, чтобы найти файл
+	photo, err := s.photoRepository.GetPhotoByID(ctx, photoVersion.PhotoID)
+	if err := s.HandleRepoErr(err); err != nil {
+		return nil, err
+	}
 
-	photoFilepath := filepath.Join(s.d.StorageFolderPath, photoVersion.UUIDFilename)
+	photoFilepath := filepath.Join(s.d.StorageFolderPath, photo.UserUUID, photoVersion.UUIDFilename)
 	file, err := os.Open(photoFilepath)
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to open file: %v", serviceErr.UnexpectedError, err)

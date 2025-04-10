@@ -36,9 +36,9 @@ type PhotoWithPhotoVersion struct {
 	Filename    string         `db:"filename"`
 	UploadedAt  *sql.NullTime  `db:"uploaded_at"`
 	VersionType sql.NullString `db:"version_type"`
-	VersionID   int            `db:"version_id"`
-	Filepath    string         `db:"filepath"`
-	Size        int64          `db:"size"`
+	VersionID    int    `db:"version_id"`
+	UUIDFilename string `db:"uuid_filename"`
+	Size         int64  `db:"size"`
 	Height      int            `db:"height"`
 	Width       int            `db:"width"`
 	SavedAt     *sql.NullTime  `db:"saved_at"`

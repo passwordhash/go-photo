@@ -3,6 +3,7 @@ package photo
 import (
 	"context"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"go-photo/internal/model"
 	"go-photo/internal/repository/photo/converter"
 	repoModel "go-photo/internal/repository/photo/model"
@@ -50,6 +51,7 @@ func (s *service) GetPhotoFileByVersionAndToken(ctx context.Context, token strin
 	}
 
 	photoFilepath := filepath.Join(s.d.StorageFolderPath, photo.UserUUID, photoVersion.UUIDFilename)
+	log.Printf("%s", photoFilepath)
 	file, err := os.Open(photoFilepath)
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to open file: %v", serviceErr.UnexpectedError, err)

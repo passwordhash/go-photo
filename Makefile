@@ -34,6 +34,44 @@ run-tests:
 	@echo "Запуск тестов..."
 	go test -v ./...
 
+EXCLUDE_PATTERNS = model error converter mock
+# Кроссплатформенная подмена команды sed
+SED_INPLACE = $(shell uname | grep -q Darwin && echo "sed -i ''" || echo "sed -i")
+collect-coverage-ci:
+	@echo "Сбор покрытия для CI..."
+	go test -coverprofile=coverage_raw.out -v \
+		./internal/handler/v1/auth/ \
+		./internal/handler/v1/photos/ \
+		./internal/handler/v1/user/ \
+		./internal/handler/v1/public/ \
+		./internal/service/photo \
+		./internal/service/user \
+		./internal/repository/photo
+
+	@echo "Фильтрация лишних файлов из покрытия..."
+	@cp coverage_raw.out coverage.out
+	@$(foreach pattern,$(EXCLUDE_PATTERNS), $(SED_INPLACE) "/${pattern}/d" coverage.out;)
+
+	@echo "Покрытие:"
+	@go tool cover -func=coverage.out
+
+collect-coverage:
+	@echo "Сбор покрытия..."
+	go test -coverprofile=coverage_raw.out \
+		./internal/handler/v1/auth/ \
+		./internal/handler/v1/photos/ \
+		./internal/handler/v1/user/ \
+		./internal/handler/v1/public/ \
+		./internal/service/photo \
+		./internal/service/user \
+		./internal/repository/photo
+
+	@echo "Результаты покрытия:"
+	@go tool cover -func=coverage.out
+
+	@echo "HTML-отчёт:"
+	@go tool cover -html=coverage.out
+
 # ==========================
 # Установка зависимостей
 # ==========================

@@ -14,14 +14,14 @@ type Photo struct {
 }
 
 type PhotoVersion struct {
-	ID          int            `db:"id"`
-	PhotoID     int            `db:"photo_id"`
-	VersionType sql.NullString `db:"version_type"`
-	Filepath    string         `db:"filepath"`
-	Size        int64          `db:"size"`
-	Height      int            `db:"height"`
-	Width       int            `db:"width"`
-	SavedAt     *sql.NullTime  `db:"saved_at"`
+	ID           int            `db:"id"`
+	PhotoID      int            `db:"photo_id"`
+	VersionType  sql.NullString `db:"version_type"`
+	UUIDFilename string         `db:"uuid_filename"`
+	Size         int64          `db:"size"`
+	Height       int            `db:"height"`
+	Width        int            `db:"width"`
+	SavedAt      *sql.NullTime  `db:"saved_at"`
 }
 
 type PublishedPhotoInfo struct {
@@ -36,22 +36,22 @@ type PhotoWithPhotoVersion struct {
 	Filename    string         `db:"filename"`
 	UploadedAt  *sql.NullTime  `db:"uploaded_at"`
 	VersionType sql.NullString `db:"version_type"`
-	VersionID   int            `db:"version_id"`
-	Filepath    string         `db:"filepath"`
-	Size        int64          `db:"size"`
+	VersionID    int    `db:"version_id"`
+	UUIDFilename string `db:"uuid_filename"`
+	Size         int64  `db:"size"`
 	Height      int            `db:"height"`
 	Width       int            `db:"width"`
 	SavedAt     *sql.NullTime  `db:"saved_at"`
 }
 
 type CreateOriginalPhotoParams struct {
-	UserUUID string
-	Filename string
-	Filepath string
-	Size     int64
-	Height   int
-	Width    int
-	SavedAt  time.Time
+	UserUUID     string
+	Filename     string
+	UUIDFilename string
+	Size         int64
+	Height       int
+	Width        int
+	SavedAt      time.Time
 }
 
 type FilterParams struct {
@@ -71,5 +71,5 @@ func (f *FilterParams) MapToArgs(params map[string]interface{}) string {
 }
 
 func (p *CreateOriginalPhotoParams) IsValid() bool {
-	return p.UserUUID != "" && p.Filename != "" && p.Filepath != "" && p.Size > 0 && p.Height > 0 && p.Width > 0 && !p.SavedAt.IsZero()
+	return p.UserUUID != "" && p.Filename != "" && p.UUIDFilename != "" && p.Size > 0 && p.Height > 0 && p.Width > 0 && !p.SavedAt.IsZero()
 }

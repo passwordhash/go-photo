@@ -52,10 +52,8 @@ func NewOk(c *gin.Context, data interface{}) {
 }
 
 func NewErr(c *gin.Context, code int, errMessage ErrMessage, err error, clientMessage string) {
-	outErr := errors.New(string(errMessage))
-	if err != nil {
-		outErr = fmt.Errorf("%s: %w", errMessage, err)
-	}
+
+	outErr := fmt.Errorf("%w: %s", err, clientMessage)
 	c.Error(outErr)
 	c.AbortWithStatusJSON(code, Error{
 		Error:   errMessage,

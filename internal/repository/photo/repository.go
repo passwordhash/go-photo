@@ -60,12 +60,12 @@ func (r *repository) CreateOriginalPhoto(ctx context.Context, params *repoModel.
 	}
 
 	photoVersionQuery := `
-		INSERT INTO photo_versions (photo_id, filepath, size, height, width, saved_at)
+		INSERT INTO photo_versions (photo_id, uuid_filename, size, height, width, saved_at)
 		VALUES ($1, $2, $3, $4, $5, $6)`
 	_, err = tx.ExecContext(ctx,
 		photoVersionQuery,
 		photoID,
-		params.Filepath,
+		params.UUIDFilename,
 		params.Size,
 		params.Height,
 		params.Width,
@@ -113,7 +113,7 @@ func (r *repository) GetPhotoByID(ctx context.Context, photoID int) (*repoModel.
 	err := r.db.GetContext(ctx, &photo, query, photoID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repoErr.NotFoundError
+			return nil, fmt.Errorf("%w: no photo found with id %d", repoErr.NotFoundError, photoID)
 		}
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func (r *repository) GetPhotoVersionByToken(
 	var photoVersion repoModel.PhotoVersion
 
 	query := `
-		SELECT pv.id, pv.photo_id, pv.version_type, pv.filepath, pv.size, pv.height, pv.width, pv.saved_at
+		SELECT pv.id, pv.photo_id, pv.version_type, pv.uuid_filename, pv.size, pv.height, pv.width, pv.saved_at
 		FROM published_photo_info ppi
 		JOIN photo_versions pv ON ppi.photo_id = pv.photo_id
 		WHERE ppi.public_token = :token`
@@ -150,7 +150,7 @@ func (r *repository) GetPhotoVersionByToken(
 	err = r.db.GetContext(ctx, &photoVersion, rebindedQuery, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repoErr.NotFoundError
+			return nil, fmt.Errorf("%w: no photo version found with token %s", repoErr.NotFoundError, token)
 		}
 		return nil, err
 	}
@@ -175,6 +175,7 @@ func (r *repository) GetPublicPhotosByTokenPrefix(
     	pv.version_type,
     	pv.size,
     	pv.width,
+    	pv.uuid_filename,
     	pv.height,
     	pv.saved_at
 	FROM photos p
@@ -207,7 +208,7 @@ func (r *repository) GetPhotoVersions(ctx context.Context, photoID int) ([]repoM
 	var versions []repoModel.PhotoVersion
 
 	query := `
-		SELECT id, photo_id, version_type, filepath, size, height, width, saved_at
+		SELECT id, photo_id, version_type, uuid_filename, size, height, width, saved_at
 		FROM photo_versions 
 		WHERE photo_id = $1
 		ORDER BY size`
@@ -215,7 +216,7 @@ func (r *repository) GetPhotoVersions(ctx context.Context, photoID int) ([]repoM
 	err := r.db.SelectContext(ctx, &versions, query, photoID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repoErr.NotFoundError
+			return nil, fmt.Errorf("%w: no photo versions found with id %d", repoErr.NotFoundError, photoID)
 		}
 		return nil, err
 	}

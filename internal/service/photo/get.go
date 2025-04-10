@@ -3,11 +3,13 @@ package photo
 import (
 	"context"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"go-photo/internal/model"
 	"go-photo/internal/repository/photo/converter"
 	repoModel "go-photo/internal/repository/photo/model"
 	serviceErr "go-photo/internal/service/error"
 	"os"
+	"path/filepath"
 )
 
 func (s *service) GetPhotoVersions(ctx context.Context, userUUID string, photoID int) ([]model.PhotoVersion, error) {
@@ -43,9 +45,14 @@ func (s *service) GetPhotoFileByVersionAndToken(ctx context.Context, token strin
 		return nil, err
 	}
 
-	//fullPath := filepath.Join(s.d.StorageFolderPath, photoVersion.Filepath)
+	photo, err := s.photoRepository.GetPhotoByID(ctx, photoVersion.PhotoID)
+	if err := s.HandleRepoErr(err); err != nil {
+		return nil, err
+	}
 
-	file, err := os.Open(photoVersion.Filepath)
+	photoFilepath := filepath.Join(s.d.StorageFolderPath, photo.UserUUID, photoVersion.UUIDFilename)
+	log.Printf("%s", photoFilepath)
+	file, err := os.Open(photoFilepath)
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to open file: %v", serviceErr.UnexpectedError, err)
 	}

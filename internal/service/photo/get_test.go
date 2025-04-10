@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/golang/mock/gomock"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go-photo/internal/model"
@@ -32,13 +33,20 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 			inputVersion: "original",
 			mockBehavior: func(repo *mock_repository.MockPhotoRepository, token string, version string) {
 				photoVersion := &repoModel.PhotoVersion{
-					Filepath: "test.png",
-					Size:     4,
+					PhotoID:      123,
+					UUIDFilename: "test.png",
+					Size:         4,
 				}
 				versionType, _ := model.ParseVersionType(version)
+
 				repo.EXPECT().GetPhotoVersionByToken(gomock.Any(), token, &repoModel.FilterParams{
 					VersionType: versionType,
 				}).Return(photoVersion, nil)
+
+				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
+						Return(&repoModel.Photo{
+							UserUUID: "some-user-uuid",
+						}, nil)
 			},
 			expectedBytes: []byte("test"),
 			expectedError: nil,
@@ -49,13 +57,18 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 			inputVersion: "thumbnail",
 			mockBehavior: func(repo *mock_repository.MockPhotoRepository, token string, version string) {
 				photoVersion := &repoModel.PhotoVersion{
-					Filepath: "test.png",
-					Size:     4,
+					UUIDFilename: "test.png",
+					Size:         4,
 				}
 				versionType, _ := model.ParseVersionType(version)
 				repo.EXPECT().GetPhotoVersionByToken(gomock.Any(), token, &repoModel.FilterParams{
 					VersionType: versionType,
 				}).Return(photoVersion, nil)
+
+				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
+						Return(&repoModel.Photo{
+							UserUUID: "some-user-uuid",
+						}, nil)
 			},
 			expectedBytes: []byte("test"),
 			expectedError: nil,
@@ -66,13 +79,18 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 			inputVersion: "preview",
 			mockBehavior: func(repo *mock_repository.MockPhotoRepository, token string, version string) {
 				photoVersion := &repoModel.PhotoVersion{
-					Filepath: "test.png",
-					Size:     4,
+					UUIDFilename: "test.png",
+					Size:         4,
 				}
 				versionType, _ := model.ParseVersionType(version)
 				repo.EXPECT().GetPhotoVersionByToken(gomock.Any(), token, &repoModel.FilterParams{
 					VersionType: versionType,
 				}).Return(photoVersion, nil)
+
+				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
+						Return(&repoModel.Photo{
+							UserUUID: "some-user-uuid",
+						}, nil)
 			},
 			expectedBytes: []byte("test"),
 			expectedError: nil,
@@ -105,13 +123,18 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 			inputVersion: "original",
 			mockBehavior: func(repo *mock_repository.MockPhotoRepository, token string, version string) {
 				photoVersion := &repoModel.PhotoVersion{
-					Filepath: "nonexistent.png",
-					Size:     10,
+					UUIDFilename: "nonexistent.png",
+					Size:         10,
 				}
 				versionType, _ := model.ParseVersionType(version)
 				repo.EXPECT().GetPhotoVersionByToken(gomock.Any(), token, &repoModel.FilterParams{
 					VersionType: versionType,
 				}).Return(photoVersion, nil)
+
+				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
+						Return(&repoModel.Photo{
+							UserUUID: "some-user-uuid",
+						}, nil)
 			},
 			expectedBytes: nil,
 			expectedError: serviceErr.UnexpectedError,
@@ -123,12 +146,17 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 			mockBehavior: func(repo *mock_repository.MockPhotoRepository, token string, version string) {
 				versionType, _ := model.ParseVersionType(version)
 				photoVersion := &repoModel.PhotoVersion{
-					Filepath: "truncated_file.png",
-					Size:     1000, // deliberately large size
+					UUIDFilename: "truncated_file.png",
+					Size:         1000, // deliberately large size
 				}
 				repo.EXPECT().GetPhotoVersionByToken(gomock.Any(), token, &repoModel.FilterParams{
 					VersionType: versionType,
 				}).Return(photoVersion, nil)
+
+				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
+						Return(&repoModel.Photo{
+							UserUUID: "some-user-uuid",
+						}, nil)
 			},
 			expectedBytes: nil,
 			expectedError: serviceErr.UnexpectedError,
@@ -137,12 +165,18 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
+			userUUID := "some-user-uuid"
 			tmpFileName := "test.png"
-			tmpFilePath := filepath.Join(tmpDir, tmpFileName)
+
+			tmpDir := t.TempDir()
+			usrDir := filepath.Join(tmpDir, userUUID)
+			assert.NoError(t, os.MkdirAll(usrDir, os.ModePerm|os.ModeDir))
+
+			tmpFilePath := filepath.Join(usrDir, tmpFileName)
+			log.Println(tmpFilePath)
 
 			content := []byte("test")
-			err := os.WriteFile(tmpFilePath, content, 0644)
+			err := os.WriteFile(tmpFilePath, content, os.ModePerm|os.ModeDir)
 			require.NoError(t, err)
 
 			defer os.Remove(tmpFileName)
@@ -153,7 +187,7 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 			mockRepo := mock_repository.NewMockPhotoRepository(ctrl)
 			tt.mockBehavior(mockRepo, tt.inputToken, tt.inputVersion)
 
-			s := NewService(Deps{StorageFolderPath: tmpDir}, mockRepo)
+			s := NewService(Deps{StorageFolderPath: tmpDir}, mockRepo, nil)
 
 			bytes, err := s.GetPhotoFileByVersionAndToken(context.TODO(), tt.inputToken, tt.inputVersion)
 			if tt.expectedError != nil {

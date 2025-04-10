@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -51,19 +50,4 @@ func EnsureDirectoryExists(path string) error {
 		}
 	}
 	return nil
-}
-
-func WriteFile(filePath string, photoFile multipart.File) (int64, error) {
-	file, err := os.Create(filePath)
-	if err != nil {
-		return 0, fmt.Errorf("failed to create file %s: %w", filePath, err)
-	}
-	defer file.Close()
-
-	fileSize, err := io.Copy(file, photoFile)
-	if err != nil {
-		return 0, fmt.Errorf("failed to copy data to file %s: %w", filePath, err)
-	}
-
-	return fileSize, nil
 }

@@ -29,7 +29,6 @@ type saveToDiskInfo struct {
 	savedAt time.Time
 }
 
-// TODO: сохранение и запись абсолютного пути в БД
 func (s *service) UploadPhoto(ctx context.Context, userUUID string, photoFile *multipart.FileHeader) (int, error) {
 	userFolder, err := ensureUserFolder(s.d.StorageFolderPath, userUUID)
 	if err != nil {
@@ -144,35 +143,41 @@ func (s *service) UploadBatchPhotos(ctx context.Context, userUUID string, photoF
 }
 
 // saveFile сохраняет файл на диск и возвращает информацию о нем
+// Название файла генерируется с помощью UUID
 func (s *service) saveFile(_ context.Context, file *multipart.FileHeader, destFolder string) serviceModel.UploadInfo {
-	info := serviceModel.UploadInfo{
-		Filename: file.Filename,
-		Size:     file.Size,
-	}
+	originalFilename := file.Filename
+	uuidFilename := s.utils.UUIDFilename(originalFilename)
+
+	file.Filename = uuidFilename
 
 	saveInfo, err := saveFileToDisk(file, destFolder)
 	if err != nil {
 		log.Errorf("Failed to save file %s: %v", file.Filename, err)
-		info.Error = fmt.Errorf("disk save error: %w", err)
+		return serviceModel.UploadInfo{
+			Error: fmt.Errorf("disk save error: %w", err),
+		}
 	}
 
-	info.Height = saveInfo.height
-	info.Width = saveInfo.width
-	info.SavedAt = saveInfo.savedAt
-
-	return info
+	return serviceModel.UploadInfo{
+		Filename:     originalFilename,
+		UUIDFilename: uuidFilename,
+		Size:         file.Size,
+		Height:       saveInfo.height,
+		Width:        saveInfo.width,
+		SavedAt:      saveInfo.savedAt,
+	}
 }
 
 // saveToDatabase сохраняет информацию о файле в базе данных. Если произошла ошибка, файл удаляется с диска
 func (s *service) saveToDatabase(ctx context.Context, userUUID string, info serviceModel.UploadInfo) serviceModel.UploadInfo {
 	id, err := s.photoRepository.CreateOriginalPhoto(ctx, &repoModel.CreateOriginalPhotoParams{
-		UserUUID: userUUID,
-		Filename: info.Filename,
-		Filepath: filepath.Join(s.d.StorageFolderPath, userUUID, info.Filename),
-		Size:     info.Size,
-		Height:   info.Height,
-		Width:    info.Width,
-		SavedAt:  info.SavedAt,
+		UserUUID:     userUUID,
+		Filename:     info.Filename,
+		UUIDFilename: info.UUIDFilename,
+		Size:         info.Size,
+		Height:       info.Height,
+		Width:        info.Width,
+		SavedAt:      info.SavedAt,
 	})
 
 	if err != nil {

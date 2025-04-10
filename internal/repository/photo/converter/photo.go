@@ -27,13 +27,13 @@ func ToPhotoVersionsFromRepo(versions []repoModel.PhotoVersion) []model.PhotoVer
 
 func ToPhotoVersionFromRepo(version repoModel.PhotoVersion) model.PhotoVersion {
 	return model.PhotoVersion{
-		ID:          version.PhotoID,
-		PhotoID:     version.PhotoID,
-		VersionType: model.PhotoVersionType(version.VersionType.String),
-		Filepath:    version.Filepath,
-		Size:        version.Size,
-		Height:      version.Height,
-		Width:       version.Width,
-		SavedAt:     version.SavedAt.Time,
+		ID:           version.PhotoID,
+		PhotoID:      version.PhotoID,
+		VersionType:  model.PhotoVersionType(version.VersionType.String),
+		UUIDFilename: version.UUIDFilename,
+		Size:         version.Size,
+		Height:       version.Height,
+		Width:        version.Width,
+		SavedAt:      version.SavedAt.Time,
 	}
 }

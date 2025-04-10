@@ -1,14 +1,12 @@
 package utils
 
-//go:generate mockgen -destination=mock/mocks.go -source=utils.go
+import (
+	"github.com/google/uuid"
+	"path/filepath"
+)
 
-type Interface interface {
-	EncryptPassword(publicKey *string, password string) (string, error)
-}
-
-type Utils struct {
-}
-
-func New() *Utils {
-	return &Utils{}
+func (u *Utils) UUIDFilename(filename string) string {
+	ext := filepath.Ext(filename)
+	uuidName := uuid.NewString()
+	return uuidName + ext
 }

@@ -1,5 +1,6 @@
 # Go Photo
 [![Swagger UI](https://img.shields.io/badge/docs-Swagger-blue?logo=swagger)](https://go-photo.passwordhash.tech/api/v1/docs/index.html)
+[![codecov](https://codecov.io/gh/passwordhash/go-photo/graph/badge.svg?token=4TW15AUT4C)](https://codecov.io/gh/passwordhash/go-photo)
 
 Микросервис для загрузки, обработки и хранения фотографий, написанный на языке *Go*. Он предоставляет *RESTful API* для загрузки, получения и удаления фотографий. Микросервис использует [внешний Auth-сервис](https://github.com/passwordhash/account-microservice) по *gRPC* для выполнения аутентификации и авторизации пользователей.
 

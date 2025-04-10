@@ -35,15 +35,11 @@ func (s *service) UploadPhoto(ctx context.Context, userUUID string, photoFile *m
 		return 0, fmt.Errorf("failed to ensure user's photos folder exists: %w", err)
 	}
 
-	log.Tracef("User folder: %s", userFolder)
-
 	info := s.saveFile(ctx, photoFile, userFolder)
 	if info.Error != nil {
 		log.Errorf("Failed to save file %s: %v", photoFile.Filename, info.Error)
 		return 0, info.Error
 	}
-
-	log.Tracef("info after saveFile: %+v", info)
 
 	info = s.saveToDatabase(ctx, userUUID, info)
 	if info.Error != nil {

@@ -1,0 +1,43 @@
+version: '3.9'
+
+services:
+    postgres:
+        image: postgres:15
+        container_name: postgres
+        restart: always
+        ports:
+            - "${POSTGRES_PORT}:5432"
+        environment:
+            POSTGRES_PORT: ${POSTGRES_PORT}
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+        volumes:
+            - db_data:/var/lib/postgresql/data
+
+    migrate:
+        image: migrate/migrate
+        container_name: migrate
+        entrypoint: [
+            "sh", "-c",
+            "sleep 5 && migrate -path /migrations -database postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable up"
+        ]
+        depends_on:
+            - postgres
+        volumes:
+            - ./schema:/migrations
+
+    app:
+        container_name: app
+        env_file: .env
+        ports:
+            - ${HTTP_PORT}:${HTTP_PORT}
+        build:
+            context: .
+            dockerfile: Dockerfile
+        volumes:
+            - app_storage:/app/storage
+
+volumes:
+    db_data:
+    app_storage:

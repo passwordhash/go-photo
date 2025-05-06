@@ -8,6 +8,7 @@ const (
 )
 
 const (
+	// TODO: move to config
 	RSAPublicKeyDefaultTTL = time.Hour * 1
 )
 

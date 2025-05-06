@@ -2,11 +2,13 @@ package config
 
 import (
 	"errors"
-	"github.com/joho/godotenv"
-	log "github.com/sirupsen/logrus"
 	"net"
 	"os"
 	"path/filepath"
+	"time"
+
+	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -30,6 +32,19 @@ type baseConfig struct {
 	grpcAddr          string
 	logLevel          string
 	storageFolderPath string
+	clients           clientsConfig
+	appSecret         string
+}
+
+type clientsConfig struct {
+	sso grpcClient
+}
+
+type grpcClient struct {
+	address      string
+	timeout      time.Duration
+	retriesCount int
+	Insecure     bool
 }
 
 func NewConfig() (Config, error) {

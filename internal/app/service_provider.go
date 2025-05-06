@@ -1,16 +1,15 @@
 package app
 
 import (
-	"github.com/jmoiron/sqlx"
 	"go-photo/internal/config"
 	"go-photo/internal/repository"
 	photoRepository "go-photo/internal/repository/photo"
 	"go-photo/internal/service"
 	photoService "go-photo/internal/service/photo"
-	userService "go-photo/internal/service/user"
-	desc "go-photo/pkg/account_v1"
 	pkgRepo "go-photo/pkg/repository"
 	"log"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type serviceProvider struct {
@@ -61,17 +60,17 @@ func (s *serviceProvider) PhotoRepository(db *sqlx.DB) repository.PhotoRepositor
 	return s.photoRepository
 }
 
-func (s *serviceProvider) UserService(accountClient desc.AccountServiceClient) service.UserService {
-	if s.userSevice == nil {
-		s.userSevice = userService.NewService(accountClient, nil)
-	}
+// func (s *serviceProvider) UserService(accountClient desc.AuthClient) service.UserService {
+// 	if s.userSevice == nil {
+// 		s.userSevice = userService.NewService(accountClient, nil)
+// 	}
 
-	return s.userSevice
-}
+// 	return s.userSevice
+// }
 
-func (s *serviceProvider) TokenService(accountClient desc.AccountServiceClient) service.TokenService {
-	return userService.NewService(accountClient, nil)
-}
+// func (s *serviceProvider) TokenService(accountClient desc.AuthClient) service.TokenService {
+// 	return userService.NewService(accountClient, nil)
+// }
 
 func (s *serviceProvider) PhotoService(db *sqlx.DB) service.PhotoService {
 	if s.photoService == nil {

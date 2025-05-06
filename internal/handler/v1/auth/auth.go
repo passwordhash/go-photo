@@ -2,13 +2,13 @@ package auth
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
 	"go-photo/internal/handler/request"
 	"go-photo/internal/handler/response"
 	"go-photo/internal/handler/response/auth"
 	serviceErr "go-photo/internal/service/error"
-	serviceUserModel "go-photo/internal/service/user/model"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // @Summary Login user

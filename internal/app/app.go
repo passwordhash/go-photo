@@ -3,29 +3,26 @@ package app
 import (
 	"context"
 	"fmt"
+	"go-photo/internal/config"
+	"go-photo/internal/handler/middleware"
+	"go-photo/internal/handler/v1/docs"
+	"go-photo/internal/handler/v1/public"
+	"go-photo/pkg/repository"
+	"os"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	desc "github.com/passwordhash/protos/gen/go/go-sso"
 	log "github.com/sirupsen/logrus"
-	"go-photo/internal/config"
-	"go-photo/internal/handler/middleware"
-	"go-photo/internal/handler/v1/auth"
-	"go-photo/internal/handler/v1/docs"
-	"go-photo/internal/handler/v1/photos"
-	"go-photo/internal/handler/v1/public"
-	"go-photo/internal/handler/v1/user"
-	desc "go-photo/pkg/account_v1"
-	"go-photo/pkg/repository"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/emptypb"
-	"os"
-	"time"
 )
 
 type App struct {
-	grpcClient desc.AccountServiceClient
+	grpcClient desc.AuthClient
 	httpServer *gin.Engine
 
 	db *sqlx.DB
@@ -152,13 +149,13 @@ func (a *App) initGRPCClient(_ context.Context) error {
 		return fmt.Errorf("grpc connection is in invalid state: %v", conn.GetState())
 	}
 
-	a.grpcClient = desc.NewAccountServiceClient(conn)
+	a.grpcClient = desc.NewAuthClient(conn)
 
-	_, err = a.grpcClient.HealthCheck(context.Background(), &emptypb.Empty{})
-	if err != nil {
-		return fmt.Errorf("failed to health check grpc client: %w", err)
-	}
-	log.Infof("grpc client is connected to %s", a.sp.BaseConfig().GRPCAddr())
+	//_, err = a.grpcClient.HealthCheck(context.Background(), &emptypb.Empty{})
+	//if err != nil {
+	//	return fmt.Errorf("failed to health check grpc client: %w", err)
+	//}
+	//log.Infof("grpc client is connected to %s", a.sp.BaseConfig().GRPCAddr())
 
 	return nil
 }
@@ -182,14 +179,14 @@ func (a *App) initHTTPServer(_ context.Context) error {
 	v1 := api.Group("/v1")
 
 	docsHandler := docs.NewHandler()
-	authHandler := auth.NewHandler(a.sp.UserService(a.grpcClient))
-	usersHandler := user.NewHandler(a.sp.UserService(a.grpcClient))
-	photosHandler := photos.NewHandler(a.sp.PhotoService(a.db), a.sp.TokenService(a.grpcClient))
+	// authHandler := auth.NewHandler(a.sp.UserService(a.grpcClient))
+	// usersHandler := user.NewHandler(a.sp.UserService(a.grpcClient))
+	// photosHandler := photos.NewHandler(a.sp.PhotoService(a.db), a.sp.TokenService(a.grpcClient))
 
 	docsHandler.RegisterRoutes(v1)
-	authHandler.RegisterRoutes(v1)
-	usersHandler.RegisterRoutes(v1)
-	photosHandler.RegisterRoutes(v1)
+	// authHandler.RegisterRoutes(v1)
+	// usersHandler.RegisterRoutes(v1)
+	// photosHandler.RegisterRoutes(v1)
 
 	a.httpServer = router
 

@@ -3,10 +3,12 @@ version: "3.9"
 services:
     postgres:
         image: postgres:15
-        container_name: postgres
+        container_name: go-photo-db
         restart: always
         ports:
             - "${POSTGRES_PORT}:5432"
+        networks:
+            - shared-net
         environment:
             POSTGRES_PORT: ${POSTGRES_PORT}
             POSTGRES_USER: ${POSTGRES_USER}
@@ -17,7 +19,7 @@ services:
 
     migrate:
         image: migrate/migrate
-        container_name: migrate
+        container_name: go-photo-migrate
         entrypoint:
             [
                 "sh",
@@ -30,8 +32,10 @@ services:
             - ./schema:/migrations
 
     app:
-        container_name: app
+        container_name: go-photo-app
         env_file: .env
+        networks:
+            - shared-net
         depends_on:
             - postgres
             - migrate
@@ -46,3 +50,7 @@ services:
 volumes:
     db_data:
     app_storage:
+
+networks:
+    shared-net:
+        external: true

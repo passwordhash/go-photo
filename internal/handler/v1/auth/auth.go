@@ -2,7 +2,6 @@ package auth
 
 import (
 	"errors"
-	"fmt"
 	"go-photo/internal/handler/request"
 	"go-photo/internal/handler/response"
 	"go-photo/internal/handler/response/auth"
@@ -25,7 +24,6 @@ import (
 // @Router /api/v1/auth/login [post]
 func (h *handler) login(c *gin.Context) {
 	var input request.AuthLogin
-	fmt.Println("asfasfasfasdfa")
 	err := c.ShouldBindJSON(&input)
 	if err != nil {
 		response.NewErr(c, http.StatusBadRequest, response.InvalidRequestParams, err, "Invalid request body format.")

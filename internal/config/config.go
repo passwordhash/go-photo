@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -12,15 +13,17 @@ import (
 )
 
 const (
-	httpPortEnvName   = "HTTP_PORT"
-	logLevelEnvName   = "LOG_LEVEL"
-	grpcAddrEnvName   = "GRPC_ADDR"
-	storageFolderPath = "STORAGE_FOLDER"
+	httpPortEnvName    = "HTTP_PORT"
+	logLevelEnvName    = "LOG_LEVEL"
+	grpcAddrEnvName    = "GRPC_ADDR"
+	grpcTimeoutEnvName = "GRPC_TIMEOUT"
+	storageFolderPath  = "STORAGE_FOLDER"
 )
 
 type Config interface {
 	HTTPAddr() string
 	GRPCAddr() string
+	GRPCTimeout() int
 
 	LogLevel() string
 
@@ -30,6 +33,7 @@ type Config interface {
 type baseConfig struct {
 	httpPort          string
 	grpcAddr          string
+	grpcTimeout       int
 	logLevel          string
 	storageFolderPath string
 	clients           clientsConfig
@@ -60,6 +64,15 @@ func NewConfig() (Config, error) {
 		return nil, errors.New("grpc addr not found")
 	}
 
+	grpcTimeout := os.Getenv(grpcTimeoutEnvName)
+	if len(grpcTimeout) == 0 {
+		return nil, errors.New("grpc timeout not found")
+	}
+	grpcTimeoutI, err := strconv.Atoi(grpcTimeout)
+	if err != nil {
+		return nil, errors.New("grpc timeout invalid")
+	}
+
 	storageFolder := os.Getenv(storageFolderPath)
 	if len(storageFolder) == 0 {
 		storageFolder = DefaultStorageFolderPath
@@ -68,6 +81,7 @@ func NewConfig() (Config, error) {
 	return &baseConfig{
 		httpPort:          port,
 		grpcAddr:          grpcAddr,
+		grpcTimeout:       grpcTimeoutI,
 		logLevel:          logLever,
 		storageFolderPath: storageFolder,
 	}, nil
@@ -88,6 +102,10 @@ func (c *baseConfig) HTTPAddr() string {
 
 func (c *baseConfig) GRPCAddr() string {
 	return c.grpcAddr
+}
+
+func (c *baseConfig) GRPCTimeout() int {
+	return c.GRPCTimeout()
 }
 
 func (c *baseConfig) LogLevel() string {

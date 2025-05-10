@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"go-photo/internal/model"
+	serviceAuthModel "go-photo/internal/service/auth/model"
 	servicePhotoModel "go-photo/internal/service/photo/model"
 	"mime/multipart"
 )
@@ -15,8 +16,14 @@ import (
 // }
 
 type AuthService interface {
+	// TODO: doc
+	Register(
+		ctx context.Context,
+		params serviceAuthModel.RegisterParams,
+	) (userID int64, err error)
+
 	// Login выполняет аутентификацию пользователя по логину и паролю. Возвращает JWT token
-	Login(ctx context.Context, login string, password string) (string, error)
+	Login(ctx context.Context, email string, password string) (jwtToken string, err error)
 }
 
 //type UserService interface {

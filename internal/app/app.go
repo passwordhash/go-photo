@@ -22,6 +22,7 @@ import (
 
 type App struct {
 	log *slog.Logger
+	cfg config.Config
 
 	ssoClient  *ssogrpc.Client
 	httpServer *gin.Engine
@@ -53,7 +54,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initGRPCClient,
 		a.initServiceProvider,
 		// TODO: см. ниже
-		a.initFolders,
+		// a.initFolders,
 		a.initPGConnection,
 		a.initHTTPServer,
 	}
@@ -85,24 +86,6 @@ func (a *App) initConfig(_ context.Context) error {
 	return nil
 }
 func (a *App) initLogging(_ context.Context) error {
-	// TODO: подчистить
-	// log.SetOutput(os.Stdout)
-	// //log.SetFormatter(&log.TextFormatter{
-	// //	ForceColors: true,
-	// //})
-	// log.SetFormatter(&config.CustomFormatter{
-	// 	TimestampFormat: time.DateTime,
-	// })
-
-	// logLevel, err := log.ParseLevel(a.sp.BaseConfig().LogLevel())
-	// if err != nil {
-	// 	log.Printf("failed to parse log level: %v", err)
-	// 	log.Printf("use default log level: %s", log.DebugLevel)
-	// 	logLevel = log.DebugLevel
-	// }
-
-	// log.SetLevel(logLevel)
-
 	jsonHandler := slog.NewJSONHandler(os.Stdout, nil)
 
 	a.log = slog.New(jsonHandler)
@@ -111,9 +94,8 @@ func (a *App) initLogging(_ context.Context) error {
 }
 
 func (a *App) initGRPCClient(ctx context.Context) error {
-	fmt.Println("adsfasdfasdfas")
 	// TODO: timeout from config
-	client, err := ssogrpc.New(ctx, a.log, a.sp.BaseConfig().GRPCAddr(), time.Second, 3)
+	client, err := ssogrpc.New(ctx, a.log, a.cfg.GRPCAddr(), time.Second, 3)
 	if err != nil {
 		return fmt.Errorf("failed to create grpc client: %w", err)
 	}
@@ -131,23 +113,27 @@ func (a *App) initServiceProvider(_ context.Context) error {
 }
 
 // TODO: решить нужно ли это
-func (a *App) initFolders(_ context.Context) error {
-	folders := []string{a.sp.BaseConfig().StorageFolder(), config.LogsDir}
+// func (a *App) initFolders(_ context.Context) error {
+// 	folders := []string{a.sp.BaseConfig().StorageFolder(), config.LogsDir}
 
-	// TODO: move to utils
-	for _, folder := range folders {
-		if _, err := os.Stat(folder); os.IsNotExist(err) {
-			err := os.MkdirAll(folder, os.ModePerm)
-			if err != nil {
-				return fmt.Errorf("unable to create folder %s: %w", folder, err)
-			}
-		}
-	}
-	return nil
-}
+// 	// TODO: move to utils
+// 	for _, folder := range folders {
+// 		if _, err := os.Stat(folder); os.IsNotExist(err) {
+// 			err := os.MkdirAll(folder, os.ModePerm)
+// 			if err != nil {
+// 				return fmt.Errorf("unable to create folder %s: %w", folder, err)
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
 
 func (a *App) initPGConnection(_ context.Context) error {
-	pgConfig := a.sp.PSQLConfig()
+	pgConfig, err := config.NewPSQLConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get psql config: %s", err.Error())
+	}
+
 	db, err := repository.NewPostgresDB(pgConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create postgres connection: %w with config: %v", err, pgConfig)
@@ -170,7 +156,7 @@ func (a *App) initHTTPServer(_ context.Context) error {
 
 	base := router.Group("/")
 
-	publicHandler := public.NewHandler(a.sp.PhotoService(a.db))
+	publicHandler := public.NewHandler(a.sp.PhotoService(a.db, a.cfg.StorageFolder()))
 	publicHandler.RegisterRoutes(base)
 
 	api := router.Group("/api")
@@ -192,5 +178,5 @@ func (a *App) initHTTPServer(_ context.Context) error {
 }
 
 func (a *App) runHTTPServer() error {
-	return a.httpServer.Run(a.sp.BaseConfig().HTTPAddr())
+	return a.httpServer.Run(a.cfg.HTTPAddr())
 }

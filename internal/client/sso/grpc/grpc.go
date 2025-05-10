@@ -1,4 +1,4 @@
-package grpc
+package ssogrpc
 
 import (
 	"context"
@@ -15,8 +15,8 @@ import (
 )
 
 type Client struct {
-	api gossov1.AuthClient
-	log *slog.Logger // добавлять ли logger на стороне клиента — дело личное
+	Api gossov1.AuthClient
+	Log *slog.Logger // добавлять ли logger на стороне клиента — дело личное
 }
 
 func New(
@@ -53,8 +53,8 @@ func New(
 	}
 
 	return &Client{
-		api: gossov1.NewAuthClient(cc),
-		log: log,
+		Api: gossov1.NewAuthClient(cc),
+		Log: log,
 	}, nil
 }
 

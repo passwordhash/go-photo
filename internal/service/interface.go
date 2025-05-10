@@ -9,18 +9,23 @@ import (
 
 //go:generate mockgen -destination=mock/mocks.go -source=interface.go
 
-type TokenService interface {
-	// VerifyToken проверяет токен и возвращает payload из токена
-	// VerifyToken(ctx context.Context, token string) (serviceUserModel.TokenPayload, error)
+// type TokenService interface {
+// VerifyToken проверяет токен и возвращает payload из токена
+// VerifyToken(ctx context.Context, token string) (serviceUserModel.TokenPayload, error)
+// }
+
+type AuthService interface {
+	// Login выполняет аутентификацию пользователя по логину и паролю. Возвращает JWT token
+	Login(ctx context.Context, login string, password string) (string, error)
 }
 
-type UserService interface {
-	// // Login выполняет аутентификацию пользователя по логину и паролю. Возвращает JWT token
-	// Login(ctx context.Context, login string, password string) (string, error)
-	// // Register регистрирует нового пользователя.
-	// Register(ctx context.Context, input serviceUserModel.RegisterParams) (serviceUserModel.RegisterInfo, error)
-	// Get(ctx context.Context, uuid string) (model.User, error)
-}
+//type UserService interface {
+// // Login выполняет аутентификацию пользователя по логину и паролю. Возвращает JWT token
+// Login(ctx context.Context, login string, password string) (string, error)
+// // Register регистрирует нового пользователя.
+// Register(ctx context.Context, input serviceUserModel.RegisterParams) (serviceUserModel.RegisterInfo, error)
+// Get(ctx context.Context, uuid string) (model.User, error)
+//}
 
 type PhotoService interface {
 	// UploadPhoto загружает фотографию и сохраняет ее в файловой системе и базе данных.

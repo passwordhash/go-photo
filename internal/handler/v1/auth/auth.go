@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"go-photo/internal/handler/request"
 	"go-photo/internal/handler/response"
 	"go-photo/internal/handler/response/auth"
@@ -24,6 +25,7 @@ import (
 // @Router /api/v1/auth/login [post]
 func (h *handler) login(c *gin.Context) {
 	var input request.AuthLogin
+	fmt.Println("asfasfasfasdfa")
 	err := c.ShouldBindJSON(&input)
 	if err != nil {
 		response.NewErr(c, http.StatusBadRequest, response.InvalidRequestParams, err, "Invalid request body format.")
@@ -53,26 +55,26 @@ func (h *handler) login(c *gin.Context) {
 // @Failure 409 {object} response.Error "User with this email already exists."
 // @Failure 500 {object} response.Error "Unexpected error occurred."
 // @Router /api/v1/auth/register [post]
-func (h *handler) register(c *gin.Context) {
-	var input request.AuthRegister
-	err := c.ShouldBindJSON(&input)
-	if err != nil {
-		response.NewErr(c, http.StatusBadRequest, response.InvalidRequestParams, err, "Invalid request body format.")
-		return
-	}
-	// TODO: validate input
-
-	info, err := h.authService.Register(c, serviceUserModel.RegisterParams{
-		Email:    input.Email,
-		Password: input.Password,
-	})
-	if errors.Is(err, serviceErr.UserAlreadyExistsError) {
-		response.NewErr(c, http.StatusConflict, response.UserAlreadyExists, err, "User with this email already exists.")
-		return
-	}
-	if response.HandleError(c, err) {
-		return
-	}
-
-	response.NewOk(c, auth.Register{UserUUID: info.UserUUID, Token: info.Token})
-}
+//func (h *handler) register(c *gin.Context) {
+//	var input request.AuthRegister
+//	err := c.ShouldBindJSON(&input)
+//	if err != nil {
+//		response.NewErr(c, http.StatusBadRequest, response.InvalidRequestParams, err, "Invalid request body format.")
+//		return
+//	}
+//	// TODO: validate input
+//
+//	info, err := h.authService.Register(c, serviceUserModel.RegisterParams{
+//		Email:    input.Email,
+//		Password: input.Password,
+//	})
+//	if errors.Is(err, serviceErr.UserAlreadyExistsError) {
+//		response.NewErr(c, http.StatusConflict, response.UserAlreadyExists, err, "User with this email already exists.")
+//		return
+//	}
+//	if response.HandleError(c, err) {
+//		return
+//	}
+//
+//	response.NewOk(c, auth.Register{UserUUID: info.UserUUID, Token: info.Token})
+//}

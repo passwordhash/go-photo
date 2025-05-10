@@ -1,0 +1,11 @@
+[
+	{
+		"label": "Docker Compose Up",
+		"command": "docker-compose up --no-deps --build app",
+		"use_new_terminal": false,
+		"allow_concurrent_runs": false,
+		"reveal": "never",
+		"hide": "never",
+		"shell": "system"
+	}
+]

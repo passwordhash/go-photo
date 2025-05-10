@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 
 services:
     postgres:
@@ -18,10 +18,12 @@ services:
     migrate:
         image: migrate/migrate
         container_name: migrate
-        entrypoint: [
-            "sh", "-c",
-            "sleep 5 && migrate -path /migrations -database postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable up"
-        ]
+        entrypoint:
+            [
+                "sh",
+                "-c",
+                "sleep 5 && migrate -path /migrations -database postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable up",
+            ]
         depends_on:
             - postgres
         volumes:
@@ -30,6 +32,9 @@ services:
     app:
         container_name: app
         env_file: .env
+        depends_on:
+            - postgres
+            - migrate
         ports:
             - ${HTTP_PORT}:${HTTP_PORT}
         build:

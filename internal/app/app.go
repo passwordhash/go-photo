@@ -3,26 +3,27 @@ package app
 import (
 	"context"
 	"fmt"
+	ssogrpc "go-photo/internal/client/sso/grpc"
 	"go-photo/internal/config"
 	"go-photo/internal/handler/middleware"
+	"go-photo/internal/handler/v1/auth"
 	"go-photo/internal/handler/v1/docs"
 	"go-photo/internal/handler/v1/public"
 	"go-photo/pkg/repository"
+	"log/slog"
 	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	desc "github.com/passwordhash/protos/gen/go/go-sso"
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type App struct {
-	grpcClient desc.AuthClient
+	log *slog.Logger
+
+	ssoClient  *ssogrpc.Client
 	httpServer *gin.Engine
 
 	db *sqlx.DB
@@ -48,12 +49,12 @@ func (a *App) Run() error {
 func (a *App) initDeps(ctx context.Context) error {
 	inits := []func(context.Context) error{
 		a.initConfig,
+		a.initLogging,
+		a.initGRPCClient,
 		a.initServiceProvider,
 		// TODO: см. ниже
 		a.initFolders,
-		a.initLogging,
 		a.initPGConnection,
-		a.initGRPCClient,
 		a.initHTTPServer,
 	}
 
@@ -73,6 +74,53 @@ func (a *App) initConfig(_ context.Context) error {
 		log.Warnf("failed to load config: %v", err)
 		log.Info("loading without .env")
 	}
+
+	cfg, err := config.NewConfig()
+	if err != nil {
+		return fmt.Errorf("failed to create config: %w", err)
+	}
+
+	a.cfg = cfg
+
+	return nil
+}
+func (a *App) initLogging(_ context.Context) error {
+	// TODO: подчистить
+	// log.SetOutput(os.Stdout)
+	// //log.SetFormatter(&log.TextFormatter{
+	// //	ForceColors: true,
+	// //})
+	// log.SetFormatter(&config.CustomFormatter{
+	// 	TimestampFormat: time.DateTime,
+	// })
+
+	// logLevel, err := log.ParseLevel(a.sp.BaseConfig().LogLevel())
+	// if err != nil {
+	// 	log.Printf("failed to parse log level: %v", err)
+	// 	log.Printf("use default log level: %s", log.DebugLevel)
+	// 	logLevel = log.DebugLevel
+	// }
+
+	// log.SetLevel(logLevel)
+
+	jsonHandler := slog.NewJSONHandler(os.Stdout, nil)
+
+	a.log = slog.New(jsonHandler)
+
+	return nil
+}
+
+func (a *App) initGRPCClient(ctx context.Context) error {
+	fmt.Println("adsfasdfasdfas")
+	// TODO: timeout from config
+	client, err := ssogrpc.New(ctx, a.log, a.sp.BaseConfig().GRPCAddr(), time.Second, 3)
+	if err != nil {
+		return fmt.Errorf("failed to create grpc client: %w", err)
+	}
+
+	a.ssoClient = client
+
+	// TODO: health check grpc client
 
 	return nil
 }
@@ -98,27 +146,6 @@ func (a *App) initFolders(_ context.Context) error {
 	return nil
 }
 
-func (a *App) initLogging(_ context.Context) error {
-	log.SetOutput(os.Stdout)
-	//log.SetFormatter(&log.TextFormatter{
-	//	ForceColors: true,
-	//})
-	log.SetFormatter(&config.CustomFormatter{
-		TimestampFormat: time.DateTime,
-	})
-
-	logLevel, err := log.ParseLevel(a.sp.BaseConfig().LogLevel())
-	if err != nil {
-		log.Printf("failed to parse log level: %v", err)
-		log.Printf("use default log level: %s", log.DebugLevel)
-		logLevel = log.DebugLevel
-	}
-
-	log.SetLevel(logLevel)
-
-	return nil
-}
-
 func (a *App) initPGConnection(_ context.Context) error {
 	pgConfig := a.sp.PSQLConfig()
 	db, err := repository.NewPostgresDB(pgConfig)
@@ -131,37 +158,8 @@ func (a *App) initPGConnection(_ context.Context) error {
 	return nil
 }
 
-func (a *App) initGRPCClient(_ context.Context) error {
-	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithDefaultCallOptions(
-			grpc.MaxCallSendMsgSize(100*1024*1024), // 10 MB
-			grpc.MaxCallRecvMsgSize(100*1024*1024), // 10 MB
-		),
-	}
-
-	conn, err := grpc.NewClient(a.sp.BaseConfig().GRPCAddr(), opts...)
-	if err != nil {
-		return fmt.Errorf("failed to create grpc client: %w", err)
-	}
-
-	if conn.GetState() == connectivity.TransientFailure || conn.GetState() == connectivity.Shutdown {
-		return fmt.Errorf("grpc connection is in invalid state: %v", conn.GetState())
-	}
-
-	a.grpcClient = desc.NewAuthClient(conn)
-
-	//_, err = a.grpcClient.HealthCheck(context.Background(), &emptypb.Empty{})
-	//if err != nil {
-	//	return fmt.Errorf("failed to health check grpc client: %w", err)
-	//}
-	//log.Infof("grpc client is connected to %s", a.sp.BaseConfig().GRPCAddr())
-
-	return nil
-}
-
 func (a *App) initHTTPServer(_ context.Context) error {
-	if a.grpcClient == nil {
+	if a.ssoClient == nil {
 		return fmt.Errorf("grpc client is not initialized")
 	}
 
@@ -179,12 +177,12 @@ func (a *App) initHTTPServer(_ context.Context) error {
 	v1 := api.Group("/v1")
 
 	docsHandler := docs.NewHandler()
-	// authHandler := auth.NewHandler(a.sp.UserService(a.grpcClient))
+	authHandler := auth.NewHandler(a.sp.AuthService(a.ssoClient))
 	// usersHandler := user.NewHandler(a.sp.UserService(a.grpcClient))
 	// photosHandler := photos.NewHandler(a.sp.PhotoService(a.db), a.sp.TokenService(a.grpcClient))
 
 	docsHandler.RegisterRoutes(v1)
-	// authHandler.RegisterRoutes(v1)
+	authHandler.RegisterRoutes(v1)
 	// usersHandler.RegisterRoutes(v1)
 	// photosHandler.RegisterRoutes(v1)
 

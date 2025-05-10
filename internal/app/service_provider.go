@@ -1,10 +1,12 @@
 package app
 
 import (
+	ssogrpc "go-photo/internal/client/sso/grpc"
 	"go-photo/internal/config"
 	"go-photo/internal/repository"
 	photoRepository "go-photo/internal/repository/photo"
 	"go-photo/internal/service"
+	"go-photo/internal/service/auth"
 	photoService "go-photo/internal/service/photo"
 	pkgRepo "go-photo/pkg/repository"
 	"log"
@@ -18,7 +20,7 @@ type serviceProvider struct {
 
 	photoRepository repository.PhotoRepository
 
-	userSevice   service.UserService
+	authService  service.AuthService
 	photoService service.PhotoService
 }
 
@@ -58,6 +60,14 @@ func (s *serviceProvider) PhotoRepository(db *sqlx.DB) repository.PhotoRepositor
 	}
 
 	return s.photoRepository
+}
+
+func (s *serviceProvider) AuthService(client *ssogrpc.Client) service.AuthService {
+	if s.authService == nil {
+		s.authService = auth.New(client)
+	}
+
+	return s.authService
 }
 
 // func (s *serviceProvider) UserService(accountClient desc.AuthClient) service.UserService {

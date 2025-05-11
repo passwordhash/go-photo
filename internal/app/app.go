@@ -17,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/lmittmann/tint"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -86,9 +87,13 @@ func (a *App) initConfig(_ context.Context) error {
 	return nil
 }
 func (a *App) initLogging(_ context.Context) error {
-	jsonHandler := slog.NewJSONHandler(os.Stdout, nil)
+	w := os.Stdout
 
-	a.log = slog.New(jsonHandler)
+	// dev
+	a.log = slog.New(tint.NewHandler(w, &tint.Options{
+		Level:      slog.LevelInfo,
+		TimeFormat: time.TimeOnly,
+	}))
 
 	return nil
 }

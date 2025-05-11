@@ -94,6 +94,7 @@ func (a *App) initLogging(_ context.Context) error {
 }
 
 func (a *App) initGRPCClient(ctx context.Context) error {
+	fmt.Println(a.cfg.GRPCAddr())
 	// TODO: timeout from config
 	client, err := ssogrpc.New(ctx, a.log, a.cfg.GRPCAddr(), time.Second, 3)
 	if err != nil {

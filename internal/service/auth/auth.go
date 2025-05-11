@@ -2,22 +2,16 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 
 	serviceAuthModel "go-photo/internal/service/auth/model"
+	serviceErr "go-photo/internal/service/error"
 
 	def "github.com/passwordhash/protos/gen/go/go-sso"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-)
-
-var (
-	UserNotFoundError         = errors.New("user not found")
-	UserAlreadyExistsError    = errors.New("user already exists")
-	UserUnauthtenticatedError = errors.New("user unauthenticated")
 )
 
 // TEMP:
@@ -78,19 +72,20 @@ func (s *service) handleGRPCErr(ctx context.Context, log *slog.Logger, err error
 		return err
 	}
 
+	log.WarnContext(ctx, "grpc error",
+		"code", st.Code().String(),
+		"message", st.Message(),
+	)
+
 	switch st.Code() {
 	case codes.NotFound:
-		log.Warn("user not found", "error", err)
-		return fmt.Errorf("%w: %v", UserNotFoundError, err)
-	case codes.AlreadyExists:
-		log.Warn("user already exists", "error", err)
-		return UserAlreadyExistsError
+		return fmt.Errorf("%w: %v", serviceErr.UserNotFoundError, err)
 	case codes.Unauthenticated:
-		log.Warn("user unauthenticated", "error", err)
-		return fmt.Errorf("%w: %v", UserUnauthtenticatedError, err)
+		return fmt.Errorf("%w: %v", serviceErr.UserUnauthtenticatedError, err)
+	case codes.AlreadyExists:
+		return fmt.Errorf("%w: %v", serviceErr.UserAlreadyExistsError, err)
+	default:
+		log.ErrorContext(ctx, "unexpected grcp error", "error", err)
+		return err
 	}
-
-	// return fmt.Errorf("%w: %v", serviceErr.UnexpectedError, err)
-	log.ErrorContext(ctx, "unexpected grcp error", "error", err)
-	return err
 }

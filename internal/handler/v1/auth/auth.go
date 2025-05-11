@@ -31,7 +31,7 @@ func (h *handler) login(c *gin.Context) {
 	}
 
 	token, err := h.authService.Login(c, input.Email, input.Password)
-	if errors.Is(err, serviceErr.UserNotFoundError) {
+	if errors.Is(err, serviceErr.UserUnauthtenticatedError) {
 		response.NewErr(c, http.StatusUnauthorized, response.InvalidCredentials, err, "Email or password is incorrect.")
 		return
 	}

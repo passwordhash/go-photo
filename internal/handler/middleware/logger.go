@@ -1,10 +1,11 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 )
 
 func Logger() gin.HandlerFunc {
@@ -18,7 +19,7 @@ func Logger() gin.HandlerFunc {
 			path += "?" + raw
 		}
 
-		fields := log.Fields{
+		startFields := log.Fields{
 			"path":       path,
 			"method":     c.Request.Method,
 			"client_ip":  clientIP,
@@ -26,7 +27,7 @@ func Logger() gin.HandlerFunc {
 			"user_agent": userAgent,
 		}
 
-		log.WithFields(fields).Info("Request started")
+		log.WithFields(startFields).Info("Request started")
 		c.Next()
 
 		latency := time.Since(start)
@@ -34,7 +35,7 @@ func Logger() gin.HandlerFunc {
 		errorMessages := c.Errors.ByType(gin.ErrorTypePrivate).Errors()
 		errorMessage := strings.Join(errorMessages, "; ")
 
-		fields = log.Fields{
+		completeFields := log.Fields{
 			"status_code":  statusCode,
 			"path":         path,
 			"method":       c.Request.Method,
@@ -43,7 +44,7 @@ func Logger() gin.HandlerFunc {
 			"user_agent":   userAgent,
 		}
 
-		entry := log.WithFields(fields)
+		entry := log.WithFields(completeFields)
 		if errorMessage != "" {
 			if statusCode >= 500 {
 				entry.Error(errorMessage)

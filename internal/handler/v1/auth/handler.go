@@ -17,7 +17,7 @@ func NewHandler(authService service.AuthService) *handler {
 func (h *handler) RegisterRoutes(router *gin.RouterGroup) {
 	authGroup := router.Group("/auth")
 	{
+		authGroup.POST("/register", h.register)
 		authGroup.POST("/login", h.login)
-		// authGroup.POST("/register", h.register)
 	}
 }

@@ -20,7 +20,7 @@ const tmpAppID = 101
 func (s *service) Register(
 	ctx context.Context,
 	params serviceAuthModel.RegisterParams,
-) (int64, error) {
+) (string, error) {
 	const op = "service.auth.Register"
 
 	log := s.log.With(
@@ -35,12 +35,12 @@ func (s *service) Register(
 		Password: params.Password,
 	})
 	if err != nil {
-		return 0, s.handleGRPCErr(ctx, log, err)
+		return "", s.handleGRPCErr(ctx, log, err)
 	}
 
-	log.Info("user registered", "userID", resp.UserId)
+	log.Info("user registered", "userID", resp.UserUuid)
 
-	return resp.UserId, nil
+	return resp.UserUuid, nil
 }
 
 func (s *service) Login(ctx context.Context, email string, password string) (string, error) {

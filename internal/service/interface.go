@@ -20,7 +20,7 @@ type AuthService interface {
 	Register(
 		ctx context.Context,
 		params serviceAuthModel.RegisterParams,
-	) (userID int64, err error)
+	) (userUUID string, err error)
 
 	// Login выполняет аутентификацию пользователя по логину и паролю. Возвращает JWT token
 	Login(ctx context.Context, email string, password string) (jwtToken string, err error)

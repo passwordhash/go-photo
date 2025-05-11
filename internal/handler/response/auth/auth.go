@@ -1,9 +1,10 @@
 package auth
 
 import (
-	"github.com/gin-gonic/gin"
 	"go-photo/internal/handler/response"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Login struct {
@@ -12,7 +13,6 @@ type Login struct {
 
 type Register struct {
 	UserUUID string `json:"user_uuid"`
-	Token    string `json:"token"`
 }
 
 func MustGetUUID(c *gin.Context, key string) (string, bool) {

@@ -18,7 +18,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/lmittmann/tint"
-	log "github.com/sirupsen/logrus"
 )
 
 type App struct {
@@ -73,8 +72,8 @@ func (a *App) initDeps(ctx context.Context) error {
 func (a *App) initConfig(_ context.Context) error {
 	err := config.Load(".env")
 	if err != nil {
-		log.Warnf("failed to load config: %v", err)
-		log.Info("loading without .env")
+		slog.Warn(fmt.Sprintf("failed to load config: %v", err))
+		slog.Info("loading without .env")
 	}
 
 	cfg, err := config.NewConfig()
@@ -158,7 +157,7 @@ func (a *App) initHTTPServer(_ context.Context) error {
 	router := gin.New()
 
 	router.Use(gin.Recovery())
-	router.Use(middleware.Logger())
+	router.Use(middleware.Logger(a.log))
 
 	base := router.Group("/")
 

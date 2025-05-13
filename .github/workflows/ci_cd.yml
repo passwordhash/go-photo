@@ -26,7 +26,7 @@ jobs:
             - name: Set up Go
               uses: actions/setup-go@v2
               with:
-                  go-version: '1.24.1'
+                  go-version: "1.24.1"
 
             - name: Update PATH
               run: echo "${{ runner.workspace }}/bin" >> $GITHUB_PATH
@@ -61,18 +61,18 @@ jobs:
         needs: test
         runs-on: ubuntu-latest
         steps:
-            -   name: Checkout code
-                uses: actions/checkout@v2
+            - name: Checkout code
+              uses: actions/checkout@v2
 
-            -   name: Download coverage artifact
-                uses: actions/download-artifact@v4
-                with:
-                    name: coverage-report
+            - name: Download coverage artifact
+              uses: actions/download-artifact@v4
+              with:
+                  name: coverage-report
 
-            -   name: Upload coverage reports to Codecov
-                uses: codecov/codecov-action@v5
-                with:
-                    token: ${{ secrets.CODECOV_TOKEN }}
+            - name: Upload coverage reports to Codecov
+              uses: codecov/codecov-action@v5
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
 
     build-and-push:
         needs:
@@ -100,7 +100,7 @@ jobs:
             - name: Set up Go
               uses: actions/setup-go@v2
               with:
-                  go-version: '1.24.1'
+                  go-version: "1.24.1"
 
             - name: Install dependencies
               run: make install-deps
@@ -148,10 +148,10 @@ jobs:
                       export VAULT_ADDR=${{ env.VAULT_ADDR }}
                       vault kv get -format=json -mount=kv ${{ env.CONTAINER_NAME }} | \
                         jq -r '.data.data | to_entries[] | "\(.key)=\(.value)"' > .env
-                      
+
                       echo "vault addr: ${{ env.VAULT_ADDR }}"
                       echo "container name: ${{ env.CONTAINER_NAME }}"
-                      
+
                       docker pull ${{ github.repository }}:latest
                       docker stop ${{ env.CONTAINER_NAME }} || true
                       docker rm ${{ env.CONTAINER_NAME }} -f || true
@@ -160,5 +160,5 @@ jobs:
                         -p 2040:${{ env.CONTAINER_PORT }} \
                         --name ${{ env.CONTAINER_NAME }} \
                         ${{ github.repository }}:latest
-                      
+
                       rm -f .env

@@ -21,9 +21,12 @@ const (
 )
 
 type Config interface {
+	AppSecret() string
+	SetAppSecret(secret string)
+
 	HTTPAddr() string
 	GRPCAddr() string
-	GRPCTimeout() int
+	GRPCTimeout() time.Duration
 
 	LogLevel() string
 
@@ -33,7 +36,7 @@ type Config interface {
 type baseConfig struct {
 	httpPort          string
 	grpcAddr          string
-	grpcTimeout       int
+	grpcTimeout       time.Duration
 	logLevel          string
 	storageFolderPath string
 	clients           clientsConfig
@@ -81,7 +84,7 @@ func NewConfig() (Config, error) {
 	return &baseConfig{
 		httpPort:          port,
 		grpcAddr:          grpcAddr,
-		grpcTimeout:       grpcTimeoutI,
+		grpcTimeout:       time.Duration(grpcTimeoutI) * time.Second,
 		logLevel:          logLever,
 		storageFolderPath: storageFolder,
 	}, nil
@@ -96,6 +99,14 @@ func Load(path string) error {
 	return nil
 }
 
+func (c *baseConfig) AppSecret() string {
+	return c.appSecret
+}
+
+func (c *baseConfig) SetAppSecret(secret string) {
+	c.appSecret = secret
+}
+
 func (c *baseConfig) HTTPAddr() string {
 	return net.JoinHostPort("0.0.0.0", c.httpPort)
 }
@@ -104,8 +115,8 @@ func (c *baseConfig) GRPCAddr() string {
 	return c.grpcAddr
 }
 
-func (c *baseConfig) GRPCTimeout() int {
-	return c.GRPCTimeout()
+func (c *baseConfig) GRPCTimeout() time.Duration {
+	return c.grpcTimeout
 }
 
 func (c *baseConfig) LogLevel() string {

@@ -18,7 +18,10 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/lmittmann/tint"
+	gossov1 "github.com/passwordhash/protos/gen/go/go-sso"
 )
+
+const APP_NAME = "go-photo"
 
 type App struct {
 	log *slog.Logger
@@ -98,14 +101,24 @@ func (a *App) initLogging(_ context.Context) error {
 }
 
 func (a *App) initGRPCClient(ctx context.Context) error {
-	fmt.Println(a.cfg.GRPCAddr())
 	// TODO: timeout from config
-	client, err := ssogrpc.New(ctx, a.log, a.cfg.GRPCAddr(), time.Second, 3)
+	client, err := ssogrpc.New(ctx, a.log,
+		a.cfg.GRPCAddr(),
+		time.Duration(a.cfg.GRPCTimeout()),
+		3)
 	if err != nil {
 		return fmt.Errorf("failed to create grpc client: %w", err)
 	}
 
+	resp, err := client.Api.SigningKey(ctx, &gossov1.SigningKeyRequest{
+		AppName: APP_NAME,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to get signing key: %w", err)
+	}
+
 	a.ssoClient = client
+	a.cfg.SetAppSecret(resp.SigningKey)
 
 	// TODO: health check grpc client
 

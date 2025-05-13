@@ -27,32 +27,6 @@ func newServiceProvider() *serviceProvider {
 	return &serviceProvider{}
 }
 
-// func (s *serviceProvider) BaseConfig() config.Config {
-// 	if s.bc == nil {
-// 		cfg, err := config.NewConfig()
-// 		if err != nil {
-// 			log.Fatalf("failed to get base config: %s", err.Error())
-// 		}
-
-// 		s.bc = cfg
-// 	}
-
-// 	return s.bc
-// }
-
-// func (s *serviceProvider) PSQLConfig() pkgRepo.PSQLConfig {
-// 	if s.pgConfig == nil {
-// 		cfg, err := config.NewPSQLConfig()
-// 		if err != nil {
-// 			log.Fatalf("failed to get psql config: %s", err.Error())
-// 		}
-
-// 		s.pgConfig = &cfg
-// 	}
-
-// 	return *s.pgConfig
-// }
-
 func (s *serviceProvider) PhotoRepository(db *sqlx.DB) repository.PhotoRepository {
 	if s.photoRepository == nil {
 		s.photoRepository = photoRepository.NewRepository(db)

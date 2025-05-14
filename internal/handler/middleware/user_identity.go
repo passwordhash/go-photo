@@ -14,14 +14,14 @@ const (
 	UserUUIDKey         = "user"
 )
 
-func UserIdentity(secret string) gin.HandlerFunc {
+func UserIdentity(verifyFuc jwt.VerifyTokenFunc, secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userIdentity(c, secret)
+		userIdentity(c, verifyFuc, secret)
 		c.Next()
 	}
 }
 
-func userIdentity(c *gin.Context, secret string) {
+func userIdentity(c *gin.Context, verifyFuc jwt.VerifyTokenFunc, secret string) {
 	header := c.GetHeader(authorizationHeader)
 
 	if header == "" {
@@ -53,7 +53,8 @@ func userIdentity(c *gin.Context, secret string) {
 		return
 	}
 
-	claims, err := jwt.ValidateToken(token, secret)
+	// claims, err := jwt.ValidateToken(token, secret)
+	claims, err := verifyFuc(c, token, secret)
 	if err != nil {
 		response.NewErr(c,
 			http.StatusUnauthorized,

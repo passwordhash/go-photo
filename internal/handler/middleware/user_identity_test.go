@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	serviceUserModel "go-photo/internal/service/user/model"
+	"go-photo/internal/lib/jwt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -17,18 +17,18 @@ import (
 func TestMiddleware_UserIdIdentity(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	type VerifyTokenFunc func(ctx context.Context, token string) (serviceUserModel.TokenPayload, error)
+	type VerifyTokenFunc func(ctx context.Context, token string) (jwt.Claims, error)
 
-	dummyVerify := func(ctx context.Context, token string) (serviceUserModel.TokenPayload, error) {
-		return serviceUserModel.TokenPayload{UserUUID: "shouldNotBeCalled"}, nil
+	dummyVerify := func(ctx context.Context, token string) (jwt.Claims, error) {
+		return jwt.Claims{UserUUID: "shouldNotBeCalled"}, nil
 	}
 
-	verifyInvalid := func(ctx context.Context, token string) (serviceUserModel.TokenPayload, error) {
-		return serviceUserModel.TokenPayload{}, errors.New("invalid token")
+	verifyInvalid := func(ctx context.Context, token string) (jwt.Claims, error) {
+		return jwt.Claims{}, errors.New("invalid token")
 	}
 
-	verifyValid := func(ctx context.Context, token string) (serviceUserModel.TokenPayload, error) {
-		return serviceUserModel.TokenPayload{UserUUID: "12345"}, nil
+	verifyValid := func(ctx context.Context, token string) (jwt.Claims, error) {
+		return jwt.Claims{UserUUID: "12345"}, nil
 	}
 
 	tests := []struct {
@@ -79,6 +79,7 @@ func TestMiddleware_UserIdIdentity(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			router := gin.New()
 			router.Use(UserIdentity(tt.verifyFn))
+
 			router.GET("/", func(c *gin.Context) {
 				if userUUID, exists := c.Get(UserUUIDKey); exists {
 					c.JSON(http.StatusOK, gin.H{"user_uuid": userUUID})

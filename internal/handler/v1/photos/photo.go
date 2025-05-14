@@ -41,7 +41,7 @@ func (h *handler) uploadPhoto(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 
-	uuid, ok := auth.MustGetUUID(c, middleware.UserUUIDCtx)
+	uuid, ok := auth.MustGetUUID(c, middleware.UserUUIDKey)
 	if !ok {
 		return
 	}
@@ -85,7 +85,7 @@ func (h *handler) uploadBatchPhotos(c *gin.Context) {
 
 	respStatus := http.StatusOK
 
-	uuid, ok := auth.MustGetUUID(c, middleware.UserUUIDCtx)
+	uuid, ok := auth.MustGetUUID(c, middleware.UserUUIDKey)
 	if !ok {
 		response.NewErr(c, http.StatusUnauthorized, response.Unauthorized, nil, "Try logging in again.")
 		return
@@ -143,7 +143,7 @@ func (h *handler) getPhotoVersions(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 
-	uuid, ok := auth.MustGetUUID(c, middleware.UserUUIDCtx)
+	uuid, ok := auth.MustGetUUID(c, middleware.UserUUIDKey)
 	if !ok {
 		response.NewErr(c, http.StatusUnauthorized, response.Unauthorized, nil, "Try logging in again.")
 		return
@@ -192,7 +192,7 @@ func (h *handler) publishPhoto(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 
-	userUUID, ok := auth.MustGetUUID(c, middleware.UserUUIDCtx)
+	userUUID, ok := auth.MustGetUUID(c, middleware.UserUUIDKey)
 	if !ok {
 		response.NewErr(c, http.StatusUnauthorized, response.Unauthorized, nil, "Try logging in again.")
 		return
@@ -240,7 +240,7 @@ func (h *handler) unpublicatePhoto(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 
-	userUUID, ok := auth.MustGetUUID(c, middleware.UserUUIDCtx)
+	userUUID, ok := auth.MustGetUUID(c, middleware.UserUUIDKey)
 	if !ok {
 		response.NewErr(c, http.StatusUnauthorized, response.Unauthorized, nil, "Try logging in again.")
 		return

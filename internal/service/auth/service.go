@@ -12,11 +12,16 @@ type service struct {
 	log *slog.Logger
 
 	authClient *ssogrpc.Client
+
+	appName   string
+	appSecret string
 }
 
-func New(authClient *ssogrpc.Client) *service {
+func New(authClient *ssogrpc.Client, appName string, appSecret string) *service {
 	return &service{
 		log:        authClient.Log,
 		authClient: authClient,
+		appName:    appName,
+		appSecret:  appSecret,
 	}
 }

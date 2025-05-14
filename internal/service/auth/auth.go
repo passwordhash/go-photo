@@ -56,7 +56,7 @@ func (s *service) Login(ctx context.Context, email string, password string) (str
 	user, err := s.authClient.Api.Login(ctx, &def.LoginRequest{
 		Email:    email,
 		Password: password,
-		AppId:    tmpAppID,
+		AppName:  s.appName,
 	})
 	if err != nil {
 		return "", s.handleGRPCErr(ctx, log, err)

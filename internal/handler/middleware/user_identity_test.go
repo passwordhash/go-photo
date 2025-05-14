@@ -8,9 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	serviceUserModel "go-photo/internal/service/user/model"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	serviceUserModel "go-photo/internal/service/user/model"
 )
 
 func TestMiddleware_UserIdIdentity(t *testing.T) {
@@ -77,7 +78,7 @@ func TestMiddleware_UserIdIdentity(t *testing.T) {
 			router := gin.New()
 			router.Use(UserIdentity(tt.verifyFn))
 			router.GET("/", func(c *gin.Context) {
-				if userUUID, exists := c.Get(UserUUIDCtx); exists {
+				if userUUID, exists := c.Get(UserUUIDKey); exists {
 					c.JSON(http.StatusOK, gin.H{"user_uuid": userUUID})
 				} else {
 					c.JSON(http.StatusOK, gin.H{"error": "no user identity"})

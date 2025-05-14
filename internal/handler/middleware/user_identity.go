@@ -63,7 +63,5 @@ func userIdentity(c *gin.Context, secret string) {
 		return
 	}
 
-	userUUID := claims["uuid"]
-
-	c.Set(UserUUIDKey, userUUID)
+	c.Set(UserUUIDKey, claims.UserUUID)
 }

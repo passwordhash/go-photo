@@ -5,13 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
-	log "github.com/sirupsen/logrus"
 	def "go-photo/internal/repository"
 	repoErr "go-photo/internal/repository/error"
 	repoModel "go-photo/internal/repository/photo/model"
 	pkgRepo "go-photo/pkg/repository"
+
+	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
 )
 
 var _ def.PhotoRepository = (*repository)(nil)
@@ -209,7 +210,7 @@ func (r *repository) GetPhotoVersions(ctx context.Context, photoID int) ([]repoM
 
 	query := `
 		SELECT id, photo_id, version_type, uuid_filename, size, height, width, saved_at
-		FROM photo_versions 
+		FROM photo_versions
 		WHERE photo_id = $1
 		ORDER BY size`
 

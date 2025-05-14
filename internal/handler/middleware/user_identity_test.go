@@ -17,6 +17,8 @@ import (
 func TestMiddleware_UserIdIdentity(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	type VerifyTokenFunc func(ctx context.Context, token string) (serviceUserModel.TokenPayload, error)
+
 	dummyVerify := func(ctx context.Context, token string) (serviceUserModel.TokenPayload, error) {
 		return serviceUserModel.TokenPayload{UserUUID: "shouldNotBeCalled"}, nil
 	}

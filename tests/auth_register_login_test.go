@@ -52,7 +52,6 @@ func TestRegisterLogin_HappyPath(t *testing.T) {
 		JSON().
 		Object().
 		Decode(&authResp.Login{})
-
 }
 
 func randomFakePassword() string {

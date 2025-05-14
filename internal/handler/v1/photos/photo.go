@@ -41,7 +41,7 @@ func (h *handler) uploadPhoto(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 
-	uuid, ok := auth.MustGetUUID(c, middleware.UserUUIDKey)
+	userUUID, ok := auth.MustGetUUID(c, middleware.UserUUIDKey)
 	if !ok {
 		return
 	}
@@ -58,7 +58,7 @@ func (h *handler) uploadPhoto(c *gin.Context) {
 		return
 	}
 
-	photoID, err := h.photoService.UploadPhoto(ctx, uuid, fileHeader)
+	photoID, err := h.photoService.UploadPhoto(ctx, userUUID, fileHeader)
 	if response.HandleError(c, err) {
 		return
 	}
@@ -85,7 +85,7 @@ func (h *handler) uploadBatchPhotos(c *gin.Context) {
 
 	respStatus := http.StatusOK
 
-	uuid, ok := auth.MustGetUUID(c, middleware.UserUUIDKey)
+	userUUID, ok := auth.MustGetUUID(c, middleware.UserUUIDKey)
 	if !ok {
 		response.NewErr(c, http.StatusUnauthorized, response.Unauthorized, nil, "Try logging in again.")
 		return
@@ -108,7 +108,7 @@ func (h *handler) uploadBatchPhotos(c *gin.Context) {
 		return
 	}
 
-	uploads, err := h.photoService.UploadBatchPhotos(ctx, uuid, files)
+	uploads, err := h.photoService.UploadBatchPhotos(ctx, userUUID, files)
 	if errors.Is(err, serviceErr.AllFailedError) {
 		respStatus = http.StatusBadRequest
 	} else if errors.Is(err, serviceErr.ParticalSuccessError) {
@@ -143,7 +143,7 @@ func (h *handler) getPhotoVersions(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 
-	uuid, ok := auth.MustGetUUID(c, middleware.UserUUIDKey)
+	userUUID, ok := auth.MustGetUUID(c, middleware.UserUUIDKey)
 	if !ok {
 		response.NewErr(c, http.StatusUnauthorized, response.Unauthorized, nil, "Try logging in again.")
 		return
@@ -156,7 +156,7 @@ func (h *handler) getPhotoVersions(c *gin.Context) {
 		return
 	}
 
-	versions, err := h.photoService.GetPhotoVersions(ctx, uuid, photoID)
+	versions, err := h.photoService.GetPhotoVersions(ctx, userUUID, photoID)
 	if errors.Is(err, serviceErr.PhotoNotFoundError) {
 		response.NewErr(c, http.StatusNotFound, response.PhotoNotFound, err, "Photo not found.")
 		return

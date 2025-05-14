@@ -6,8 +6,13 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func ValidateToken(tokenString string, secret string) (jwt.MapClaims, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+type Claims struct {
+	UserUUID string `json:"uuid"`
+	jwt.RegisteredClaims
+}
+
+func ValidateToken(tokenString string, secret string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -17,7 +22,7 @@ func ValidateToken(tokenString string, secret string) (jwt.MapClaims, error) {
 		return nil, err
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
 

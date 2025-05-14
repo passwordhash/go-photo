@@ -17,68 +17,66 @@ import (
 func TestMiddleware_UserIdIdentity(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	type VerifyTokenFunc func(ctx context.Context, token string) (jwt.Claims, error)
-
-	dummyVerify := func(ctx context.Context, token string) (jwt.Claims, error) {
-		return jwt.Claims{UserUUID: "shouldNotBeCalled"}, nil
+	dummyVerify := func(ctx context.Context, token, secret string) (*jwt.Claims, error) {
+		return &jwt.Claims{UserUUID: "shouldNotBeCalled"}, nil
 	}
 
-	verifyInvalid := func(ctx context.Context, token string) (jwt.Claims, error) {
-		return jwt.Claims{}, errors.New("invalid token")
+	verifyInvalid := func(ctx context.Context, token, secret string) (*jwt.Claims, error) {
+		return &jwt.Claims{}, errors.New("invalid token")
 	}
 
-	verifyValid := func(ctx context.Context, token string) (jwt.Claims, error) {
-		return jwt.Claims{UserUUID: "12345"}, nil
+	verifyValid := func(ctx context.Context, token, secret string) (*jwt.Claims, error) {
+		return &jwt.Claims{UserUUID: "12345"}, nil
 	}
 
 	tests := []struct {
 		name                string
 		authHeader          string
-		verifyFn            VerifyTokenFunc
+		verifyFn            jwt.VerifyTokenFunc
 		expectedStatusCode  int
 		expectedBodyContent string
 	}{
 		{
-			name:                "Пустой заголовок Authorization",
+			name:                "Valid",
+			authHeader:          "Bearer validtoken",
+			verifyFn:            verifyValid,
+			expectedStatusCode:  http.StatusOK,
+			expectedBodyContent: "12345",
+		},
+		{
+			name:                "Empty auth header",
 			authHeader:          "",
 			verifyFn:            dummyVerify,
 			expectedStatusCode:  http.StatusUnauthorized,
 			expectedBodyContent: "Auth header is empty.",
 		},
 		{
-			name:                "Неверный формат заголовка (не Bearer)",
+			name:                "Invalid header format",
 			authHeader:          "Basic token",
 			verifyFn:            dummyVerify,
 			expectedStatusCode:  http.StatusUnauthorized,
 			expectedBodyContent: "Bearer token is invalid.",
 		},
 		{
-			name:                "Пустой токен в заголовке Bearer",
+			name:                "Empty token",
 			authHeader:          "Bearer ",
 			verifyFn:            dummyVerify,
 			expectedStatusCode:  http.StatusUnauthorized,
 			expectedBodyContent: "Token is empty.",
 		},
 		{
-			name:                "Некорректный токен",
+			name:                "Invalid token",
 			authHeader:          "Bearer invalidtoken",
 			verifyFn:            verifyInvalid,
 			expectedStatusCode:  http.StatusUnauthorized,
 			expectedBodyContent: "Token is invalid or user cannot be found.",
-		},
-		{
-			name:                "Корректный токен",
-			authHeader:          "Bearer validtoken",
-			verifyFn:            verifyValid,
-			expectedStatusCode:  http.StatusOK,
-			expectedBodyContent: "12345",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			router := gin.New()
-			router.Use(UserIdentity(tt.verifyFn))
+			router.Use(UserIdentity(tt.verifyFn, "some-secret"))
 
 			router.GET("/", func(c *gin.Context) {
 				if userUUID, exists := c.Get(UserUUIDKey); exists {

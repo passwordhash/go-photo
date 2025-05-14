@@ -3,20 +3,21 @@ package auth
 import (
 	"bytes"
 	"encoding/json"
+	"go-photo/internal/handler/response"
+	"go-photo/internal/handler/response/auth"
+	serviceAuthModel "go-photo/internal/service/auth/model"
+	serviceErr "go-photo/internal/service/error"
+	mock_service "go-photo/internal/service/mock"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"go-photo/internal/handler/response"
-	"go-photo/internal/handler/response/auth"
-	serviceErr "go-photo/internal/service/error"
-	mock_service "go-photo/internal/service/mock"
-	serviceUserModel "go-photo/internal/service/user/model"
-	"net/http/httptest"
-	"testing"
 )
 
 func TestHandler_login(t *testing.T) {
-	type mockBehavior func(s *mock_service.MockUserService, email, password string)
+	type mockBehavior func(s *mock_service.MockAuthService, email, password string)
 
 	tests := []struct {
 		name               string
@@ -32,7 +33,7 @@ func TestHandler_login(t *testing.T) {
 			inputBody: `{"email":"test@mail.ru","password":"password"}`,
 			email:     "test@mail.ru",
 			password:  "password",
-			mockBehavior: func(s *mock_service.MockUserService, email, password string) {
+			mockBehavior: func(s *mock_service.MockAuthService, email, password string) {
 				s.EXPECT().Login(gomock.Any(), email, password).Return("accessToken", nil).Times(1)
 			},
 			expectedStatusCode: 200,
@@ -45,7 +46,7 @@ func TestHandler_login(t *testing.T) {
 			inputBody: `{"email":"
 			email:     "
 			password:  "`,
-			mockBehavior: func(s *mock_service.MockUserService, email, password string) {
+			mockBehavior: func(s *mock_service.MockAuthService, email, password string) {
 				s.EXPECT().Login(gomock.Any(), email, password).Times(0)
 			},
 			expectedStatusCode: 400,
@@ -56,7 +57,7 @@ func TestHandler_login(t *testing.T) {
 		{
 			name:      "Empty Request Body",
 			inputBody: `{}`,
-			mockBehavior: func(s *mock_service.MockUserService, email, password string) {
+			mockBehavior: func(s *mock_service.MockAuthService, email, password string) {
 				s.EXPECT().Login(gomock.Any(), email, password).Times(0)
 			},
 			expectedStatusCode: 400,
@@ -69,8 +70,8 @@ func TestHandler_login(t *testing.T) {
 			inputBody: `{"email":"test@mail.ru","password":"wrongpassword"}`,
 			email:     "test@mail.ru",
 			password:  "wrongpassword",
-			mockBehavior: func(s *mock_service.MockUserService, email, password string) {
-				s.EXPECT().Login(gomock.Any(), email, password).Return("", serviceErr.UserNotFoundError).Times(1)
+			mockBehavior: func(s *mock_service.MockAuthService, email, password string) {
+				s.EXPECT().Login(gomock.Any(), email, password).Return("", serviceErr.UserUnauthtenticatedError).Times(1)
 			},
 			expectedStatusCode: 401,
 			expectedResponse: response.Error{
@@ -82,7 +83,7 @@ func TestHandler_login(t *testing.T) {
 			inputBody: `{"email":"test@mail.ru","password":"password"}`,
 			email:     "test@mail.ru",
 			password:  "password",
-			mockBehavior: func(s *mock_service.MockUserService, email, password string) {
+			mockBehavior: func(s *mock_service.MockAuthService, email, password string) {
 				s.EXPECT().Login(gomock.Any(), email, password).Return("", serviceErr.UnexpectedError).Times(1)
 			},
 			expectedStatusCode: 500,
@@ -97,7 +98,7 @@ func TestHandler_login(t *testing.T) {
 			c := gomock.NewController(t)
 			defer c.Finish()
 
-			mockPhotoService := mock_service.NewMockUserService(c)
+			mockPhotoService := mock_service.NewMockAuthService(c)
 			tt.mockBehavior(mockPhotoService, tt.email, tt.password)
 
 			h := NewHandler(mockPhotoService)
@@ -130,12 +131,12 @@ func TestHandler_login(t *testing.T) {
 }
 
 func TestHandler_register(t *testing.T) {
-	type mockBehavior func(s *mock_service.MockUserService, params serviceUserModel.RegisterParams)
+	type mockBehavior func(s *mock_service.MockAuthService, params serviceAuthModel.RegisterParams)
 
 	tests := []struct {
 		name               string
 		inputBody          string
-		params             serviceUserModel.RegisterParams
+		params             serviceAuthModel.RegisterParams
 		mockBehavior       mockBehavior
 		expectedStatusCode int
 		expectedResponse   any
@@ -143,26 +144,22 @@ func TestHandler_register(t *testing.T) {
 		{
 			name:      "Valid",
 			inputBody: `{"email":"john@doe.com","password":"password"}`,
-			params: serviceUserModel.RegisterParams{
+			params: serviceAuthModel.RegisterParams{
 				Email:    "john@doe.com",
 				Password: "password",
 			},
-			mockBehavior: func(s *mock_service.MockUserService, params serviceUserModel.RegisterParams) {
-				s.EXPECT().Register(gomock.Any(), params).Return(serviceUserModel.RegisterInfo{
-					UserUUID: "user-id",
-					Token:    "jwt-token",
-				}, nil).Times(1)
+			mockBehavior: func(s *mock_service.MockAuthService, params serviceAuthModel.RegisterParams) {
+				s.EXPECT().Register(gomock.Any(), params).Return("user-id", nil).Times(1)
 			},
 			expectedStatusCode: 200,
 			expectedResponse: auth.Register{
 				UserUUID: "user-id",
-				Token:    "jwt-token",
 			},
 		},
 		{
 			name:               "Invalid Request Body",
 			inputBody:          `{"email": "email@mail.ru"`,
-			mockBehavior:       func(s *mock_service.MockUserService, params serviceUserModel.RegisterParams) {},
+			mockBehavior:       func(s *mock_service.MockAuthService, params serviceAuthModel.RegisterParams) {},
 			expectedStatusCode: 400,
 			expectedResponse: response.Error{
 				Error: response.InvalidRequestParams,
@@ -171,7 +168,7 @@ func TestHandler_register(t *testing.T) {
 		{
 			name:               "Empty Request Body",
 			inputBody:          `{}`,
-			mockBehavior:       func(s *mock_service.MockUserService, params serviceUserModel.RegisterParams) {},
+			mockBehavior:       func(s *mock_service.MockAuthService, params serviceAuthModel.RegisterParams) {},
 			expectedStatusCode: 400,
 			expectedResponse: response.Error{
 				Error: response.InvalidRequestParams,
@@ -180,12 +177,12 @@ func TestHandler_register(t *testing.T) {
 		{
 			name:      "User Already Exists",
 			inputBody: `{"email":"john@doe.ru","password":"password"}`,
-			params: serviceUserModel.RegisterParams{
+			params: serviceAuthModel.RegisterParams{
 				Email:    "john@doe.ru",
 				Password: "password",
 			},
-			mockBehavior: func(s *mock_service.MockUserService, params serviceUserModel.RegisterParams) {
-				s.EXPECT().Register(gomock.Any(), params).Return(serviceUserModel.RegisterInfo{}, serviceErr.UserAlreadyExistsError).Times(1)
+			mockBehavior: func(s *mock_service.MockAuthService, params serviceAuthModel.RegisterParams) {
+				s.EXPECT().Register(gomock.Any(), params).Return("some-id", serviceErr.UserAlreadyExistsError).Times(1)
 			},
 			expectedStatusCode: 409,
 			expectedResponse: response.Error{
@@ -195,12 +192,12 @@ func TestHandler_register(t *testing.T) {
 		{
 			name:      "Internal Service Error",
 			inputBody: `{"email":"john@doe.ru", "password":"password"}`,
-			params: serviceUserModel.RegisterParams{
+			params: serviceAuthModel.RegisterParams{
 				Email:    "john@doe.ru",
 				Password: "password",
 			},
-			mockBehavior: func(s *mock_service.MockUserService, params serviceUserModel.RegisterParams) {
-				s.EXPECT().Register(gomock.Any(), params).Return(serviceUserModel.RegisterInfo{}, serviceErr.UnexpectedError).Times(1)
+			mockBehavior: func(s *mock_service.MockAuthService, params serviceAuthModel.RegisterParams) {
+				s.EXPECT().Register(gomock.Any(), params).Return("...", serviceErr.UnexpectedError).Times(1)
 			},
 			expectedStatusCode: 500,
 			expectedResponse: response.Error{
@@ -214,7 +211,7 @@ func TestHandler_register(t *testing.T) {
 			c := gomock.NewController(t)
 			defer c.Finish()
 
-			mockPhotoService := mock_service.NewMockUserService(c)
+			mockPhotoService := mock_service.NewMockAuthService(c)
 			tt.mockBehavior(mockPhotoService, tt.params)
 
 			h := NewHandler(mockPhotoService)

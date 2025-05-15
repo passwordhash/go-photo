@@ -1,9 +1,11 @@
 package auth
 
 import (
-	"github.com/gin-gonic/gin"
 	"go-photo/internal/handler/response"
 	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Login struct {
@@ -12,7 +14,6 @@ type Login struct {
 
 type Register struct {
 	UserUUID string `json:"user_uuid"`
-	Token    string `json:"token"`
 }
 
 func MustGetUUID(c *gin.Context, key string) (string, bool) {
@@ -22,11 +23,16 @@ func MustGetUUID(c *gin.Context, key string) (string, bool) {
 		return "", false
 	}
 
-	uuid, ok := val.(string)
+	userUUID, ok := val.(string)
 	if !ok {
 		response.NewErr(c, http.StatusInternalServerError, response.InternalServerError, nil, "Unexpected error occurred.")
 		return "", false
 	}
 
-	return uuid, true
+	if strings.TrimSpace(userUUID) == "" {
+		response.NewErr(c, http.StatusUnauthorized, response.Unauthorized, nil, "Try logging in again.")
+		return "", false
+	}
+
+	return userUUID, true
 }

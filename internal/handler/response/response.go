@@ -3,10 +3,10 @@ package response
 import (
 	"context"
 	"errors"
-	"fmt"
-	"github.com/gin-gonic/gin"
 	serviceErr "go-photo/internal/service/error"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ErrMessage string
@@ -52,9 +52,8 @@ func NewOk(c *gin.Context, data interface{}) {
 }
 
 func NewErr(c *gin.Context, code int, errMessage ErrMessage, err error, clientMessage string) {
-
-	outErr := fmt.Errorf("%w: %s", err, clientMessage)
-	c.Error(outErr)
+	// outErr := fmt.Errorf("%w: %s", err, clientMessage)
+	// c.Error(outErr)
 	c.AbortWithStatusJSON(code, Error{
 		Error:   errMessage,
 		Message: clientMessage,

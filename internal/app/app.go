@@ -3,29 +3,32 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
-	log "github.com/sirupsen/logrus"
+	ssogrpc "go-photo/internal/client/sso/grpc"
 	"go-photo/internal/config"
 	"go-photo/internal/handler/middleware"
 	"go-photo/internal/handler/v1/auth"
 	"go-photo/internal/handler/v1/docs"
 	"go-photo/internal/handler/v1/photos"
 	"go-photo/internal/handler/v1/public"
-	"go-photo/internal/handler/v1/user"
-	desc "go-photo/pkg/account_v1"
 	"go-photo/pkg/repository"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/emptypb"
+	"log/slog"
 	"os"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
+	"github.com/lmittmann/tint"
+	gossov1 "github.com/passwordhash/protos/gen/go/go-sso"
 )
 
+const APP_NAME = "go-photo"
+
 type App struct {
-	grpcClient desc.AccountServiceClient
+	log *slog.Logger
+	cfg config.Config
+
+	ssoClient  *ssogrpc.Client
 	httpServer *gin.Engine
 
 	db *sqlx.DB
@@ -51,12 +54,12 @@ func (a *App) Run() error {
 func (a *App) initDeps(ctx context.Context) error {
 	inits := []func(context.Context) error{
 		a.initConfig,
+		a.initLogging,
+		a.initGRPCClient,
 		a.initServiceProvider,
 		// TODO: см. ниже
-		a.initFolders,
-		a.initLogging,
+		// a.initFolders,
 		a.initPGConnection,
-		a.initGRPCClient,
 		a.initHTTPServer,
 	}
 
@@ -73,9 +76,52 @@ func (a *App) initDeps(ctx context.Context) error {
 func (a *App) initConfig(_ context.Context) error {
 	err := config.Load(".env")
 	if err != nil {
-		log.Warnf("failed to load config: %v", err)
-		log.Info("loading without .env")
+		slog.Warn(fmt.Sprintf("failed to load config: %v", err))
+		slog.Info("loading without .env")
 	}
+
+	cfg, err := config.NewConfig()
+	if err != nil {
+		return fmt.Errorf("failed to create config: %w", err)
+	}
+
+	a.cfg = cfg
+
+	return nil
+}
+func (a *App) initLogging(_ context.Context) error {
+	w := os.Stdout
+
+	// dev
+	a.log = slog.New(tint.NewHandler(w, &tint.Options{
+		Level:      slog.LevelInfo,
+		TimeFormat: time.TimeOnly,
+	}))
+
+	return nil
+}
+
+func (a *App) initGRPCClient(ctx context.Context) error {
+	// TODO: timeout from config
+	client, err := ssogrpc.New(ctx, a.log,
+		a.cfg.GRPCAddr(),
+		time.Duration(a.cfg.GRPCTimeout()),
+		3)
+	if err != nil {
+		return fmt.Errorf("failed to create grpc client: %w", err)
+	}
+
+	resp, err := client.Api.SigningKey(ctx, &gossov1.SigningKeyRequest{
+		AppName: APP_NAME,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to get signing key: %w", err)
+	}
+
+	a.ssoClient = client
+	a.cfg.SetAppSecret(resp.SigningKey)
+
+	// TODO: health check grpc client
 
 	return nil
 }
@@ -86,44 +132,27 @@ func (a *App) initServiceProvider(_ context.Context) error {
 }
 
 // TODO: решить нужно ли это
-func (a *App) initFolders(_ context.Context) error {
-	folders := []string{a.sp.BaseConfig().StorageFolder(), config.LogsDir}
+// func (a *App) initFolders(_ context.Context) error {
+// 	folders := []string{a.sp.BaseConfig().StorageFolder(), config.LogsDir}
 
-	// TODO: move to utils
-	for _, folder := range folders {
-		if _, err := os.Stat(folder); os.IsNotExist(err) {
-			err := os.MkdirAll(folder, os.ModePerm)
-			if err != nil {
-				return fmt.Errorf("unable to create folder %s: %w", folder, err)
-			}
-		}
-	}
-	return nil
-}
-
-func (a *App) initLogging(_ context.Context) error {
-	log.SetOutput(os.Stdout)
-	//log.SetFormatter(&log.TextFormatter{
-	//	ForceColors: true,
-	//})
-	log.SetFormatter(&config.CustomFormatter{
-		TimestampFormat: time.DateTime,
-	})
-
-	logLevel, err := log.ParseLevel(a.sp.BaseConfig().LogLevel())
-	if err != nil {
-		log.Printf("failed to parse log level: %v", err)
-		log.Printf("use default log level: %s", log.DebugLevel)
-		logLevel = log.DebugLevel
-	}
-
-	log.SetLevel(logLevel)
-
-	return nil
-}
+// 	// TODO: move to utils
+// 	for _, folder := range folders {
+// 		if _, err := os.Stat(folder); os.IsNotExist(err) {
+// 			err := os.MkdirAll(folder, os.ModePerm)
+// 			if err != nil {
+// 				return fmt.Errorf("unable to create folder %s: %w", folder, err)
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
 
 func (a *App) initPGConnection(_ context.Context) error {
-	pgConfig := a.sp.PSQLConfig()
+	pgConfig, err := config.NewPSQLConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get psql config: %s", err.Error())
+	}
+
 	db, err := repository.NewPostgresDB(pgConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create postgres connection: %w with config: %v", err, pgConfig)
@@ -134,61 +163,35 @@ func (a *App) initPGConnection(_ context.Context) error {
 	return nil
 }
 
-func (a *App) initGRPCClient(_ context.Context) error {
-	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithDefaultCallOptions(
-			grpc.MaxCallSendMsgSize(100*1024*1024), // 10 MB
-			grpc.MaxCallRecvMsgSize(100*1024*1024), // 10 MB
-		),
-	}
-
-	conn, err := grpc.NewClient(a.sp.BaseConfig().GRPCAddr(), opts...)
-	if err != nil {
-		return fmt.Errorf("failed to create grpc client: %w", err)
-	}
-
-	if conn.GetState() == connectivity.TransientFailure || conn.GetState() == connectivity.Shutdown {
-		return fmt.Errorf("grpc connection is in invalid state: %v", conn.GetState())
-	}
-
-	a.grpcClient = desc.NewAccountServiceClient(conn)
-
-	_, err = a.grpcClient.HealthCheck(context.Background(), &emptypb.Empty{})
-	if err != nil {
-		return fmt.Errorf("failed to health check grpc client: %w", err)
-	}
-	log.Infof("grpc client is connected to %s", a.sp.BaseConfig().GRPCAddr())
-
-	return nil
-}
-
 func (a *App) initHTTPServer(_ context.Context) error {
-	if a.grpcClient == nil {
+	if a.ssoClient == nil {
 		return fmt.Errorf("grpc client is not initialized")
 	}
 
 	router := gin.New()
 
 	router.Use(gin.Recovery())
-	router.Use(middleware.Logger())
+	router.Use(middleware.Logger(a.log))
 
 	base := router.Group("/")
 
-	publicHandler := public.NewHandler(a.sp.PhotoService(a.db))
+	publicHandler := public.NewHandler(a.sp.PhotoService(a.db, a.cfg.StorageFolder()))
 	publicHandler.RegisterRoutes(base)
 
 	api := router.Group("/api")
 	v1 := api.Group("/v1")
 
 	docsHandler := docs.NewHandler()
-	authHandler := auth.NewHandler(a.sp.UserService(a.grpcClient))
-	usersHandler := user.NewHandler(a.sp.UserService(a.grpcClient))
-	photosHandler := photos.NewHandler(a.sp.PhotoService(a.db), a.sp.TokenService(a.grpcClient))
+	authHandler := auth.NewHandler(a.sp.AuthService(a.ssoClient, a.cfg.AppSecret()))
+	// usersHandler := user.NewHandler(a.sp.UserService(a.grpcClient))
+	photosHandler := photos.NewHandler(
+		a.sp.PhotoService(a.db, a.cfg.StorageFolder()),
+		a.sp.TokenService(a.cfg.AppSecret()),
+	)
 
 	docsHandler.RegisterRoutes(v1)
 	authHandler.RegisterRoutes(v1)
-	usersHandler.RegisterRoutes(v1)
+	// usersHandler.RegisterRoutes(v1)
 	photosHandler.RegisterRoutes(v1)
 
 	a.httpServer = router
@@ -197,5 +200,5 @@ func (a *App) initHTTPServer(_ context.Context) error {
 }
 
 func (a *App) runHTTPServer() error {
-	return a.httpServer.Run(a.sp.BaseConfig().HTTPAddr())
+	return a.httpServer.Run(a.cfg.HTTPAddr())
 }

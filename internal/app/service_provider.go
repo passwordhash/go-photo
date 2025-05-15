@@ -1,16 +1,17 @@
 package app
 
 import (
-	"github.com/jmoiron/sqlx"
+	ssogrpc "go-photo/internal/client/sso/grpc"
 	"go-photo/internal/config"
 	"go-photo/internal/repository"
 	photoRepository "go-photo/internal/repository/photo"
 	"go-photo/internal/service"
+	"go-photo/internal/service/auth"
 	photoService "go-photo/internal/service/photo"
-	userService "go-photo/internal/service/user"
-	desc "go-photo/pkg/account_v1"
+	"go-photo/internal/service/token"
 	pkgRepo "go-photo/pkg/repository"
-	"log"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type serviceProvider struct {
@@ -19,38 +20,13 @@ type serviceProvider struct {
 
 	photoRepository repository.PhotoRepository
 
-	userSevice   service.UserService
+	authService  service.AuthService
+	tokenService service.TokenService
 	photoService service.PhotoService
 }
 
 func newServiceProvider() *serviceProvider {
 	return &serviceProvider{}
-}
-
-func (s *serviceProvider) BaseConfig() config.Config {
-	if s.bc == nil {
-		cfg, err := config.NewConfig()
-		if err != nil {
-			log.Fatalf("failed to get base config: %s", err.Error())
-		}
-
-		s.bc = cfg
-	}
-
-	return s.bc
-}
-
-func (s *serviceProvider) PSQLConfig() pkgRepo.PSQLConfig {
-	if s.pgConfig == nil {
-		cfg, err := config.NewPSQLConfig()
-		if err != nil {
-			log.Fatalf("failed to get psql config: %s", err.Error())
-		}
-
-		s.pgConfig = &cfg
-	}
-
-	return *s.pgConfig
 }
 
 func (s *serviceProvider) PhotoRepository(db *sqlx.DB) repository.PhotoRepository {
@@ -61,22 +37,34 @@ func (s *serviceProvider) PhotoRepository(db *sqlx.DB) repository.PhotoRepositor
 	return s.photoRepository
 }
 
-func (s *serviceProvider) UserService(accountClient desc.AccountServiceClient) service.UserService {
-	if s.userSevice == nil {
-		s.userSevice = userService.NewService(accountClient, nil)
+func (s *serviceProvider) AuthService(client *ssogrpc.Client, appSecret string) service.AuthService {
+	if s.authService == nil {
+		s.authService = auth.New(client.Log, client.Api, APP_NAME, appSecret)
 	}
 
-	return s.userSevice
+	return s.authService
 }
 
-func (s *serviceProvider) TokenService(accountClient desc.AccountServiceClient) service.TokenService {
-	return userService.NewService(accountClient, nil)
+// func (s *serviceProvider) UserService(accountClient desc.AuthClient) service.UserService {
+// 	if s.userSevice == nil {
+// 		s.userSevice = userService.NewService(accountClient, nil)
+// 	}
+
+// 	return s.userSevice
+// }
+
+func (s *serviceProvider) TokenService(appSecret string) service.TokenService {
+	if s.tokenService == nil {
+		s.tokenService = token.New(appSecret)
+	}
+
+	return s.tokenService
 }
 
-func (s *serviceProvider) PhotoService(db *sqlx.DB) service.PhotoService {
+func (s *serviceProvider) PhotoService(db *sqlx.DB, storageFolder string) service.PhotoService {
 	if s.photoService == nil {
 		deps := photoService.Deps{
-			StorageFolderPath: s.BaseConfig().StorageFolder(),
+			StorageFolderPath: storageFolder,
 		}
 		s.photoService = photoService.NewService(deps, s.PhotoRepository(db), nil)
 	}

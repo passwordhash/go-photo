@@ -6,22 +6,23 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"go-photo/internal/handler/middleware"
 	"go-photo/internal/handler/response"
 	"go-photo/internal/handler/response/photo"
 	"go-photo/internal/model"
 	serviceErr "go-photo/internal/service/error"
 	mockservice "go-photo/internal/service/mock"
-	serviceModel "go-photo/internal/service/photo/model"
-	serviceUserModel "go-photo/internal/service/user/model"
+	servicePhotoModel "go-photo/internal/service/photo/model"
+	serviceTokenModel "go-photo/internal/service/token/model"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHandler_uploadPhoto(t *testing.T) {
@@ -132,11 +133,11 @@ func TestHandler_uploadPhoto(t *testing.T) {
 			r := gin.New()
 			gin.DefaultWriter = ioutil.Discard
 
-			r.Use(middleware.UserIdentity(func(ctx context.Context, token string) (serviceUserModel.TokenPayload, error) {
+			r.Use(middleware.UserIdentity(func(ctx context.Context, token string) (*serviceTokenModel.Claims, error) {
 				if token == "valid-token" {
-					return serviceUserModel.TokenPayload{UserUUID: tt.userUUID}, nil
+					return &serviceTokenModel.Claims{UserUUID: tt.userUUID}, nil
 				}
-				return serviceUserModel.TokenPayload{}, errors.New("invalid token")
+				return &serviceTokenModel.Claims{}, errors.New("invalid token")
 			}))
 			r.POST("/upload", h.uploadPhoto)
 
@@ -191,7 +192,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			expectedResponse: photo.UploadBatchPhotosResponse{
 				TotalCount:   3,
 				SuccessCount: 3,
-				UploadInfos:  serviceModel.ToUploadsInfoFromService(defaultUploads.Get()),
+				UploadInfos:  servicePhotoModel.ToUploadsInfoFromService(defaultUploads.Get()),
 			},
 		},
 		{
@@ -226,7 +227,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			expectedResponse: photo.UploadBatchPhotosResponse{
 				TotalCount:   3,
 				SuccessCount: 2,
-				UploadInfos:  serviceModel.ToUploadsInfoFromService(createPartialUploads().Get()),
+				UploadInfos:  servicePhotoModel.ToUploadsInfoFromService(createPartialUploads().Get()),
 			},
 		},
 		{
@@ -246,7 +247,7 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			expectedResponse: photo.UploadBatchPhotosResponse{
 				TotalCount:   2,
 				SuccessCount: 0,
-				UploadInfos:  serviceModel.ToUploadsInfoFromService(createFailedUploads().Get()),
+				UploadInfos:  servicePhotoModel.ToUploadsInfoFromService(createFailedUploads().Get()),
 			},
 		},
 	}
@@ -264,12 +265,14 @@ func TestHandler_uploadBatchPhotos(t *testing.T) {
 			h := NewHandler(mockPhotoService, mockTokenService)
 
 			r := gin.New()
-			r.Use(middleware.UserIdentity(func(ctx context.Context, token string) (serviceUserModel.TokenPayload, error) {
-				if token == "valid-token" {
-					return serviceUserModel.TokenPayload{UserUUID: tt.userUUID}, nil
-				}
-				return serviceUserModel.TokenPayload{}, errors.New("invalid token")
-			}))
+			r.Use(middleware.UserIdentity(
+				func(ctx context.Context, token string) (*serviceTokenModel.Claims, error) {
+					if token == "valid-token" {
+						return &serviceTokenModel.Claims{UserUUID: tt.userUUID}, nil
+					}
+					return &serviceTokenModel.Claims{}, errors.New("invalid token")
+				}))
+
 			r.POST("/uploadBatch", h.uploadBatchPhotos)
 
 			w := httptest.NewRecorder()
@@ -410,11 +413,11 @@ func TestHandler_getPhotoVersions(t *testing.T) {
 			h := NewHandler(mockPhotoService, mockTokenService)
 
 			r := gin.New()
-			r.Use(middleware.UserIdentity(func(ctx context.Context, token string) (serviceUserModel.TokenPayload, error) {
+			r.Use(middleware.UserIdentity(func(ctx context.Context, token string) (*serviceTokenModel.Claims, error) {
 				if token == "valid-token" {
-					return serviceUserModel.TokenPayload{UserUUID: tt.userUUID}, nil
+					return &serviceTokenModel.Claims{UserUUID: tt.userUUID}, nil
 				}
-				return serviceUserModel.TokenPayload{}, errors.New("invalid token")
+				return &serviceTokenModel.Claims{}, errors.New("invalid token")
 			}))
 			r.GET("/photos/:id/versions", h.getPhotoVersions)
 
@@ -457,10 +460,10 @@ func createMultipartBodyMixed(filenames, contents []string) (*bytes.Buffer, stri
 	return body, writer.FormDataContentType()
 }
 
-func createDefaultUploads(count int) serviceModel.UploadInfoList {
-	uploads := serviceModel.UploadInfoList{}
+func createDefaultUploads(count int) servicePhotoModel.UploadInfoList {
+	uploads := servicePhotoModel.UploadInfoList{}
 	for i := 1; i <= count; i++ {
-		uploads.Add(serviceModel.UploadInfo{
+		uploads.Add(servicePhotoModel.UploadInfo{
 			PhotoID:  i,
 			Filename: fmt.Sprintf("tt%d.jpg", i),
 		})
@@ -468,16 +471,16 @@ func createDefaultUploads(count int) serviceModel.UploadInfoList {
 	return uploads
 }
 
-func createPartialUploads() *serviceModel.UploadInfoList {
-	return serviceModel.NewUploadInfoList([]serviceModel.UploadInfo{
+func createPartialUploads() *servicePhotoModel.UploadInfoList {
+	return servicePhotoModel.NewUploadInfoList([]servicePhotoModel.UploadInfo{
 		{PhotoID: 1, Filename: "tt1.jpg"},
 		{PhotoID: 0, Filename: "tt2.jpg", Error: serviceErr.DbError},
 		{PhotoID: 3, Filename: "tt3.jpg"},
 	})
 }
 
-func createFailedUploads() *serviceModel.UploadInfoList {
-	return serviceModel.NewUploadInfoList([]serviceModel.UploadInfo{
+func createFailedUploads() *servicePhotoModel.UploadInfoList {
+	return servicePhotoModel.NewUploadInfoList([]servicePhotoModel.UploadInfo{
 		{PhotoID: 0, Filename: "tt1.jpg", Error: serviceErr.DbError},
 		{PhotoID: 0, Filename: "tt2.jpg", Error: serviceErr.UnexpectedError},
 	})

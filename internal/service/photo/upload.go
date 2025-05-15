@@ -3,12 +3,10 @@ package photo
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	repoModel "go-photo/internal/repository/photo/model"
 	serviceErr "go-photo/internal/service/error"
 	serviceModel "go-photo/internal/service/photo/model"
 	"go-photo/internal/utils"
-	_ "golang.org/x/image/webp"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -20,6 +18,9 @@ import (
 	"runtime"
 	"sync"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	_ "golang.org/x/image/webp"
 )
 
 type saveToDiskInfo struct {
@@ -170,6 +171,8 @@ func (s *service) saveFile(_ context.Context, file *multipart.FileHeader, destFo
 
 // saveToDatabase сохраняет информацию о файле в базе данных. Если произошла ошибка, файл удаляется с диска
 func (s *service) saveToDatabase(ctx context.Context, userUUID string, info serviceModel.UploadInfo) serviceModel.UploadInfo {
+	filePath := filepath.Join(s.d.StorageFolderPath, userUUID, info.UUIDFilename)
+
 	id, err := s.photoRepository.CreateOriginalPhoto(ctx, &repoModel.CreateOriginalPhotoParams{
 		UserUUID:     userUUID,
 		Filename:     info.Filename,
@@ -179,18 +182,18 @@ func (s *service) saveToDatabase(ctx context.Context, userUUID string, info serv
 		Width:        info.Width,
 		SavedAt:      info.SavedAt,
 	})
-
 	if err != nil {
-		log.Errorf("DB save error for file %s: %v", info.Filename, err)
+		// TODO: log in upper func
+		// log.Errorf("DB save error for file %s: %v", info.UUIDFilename, err)
+
 		info.Error = fmt.Errorf("db save error: %w", err)
 
-		filePath := filepath.Join(s.d.StorageFolderPath, userUUID, info.Filename)
-		if rmErr := os.Remove(filePath); rmErr != nil {
-			log.Errorf("Failed to remove file %s after DB save error: %v", filePath, rmErr)
-			info.Error = fmt.Errorf("%w; additionally, rollback failed: %v", info.Error, rmErr)
-		} else {
-			log.Infof("File %s removed due to failed DB save", filePath)
+		if rbErr := rollbackFile(filePath); rbErr != nil {
+			info.Error = fmt.Errorf("%w; additionally, rollback failed: %v", info.Error, rbErr)
+			return info
 		}
+
+		log.Infof("File %s removed due to failed DB save", filePath)
 	} else {
 		info.PhotoID = id
 	}
@@ -241,4 +244,11 @@ func saveFileToDisk(file *multipart.FileHeader, destFolder string) (saveToDiskIn
 	}
 
 	return info, nil
+}
+
+func rollbackFile(filePath string) error {
+	if err := os.Remove(filePath); err != nil {
+		return fmt.Errorf("failed to remove file %s: %w", filePath, err)
+	}
+	return nil
 }

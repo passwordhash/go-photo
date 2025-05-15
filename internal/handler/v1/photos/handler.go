@@ -1,9 +1,10 @@
 package photos
 
 import (
-	"github.com/gin-gonic/gin"
 	"go-photo/internal/handler/middleware"
 	"go-photo/internal/service"
+
+	"github.com/gin-gonic/gin"
 )
 
 type handler struct {
@@ -11,7 +12,10 @@ type handler struct {
 	tokenService service.TokenService
 }
 
-func NewHandler(photoService service.PhotoService, tokenService service.TokenService) *handler {
+func NewHandler(
+	photoService service.PhotoService,
+	tokenService service.TokenService,
+) *handler {
 	return &handler{
 		photoService: photoService,
 		tokenService: tokenService,
@@ -21,7 +25,7 @@ func NewHandler(photoService service.PhotoService, tokenService service.TokenSer
 func (h *handler) RegisterRoutes(router *gin.RouterGroup) {
 	photosGroup := router.Group("/photos")
 
-	photosGroup.Use(middleware.UserIdentity(h.tokenService.VerifyToken))
+	photosGroup.Use(middleware.UserIdentity(h.tokenService.ValidateToken))
 
 	{
 		photosGroup.POST("/", h.uploadPhoto)

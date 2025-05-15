@@ -1,57 +1,62 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
-func Logger() gin.HandlerFunc {
+const RequestIDKey = "request_id"
+
+func Logger(log *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		clientIP := c.ClientIP()
+		mwLog := log.WithGroup("HTTP")
+
+		reqID := c.GetHeader("X-Request-ID")
+		if reqID == "" {
+			reqID = uuid.New().String()
+		}
+		c.Set(RequestIDKey, reqID)
+		c.Writer.Header().Set("X-Request-ID", reqID)
+
+		baseLog := mwLog.With(
+			slog.String("path", c.Request.URL.RequestURI()),
+			slog.String("method", c.Request.Method),
+			slog.String("client_ip", c.ClientIP()),
+			slog.String("user_agent", c.Request.UserAgent()),
+			slog.String("request_id", reqID),
+		)
+
 		start := time.Now()
-		userAgent := c.Request.UserAgent()
-		path := c.Request.URL.Path
-		raw := c.Request.URL.RawQuery
-		if raw != "" {
-			path += "?" + raw
-		}
+		startLog := baseLog.With(
+			slog.Time("start_time", start),
+		)
 
-		fields := log.Fields{
-			"path":       path,
-			"method":     c.Request.Method,
-			"client_ip":  clientIP,
-			"start_time": start.Format(time.DateTime),
-			"user_agent": userAgent,
-		}
-
-		log.WithFields(fields).Info("Request started")
+		startLog.InfoContext(c, "Request started")
 		c.Next()
 
 		latency := time.Since(start)
 		statusCode := c.Writer.Status()
-		errorMessages := c.Errors.ByType(gin.ErrorTypePrivate).Errors()
-		errorMessage := strings.Join(errorMessages, "; ")
+		completeLog := baseLog.With(
+			slog.Int("status_code", statusCode),
+			slog.Duration("latency_time", latency),
+		)
 
-		fields = log.Fields{
-			"status_code":  statusCode,
-			"path":         path,
-			"method":       c.Request.Method,
-			"client_ip":    clientIP,
-			"latency_time": latency,
-			"user_agent":   userAgent,
+		errors := c.Errors.ByType(gin.ErrorTypeAny).Errors()
+		if len(errors) > 0 {
+			msgs := strings.Join(errors, "; ")
+			completeLog = completeLog.With(slog.String("error_messages", msgs))
 		}
 
-		entry := log.WithFields(fields)
-		if errorMessage != "" {
-			if statusCode >= 500 {
-				entry.Error(errorMessage)
-			} else if statusCode >= 400 {
-				entry.Warn(errorMessage)
-			}
+		if statusCode >= 500 {
+			completeLog.ErrorContext(c, "Request failed")
+		} else if statusCode >= 400 {
+			completeLog.WarnContext(c, "Request failed")
 		} else {
-			entry.Info("Request completed")
+			completeLog.InfoContext(c, "Request completed")
 		}
 	}
 }

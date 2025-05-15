@@ -14,10 +14,11 @@ type handler struct {
 
 func NewHandler(
 	photoService service.PhotoService,
-	tokenServcie service.TokenService,
+	tokenService service.TokenService,
 ) *handler {
 	return &handler{
 		photoService: photoService,
+		tokenService: tokenService,
 	}
 }
 

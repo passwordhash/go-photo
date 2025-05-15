@@ -121,8 +121,6 @@ func (a *App) initGRPCClient(ctx context.Context) error {
 	a.ssoClient = client
 	a.cfg.SetAppSecret(resp.SigningKey)
 
-	fmt.Println("app secret", resp.SigningKey)
-
 	// TODO: health check grpc client
 
 	return nil
@@ -189,7 +187,6 @@ func (a *App) initHTTPServer(_ context.Context) error {
 	photosHandler := photos.NewHandler(
 		a.sp.PhotoService(a.db, a.cfg.StorageFolder()),
 		a.sp.TokenService(a.cfg.AppSecret()),
-		a.cfg.AppSecret(),
 	)
 
 	docsHandler.RegisterRoutes(v1)

@@ -31,8 +31,8 @@ tests-build: install-deps generate-mock generate-mock
 run-tests:
 	@echo "Установка go зависимостей..."
 	go mod tidy
-	@echo "Запуск тестов..."
-	go test -v ./...
+	@echo "Запуск unit тестов..."
+	go test -v `go list ./... | grep -v '/tests'`
 
 EXCLUDE_PATTERNS = model error converter mock
 # Кроссплатформенная подмена команды sed
@@ -42,10 +42,9 @@ collect-coverage-ci:
 	go test -coverprofile=coverage_raw.out -v \
 		./internal/handler/v1/auth/ \
 		./internal/handler/v1/photos/ \
-		./internal/handler/v1/user/ \
 		./internal/handler/v1/public/ \
 		./internal/service/photo \
-		./internal/service/user \
+		./internal/service/auth \
 		./internal/repository/photo
 
 	@echo "Фильтрация лишних файлов из покрытия..."

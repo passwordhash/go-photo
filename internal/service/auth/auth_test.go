@@ -3,12 +3,15 @@ package auth
 import (
 	"context"
 	serviceAuthModel "go-photo/internal/service/auth/model"
+	serviceErr "go-photo/internal/service/error"
 	"io"
 	"log/slog"
 	"testing"
 
 	def "github.com/passwordhash/protos/gen/go/go-sso"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/golang/mock/gomock"
 	"github.com/passwordhash/protos/mocks"
@@ -46,6 +49,33 @@ func TestAuthService_Register(t *testing.T) {
 			expectedUserUUID: "user-id",
 			expectedError:    nil,
 		},
+		{
+			name: "User Already Exists",
+			inputParams: serviceAuthModel.RegisterParams{
+				Email:    "john@doe.com",
+				Password: "password",
+			},
+			mockBehavior: func(authAPI *mocks.MockAuthClient, params serviceAuthModel.RegisterParams) {
+				authAPI.EXPECT().Register(gomock.Any(), &def.RegisterRequest{
+					Email:    params.Email,
+					Password: params.Password,
+				}).Return(nil, status.Error(codes.AlreadyExists, "user already exists")).Times(1)
+			},
+			expectedUserUUID: "",
+			expectedError:    serviceErr.UserAlreadyExistsError,
+		},
+		{
+			name:        "Internal Error",
+			inputParams: serviceAuthModel.RegisterParams{},
+			mockBehavior: func(authAPI *mocks.MockAuthClient, params serviceAuthModel.RegisterParams) {
+				authAPI.EXPECT().Register(gomock.Any(), &def.RegisterRequest{
+					Email:    params.Email,
+					Password: params.Password,
+				}).Return(nil, status.Error(codes.Internal, "internal error")).Times(1)
+			},
+			expectedUserUUID: "",
+			expectedError:    serviceErr.UnexpectedError,
+		},
 	}
 
 	for _, tt := range tests {
@@ -64,7 +94,8 @@ func TestAuthService_Register(t *testing.T) {
 			userUUID, err := s.Register(context.Background(), tt.inputParams)
 			if tt.expectedError != nil {
 				assert.Error(t, err)
-				assert.Equal(t, tt.expectedError, err)
+				// assert.Equal(t, tt.expectedError, err)
+				assert.ErrorIs(t, err, tt.expectedError)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedUserUUID, userUUID)

@@ -14,9 +14,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// TEMP:
-const tmpAppID = 101
-
 func (s *service) Register(
 	ctx context.Context,
 	params serviceAuthModel.RegisterParams,
@@ -86,6 +83,6 @@ func (s *service) handleGRPCErr(ctx context.Context, log *slog.Logger, err error
 		return fmt.Errorf("%w: %v", serviceErr.UserAlreadyExistsError, err)
 	default:
 		log.ErrorContext(ctx, "unexpected grcp error", "error", err)
-		return err
+		return fmt.Errorf("%w: %v", serviceErr.UnexpectedError, err)
 	}
 }

@@ -432,6 +432,242 @@ func TestHandler_getPhotoVersions(t *testing.T) {
 	}
 }
 
+func TestHandler_publishPhoto(t *testing.T) {
+	type mockBehavior func(s *mockservice.MockPhotoService, userUUID string, photoID int)
+
+	tests := []struct {
+		name               string
+		userUUID           string
+		photoID            int
+		mockBehavior       mockBehavior
+		expectedStatusCode int
+		expectedResponse   any
+	}{
+		{
+			name:     "Valid",
+			userUUID: "1abc4",
+			photoID:  123,
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, photoID int) {
+				s.EXPECT().
+					PublishPhoto(gomock.Any(), userUUID, photoID).
+					Return("public-token", nil).
+					Times(1)
+			},
+			expectedStatusCode: 200,
+			expectedResponse: photo.PublishPhotoResponse{
+				PublicToken: "public-token",
+			},
+		},
+		{
+			name:     "Photo not found",
+			userUUID: "1abc4",
+			photoID:  123,
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, photoID int) {
+				s.EXPECT().
+					PublishPhoto(gomock.Any(), userUUID, photoID).
+					Return("", serviceErr.PhotoNotFoundError).
+					Times(1)
+			},
+			expectedStatusCode: 404,
+			expectedResponse: response.Error{
+				Error: response.PhotoNotFound,
+			},
+		},
+		{
+			name:     "Access denied",
+			userUUID: "1abc4",
+			photoID:  123,
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, photoID int) {
+				s.EXPECT().
+					PublishPhoto(gomock.Any(), userUUID, photoID).
+					Return("", serviceErr.AccessDeniedError).
+					Times(1)
+			},
+			expectedStatusCode: 403,
+			expectedResponse: response.Error{
+				Error: response.Forbidden,
+			},
+		},
+		{
+			name:     "Internal error",
+			userUUID: "1abc4",
+			photoID:  123,
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, photoID int) {
+				s.EXPECT().
+					PublishPhoto(gomock.Any(), userUUID, photoID).
+					Return("", assert.AnError).
+					Times(1)
+			},
+			expectedStatusCode: 500,
+			expectedResponse: response.Error{
+				Error: response.InternalServerError,
+			},
+		},
+		{
+			name:     "Already published",
+			userUUID: "1abc4",
+			photoID:  123,
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, photoID int) {
+				s.EXPECT().
+					PublishPhoto(gomock.Any(), userUUID, photoID).
+					Return("", serviceErr.AlreadyExists).
+					Times(1)
+			},
+			expectedStatusCode: 204,
+			expectedResponse:   response.Message{},
+		},
+		{
+			name:     "Unexpected error",
+			userUUID: "1abc4",
+			photoID:  1,
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, photoID int) {
+				s.EXPECT().
+					PublishPhoto(gomock.Any(), userUUID, photoID).
+					Return("", serviceErr.UnexpectedError).
+					Times(1)
+			},
+			expectedStatusCode: 500,
+			expectedResponse: response.Error{
+				Error: response.InternalServerError,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockPhotoService := mockservice.NewMockPhotoService(ctrl)
+			tt.mockBehavior(mockPhotoService, tt.userUUID, tt.photoID)
+
+			mockTokenService := mockservice.NewMockTokenService(ctrl)
+
+			h := NewHandler(mockPhotoService, mockTokenService)
+
+			r := gin.New()
+			r.Use(middleware.UserIdentity(func(ctx context.Context, token string) (*serviceTokenModel.Claims, error) {
+				if token == "valid-token" {
+					return &serviceTokenModel.Claims{UserUUID: tt.userUUID}, nil
+				}
+				return &serviceTokenModel.Claims{}, errors.New("invalid token")
+			}))
+			r.POST("/photos/:id/publish", h.publishPhoto)
+
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", fmt.Sprintf("/photos/%d/publish", tt.photoID), nil)
+			req.Header.Set("Authorization", "Bearer valid-token")
+
+			r.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatusCode, w.Code)
+		})
+	}
+}
+
+func TestHandler_unpublishPhoto(t *testing.T) {
+	type mockBehavior func(s *mockservice.MockPhotoService, userUUID string, photoID int)
+
+	tests := []struct {
+		name               string
+		userUUID           string
+		photoID            int
+		mockBehavior       mockBehavior
+		expectedStatusCode int
+		expectedResponse   any
+	}{
+		{
+			name:     "Valid",
+			userUUID: "1abc4",
+			photoID:  123,
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, photoID int) {
+				s.EXPECT().
+					UnpublishPhoto(gomock.Any(), userUUID, photoID).
+					Return(nil).
+					Times(1)
+			},
+			expectedStatusCode: 200,
+			expectedResponse:   response.Message{},
+		},
+		{
+			name:     "Photo not found",
+			userUUID: "1abc4",
+			photoID:  123,
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, photoID int) {
+				s.EXPECT().
+					UnpublishPhoto(gomock.Any(), userUUID, photoID).
+					Return(serviceErr.PhotoNotFoundError).
+					Times(1)
+			},
+			expectedStatusCode: 404,
+			expectedResponse: response.Error{
+				Error: response.PhotoNotFound,
+			},
+		},
+		{
+			name:     "Access denied",
+			userUUID: "1abc4",
+			photoID:  123,
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, photoID int) {
+				s.EXPECT().
+					UnpublishPhoto(gomock.Any(), userUUID, photoID).
+					Return(serviceErr.AccessDeniedError).
+					Times(1)
+			},
+			expectedStatusCode: 403,
+			expectedResponse: response.Error{
+				Error: response.Forbidden,
+			},
+		},
+		{
+			name:     "Internal error",
+			userUUID: "1abc4",
+			photoID:  123,
+			mockBehavior: func(s *mockservice.MockPhotoService, userUUID string, photoID int) {
+				s.EXPECT().
+					UnpublishPhoto(gomock.Any(), userUUID, photoID).
+					Return(assert.AnError).
+					Times(1)
+			},
+			expectedStatusCode: 500,
+			expectedResponse: response.Error{
+				Error: response.InternalServerError,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockPhotoService := mockservice.NewMockPhotoService(ctrl)
+			tt.mockBehavior(mockPhotoService, tt.userUUID, tt.photoID)
+
+			mockTokenService := mockservice.NewMockTokenService(ctrl)
+
+			h := NewHandler(mockPhotoService, mockTokenService)
+
+			r := gin.New()
+			r.Use(middleware.UserIdentity(func(ctx context.Context, token string) (*serviceTokenModel.Claims, error) {
+				if token == "valid-token" {
+					return &serviceTokenModel.Claims{UserUUID: tt.userUUID}, nil
+				}
+				return &serviceTokenModel.Claims{}, errors.New("invalid token")
+			}))
+			r.POST("/photos/:id/unpublish", h.unpublishPhoto)
+
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", fmt.Sprintf("/photos/%d/unpublish", tt.photoID), nil)
+			req.Header.Set("Authorization", "Bearer valid-token")
+
+			r.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatusCode, w.Code)
+		})
+	}
+}
+
 // Вспомогательные функции
 
 func createMultipartBody(count int, filenamePattern, content string) (*bytes.Buffer, string) {

@@ -236,7 +236,7 @@ func (h *handler) publishPhoto(c *gin.Context) {
 // @Failure 404 {object} response.Error "Photo not found or already unpublished."
 // @Failure 500 {object} response.Error "Unexpected error occurred."
 // @Router /api/v1/photos/{id}/unpublicate [delete]
-func (h *handler) unpublicatePhoto(c *gin.Context) {
+func (h *handler) unpublishPhoto(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
 

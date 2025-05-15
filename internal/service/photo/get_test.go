@@ -3,10 +3,6 @@ package photo
 import (
 	"context"
 	"errors"
-	"github.com/golang/mock/gomock"
-	log "github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go-photo/internal/model"
 	mock_repository "go-photo/internal/repository/mock"
 	repoModel "go-photo/internal/repository/photo/model"
@@ -14,6 +10,11 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
@@ -44,9 +45,9 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 				}).Return(photoVersion, nil)
 
 				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
-						Return(&repoModel.Photo{
-							UserUUID: "some-user-uuid",
-						}, nil)
+					Return(&repoModel.Photo{
+						UserUUID: "some-user-uuid",
+					}, nil)
 			},
 			expectedBytes: []byte("test"),
 			expectedError: nil,
@@ -66,9 +67,9 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 				}).Return(photoVersion, nil)
 
 				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
-						Return(&repoModel.Photo{
-							UserUUID: "some-user-uuid",
-						}, nil)
+					Return(&repoModel.Photo{
+						UserUUID: "some-user-uuid",
+					}, nil)
 			},
 			expectedBytes: []byte("test"),
 			expectedError: nil,
@@ -88,9 +89,9 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 				}).Return(photoVersion, nil)
 
 				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
-						Return(&repoModel.Photo{
-							UserUUID: "some-user-uuid",
-						}, nil)
+					Return(&repoModel.Photo{
+						UserUUID: "some-user-uuid",
+					}, nil)
 			},
 			expectedBytes: []byte("test"),
 			expectedError: nil,
@@ -132,9 +133,9 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 				}).Return(photoVersion, nil)
 
 				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
-						Return(&repoModel.Photo{
-							UserUUID: "some-user-uuid",
-						}, nil)
+					Return(&repoModel.Photo{
+						UserUUID: "some-user-uuid",
+					}, nil)
 			},
 			expectedBytes: nil,
 			expectedError: serviceErr.UnexpectedError,
@@ -154,9 +155,9 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 				}).Return(photoVersion, nil)
 
 				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
-						Return(&repoModel.Photo{
-							UserUUID: "some-user-uuid",
-						}, nil)
+					Return(&repoModel.Photo{
+						UserUUID: "some-user-uuid",
+					}, nil)
 			},
 			expectedBytes: nil,
 			expectedError: serviceErr.UnexpectedError,

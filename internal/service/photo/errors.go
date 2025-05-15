@@ -3,9 +3,10 @@ package photo
 import (
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	repoErr "go-photo/internal/repository/error"
 	serviceErr "go-photo/internal/service/error"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (s *service) HandleRepoErr(err error) error {

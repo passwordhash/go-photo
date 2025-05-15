@@ -30,7 +30,7 @@ func (s *service) Register(
 
 	log.Info("registration user")
 
-	resp, err := s.authClient.Api.Register(ctx, &def.RegisterRequest{
+	resp, err := s.authAPI.Register(ctx, &def.RegisterRequest{
 		Email:    params.Email,
 		Password: params.Password,
 	})
@@ -53,7 +53,7 @@ func (s *service) Login(ctx context.Context, email string, password string) (str
 
 	log.Info("logging in user")
 
-	user, err := s.authClient.Api.Login(ctx, &def.LoginRequest{
+	user, err := s.authAPI.Login(ctx, &def.LoginRequest{
 		Email:    email,
 		Password: password,
 		AppName:  s.appName,

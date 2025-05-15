@@ -39,7 +39,7 @@ func (s *serviceProvider) PhotoRepository(db *sqlx.DB) repository.PhotoRepositor
 
 func (s *serviceProvider) AuthService(client *ssogrpc.Client, appSecret string) service.AuthService {
 	if s.authService == nil {
-		s.authService = auth.New(client, APP_NAME, appSecret)
+		s.authService = auth.New(client.Log, client.Api, APP_NAME, appSecret)
 	}
 
 	return s.authService

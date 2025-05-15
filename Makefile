@@ -34,18 +34,20 @@ run-tests:
 	@echo "Запуск unit тестов..."
 	go test -v `go list ./... | grep -v '/tests'`
 
-EXCLUDE_PATTERNS = model error converter mock
+EXCLUDE_PATTERNS = model error converter mock handler.go service.go repository.go
 # Кроссплатформенная подмена команды sed
 SED_INPLACE = $(shell uname | grep -q Darwin && echo "sed -i ''" || echo "sed -i")
 collect-coverage-ci:
 	@echo "Сбор покрытия для CI..."
 	go test -coverprofile=coverage_raw.out -v \
-		./internal/handler/v1/auth/ \
-		./internal/handler/v1/photos/ \
-		./internal/handler/v1/public/ \
-		./internal/service/photo \
-		./internal/service/auth \
-		./internal/repository/photo
+		./internal/handler/v1/... \
+		./internal/service/... \
+		./internal/repository/...
+#		./internal/handler/v1/photos/.. \
+#		./internal/handler/v1/public/ \
+#		./internal/service/photo \
+#		./internal/service/auth \
+#		./internal/repository/photo
 
 	@echo "Фильтрация лишних файлов из покрытия..."
 	@cp coverage_raw.out coverage.out

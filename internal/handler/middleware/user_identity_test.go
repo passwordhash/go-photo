@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	serviceToken "go-photo/internal/service/token"
+	serviceTokenModel "go-photo/internal/service/token/model"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"go-photo/internal/lib/jwt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -17,22 +17,22 @@ import (
 func TestMiddleware_UserIdIdentity(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	dummyVerify := func(ctx context.Context, token, secret string) (*jwt.Claims, error) {
-		return &jwt.Claims{UserUUID: "shouldNotBeCalled"}, nil
+	dummyVerify := func(ctx context.Context, token string) (*serviceTokenModel.Claims, error) {
+		return &serviceTokenModel.Claims{UserUUID: "shouldNotBeCalled"}, nil
 	}
 
-	verifyInvalid := func(ctx context.Context, token, secret string) (*jwt.Claims, error) {
-		return &jwt.Claims{}, errors.New("invalid token")
+	verifyInvalid := func(ctx context.Context, token string) (*serviceTokenModel.Claims, error) {
+		return &serviceTokenModel.Claims{}, errors.New("invalid token")
 	}
 
-	verifyValid := func(ctx context.Context, token, secret string) (*jwt.Claims, error) {
-		return &jwt.Claims{UserUUID: "12345"}, nil
+	verifyValid := func(ctx context.Context, token string) (*serviceTokenModel.Claims, error) {
+		return &serviceTokenModel.Claims{UserUUID: "12345"}, nil
 	}
 
 	tests := []struct {
 		name                string
 		authHeader          string
-		verifyFn            jwt.VerifyTokenFunc
+		verifyFn            serviceToken.VerifyTokenFunc
 		expectedStatusCode  int
 		expectedBodyContent string
 	}{
@@ -76,7 +76,7 @@ func TestMiddleware_UserIdIdentity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			router := gin.New()
-			router.Use(UserIdentity(tt.verifyFn, "some-secret"))
+			router.Use(UserIdentity(tt.verifyFn))
 
 			router.GET("/", func(c *gin.Context) {
 				if userUUID, exists := c.Get(UserUUIDKey); exists {

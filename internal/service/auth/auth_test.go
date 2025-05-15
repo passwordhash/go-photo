@@ -103,3 +103,57 @@ func TestAuthService_Register(t *testing.T) {
 		})
 	}
 }
+
+func TestAuthService_Login(t *testing.T) {
+	type mockBehavior func(authAPI *mocks.MockAuthClient, email, password string)
+
+	tests := []struct {
+		name          string
+		email         string
+		password      string
+		mockBehavior  mockBehavior
+		expectedToken string
+		expectedError error
+	}{
+		{
+			name:     "Valid",
+			email:    "joh@doe.com",
+			password: "password",
+			mockBehavior: func(authAPI *mocks.MockAuthClient, email string, password string) {
+				authAPI.EXPECT().Login(gomock.Any(), &def.LoginRequest{
+					Email:    email,
+					Password: password,
+					AppName:  appName,
+				}).Return(&def.LoginResponse{
+					Token: "valid-token",
+				}, nil).Times(1)
+			},
+			expectedToken: "valid-token",
+			expectedError: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			authAPI := mocks.NewMockAuthClient(ctrl)
+
+			log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+			tt.mockBehavior(authAPI, tt.email, tt.password)
+
+			s := New(log, authAPI, appName, appSecret)
+
+			token, err := s.Login(context.Background(), tt.email, tt.password)
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, tt.expectedError)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedToken, token)
+			}
+		})
+	}
+}

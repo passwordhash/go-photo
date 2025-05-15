@@ -2,7 +2,6 @@ package photos
 
 import (
 	"go-photo/internal/handler/middleware"
-	"go-photo/internal/lib/jwt"
 	"go-photo/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -10,21 +9,22 @@ import (
 
 type handler struct {
 	photoService service.PhotoService
-
-	appSecret string
+	tokenService service.TokenService
 }
 
-func NewHandler(photoService service.PhotoService, appSecret string) *handler {
+func NewHandler(
+	photoService service.PhotoService,
+	tokenServcie service.TokenService,
+) *handler {
 	return &handler{
 		photoService: photoService,
-		appSecret:    appSecret,
 	}
 }
 
 func (h *handler) RegisterRoutes(router *gin.RouterGroup) {
 	photosGroup := router.Group("/photos")
 
-	photosGroup.Use(middleware.UserIdentity(jwt.ValidateToken, h.appSecret))
+	photosGroup.Use(middleware.UserIdentity(h.tokenService.ValidateToken))
 
 	{
 		photosGroup.POST("/", h.uploadPhoto)

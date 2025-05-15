@@ -5,18 +5,14 @@ import (
 	"go-photo/internal/model"
 	serviceAuthModel "go-photo/internal/service/auth/model"
 	servicePhotoModel "go-photo/internal/service/photo/model"
+	serviceTokenModel "go-photo/internal/service/token/model"
 	"mime/multipart"
 )
 
-//go:generate mockgen -destination=mock/mocks.go -source=interface.go
-
-// type TokenService interface {
-// VerifyToken проверяет токен и возвращает payload из токена
-// VerifyToken(ctx context.Context, token string) (serviceUserModel.TokenPayload, error)
-// }
+// go:generate mockgen -destination=mock/mocks.go -source=interface.go
 
 type AuthService interface {
-	// TODO: doc
+	// Register регистрирует нового пользователя в системе.
 	Register(
 		ctx context.Context,
 		params serviceAuthModel.RegisterParams,
@@ -26,13 +22,13 @@ type AuthService interface {
 	Login(ctx context.Context, email string, password string) (jwtToken string, err error)
 }
 
-//type UserService interface {
-// // Login выполняет аутентификацию пользователя по логину и паролю. Возвращает JWT token
-// Login(ctx context.Context, login string, password string) (string, error)
-// // Register регистрирует нового пользователя.
-// Register(ctx context.Context, input serviceUserModel.RegisterParams) (serviceUserModel.RegisterInfo, error)
-// Get(ctx context.Context, uuid string) (model.User, error)
-//}
+type TokenService interface {
+	// ValidateToken проверяет валидность JWT токена.
+	ValidateToken(
+		ctx context.Context,
+		token string,
+	) (claims *serviceTokenModel.Claims, err error)
+}
 
 type PhotoService interface {
 	// UploadPhoto загружает фотографию и сохраняет ее в файловой системе и базе данных.

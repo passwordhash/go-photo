@@ -8,6 +8,7 @@ import (
 	"go-photo/internal/service"
 	"go-photo/internal/service/auth"
 	photoService "go-photo/internal/service/photo"
+	"go-photo/internal/service/token"
 	pkgRepo "go-photo/pkg/repository"
 
 	"github.com/jmoiron/sqlx"
@@ -20,6 +21,7 @@ type serviceProvider struct {
 	photoRepository repository.PhotoRepository
 
 	authService  service.AuthService
+	tokenService service.TokenService
 	photoService service.PhotoService
 }
 
@@ -51,9 +53,13 @@ func (s *serviceProvider) AuthService(client *ssogrpc.Client, appSecret string) 
 // 	return s.userSevice
 // }
 
-// func (s *serviceProvider) TokenService(accountClient desc.AuthClient) service.TokenService {
-// 	return userService.NewService(accountClient, nil)
-// }
+func (s *serviceProvider) TokenService(appSecret string) service.TokenService {
+	if s.tokenService == nil {
+		s.tokenService = token.New(appSecret)
+	}
+
+	return s.tokenService
+}
 
 func (s *serviceProvider) PhotoService(db *sqlx.DB, storageFolder string) service.PhotoService {
 	if s.photoService == nil {

@@ -186,7 +186,11 @@ func (a *App) initHTTPServer(_ context.Context) error {
 	docsHandler := docs.NewHandler()
 	authHandler := auth.NewHandler(a.sp.AuthService(a.ssoClient, a.cfg.AppSecret()))
 	// usersHandler := user.NewHandler(a.sp.UserService(a.grpcClient))
-	photosHandler := photos.NewHandler(a.sp.PhotoService(a.db, a.cfg.StorageFolder()), a.cfg.AppSecret())
+	photosHandler := photos.NewHandler(
+		a.sp.PhotoService(a.db, a.cfg.StorageFolder()),
+		a.sp.TokenService(a.cfg.AppSecret()),
+		a.cfg.AppSecret(),
+	)
 
 	docsHandler.RegisterRoutes(v1)
 	authHandler.RegisterRoutes(v1)

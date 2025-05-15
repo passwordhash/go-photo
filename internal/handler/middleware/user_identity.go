@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"go-photo/internal/handler/response"
-	"go-photo/internal/lib/jwt"
+	"go-photo/internal/service/token"
 	"net/http"
 	"strings"
 
@@ -14,14 +14,14 @@ const (
 	UserUUIDKey         = "user"
 )
 
-func UserIdentity(verifyFuc jwt.VerifyTokenFunc, secret string) gin.HandlerFunc {
+func UserIdentity(verifyFuc token.VerifyTokenFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userIdentity(c, verifyFuc, secret)
+		userIdentity(c, verifyFuc)
 		c.Next()
 	}
 }
 
-func userIdentity(c *gin.Context, verifyFuc jwt.VerifyTokenFunc, secret string) {
+func userIdentity(c *gin.Context, verifyFuc token.VerifyTokenFunc) {
 	header := c.GetHeader(authorizationHeader)
 
 	if header == "" {
@@ -54,7 +54,7 @@ func userIdentity(c *gin.Context, verifyFuc jwt.VerifyTokenFunc, secret string) 
 	}
 
 	// claims, err := jwt.ValidateToken(token, secret)
-	claims, err := verifyFuc(c, token, secret)
+	claims, err := verifyFuc(c, token)
 	if err != nil {
 		response.NewErr(c,
 			http.StatusUnauthorized,

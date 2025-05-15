@@ -17,3 +17,14 @@ func (s *service) PublishPhoto(ctx context.Context, userUUID string, photoID int
 
 	return publicToken, nil
 }
+
+func (s *service) UnpublishPhoto(ctx context.Context, userUUID string, photoID int) error {
+	photo, err := s.getUserPhoto(ctx, userUUID, photoID)
+	if err != nil {
+		return err
+	}
+
+	err = s.photoRepository.DeletePhotoPublishedInfo(ctx, photo.ID)
+
+	return s.HandleRepoErr(err)
+}

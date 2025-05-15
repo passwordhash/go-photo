@@ -86,3 +86,68 @@ func TestService_PublishPhoto(t *testing.T) {
 	}
 
 }
+
+func TestService_UnpublishPhoto(t *testing.T) {
+	type mockBehavior func(s *mock_service.MockPhotoService, r *mock_repository.MockPhotoRepository, userUUID string, photoID int)
+	tests := []struct {
+		name          string
+		userUUID      string
+		photoID       int
+		mockBehavior  mockBehavior
+		expectedError error
+	}{
+		{
+			name:     "Valid",
+			userUUID: "user-uuid",
+			photoID:  1,
+			mockBehavior: func(s *mock_service.MockPhotoService, r *mock_repository.MockPhotoRepository, userUUID string, photoID int) {
+				r.EXPECT().GetPhotoByID(gomock.Any(), photoID).Return(&repoModel.Photo{
+					ID:       1,
+					UserUUID: userUUID,
+				}, nil).Times(1)
+
+				r.EXPECT().DeletePhotoPublishedInfo(gomock.Any(), photoID).Return(nil).Times(1)
+			},
+			expectedError: nil,
+		},
+		{
+			name:     "Photo Not Found",
+			userUUID: "user-uuid",
+			photoID:  1,
+			mockBehavior: func(s *mock_service.MockPhotoService, r *mock_repository.MockPhotoRepository, userUUID string, photoID int) {
+				r.EXPECT().GetPhotoByID(gomock.Any(), photoID).Return(nil, repoErr.NotFoundError).Times(1)
+			},
+			expectedError: serviceErr.PhotoNotFoundError,
+		},
+
+		{
+			name:     "Photo Not Owned",
+			userUUID: "user-uuid",
+			photoID:  1,
+			mockBehavior: func(s *mock_service.MockPhotoService, r *mock_repository.MockPhotoRepository, userUUID string, photoID int) {
+				r.EXPECT().GetPhotoByID(gomock.Any(), photoID).Return(&repoModel.Photo{
+					ID:       1,
+					UserUUID: "other-user-uuid",
+				}, nil).Times(1)
+			},
+			expectedError: serviceErr.AccessDeniedError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockRepo := mock_repository.NewMockPhotoRepository(ctrl)
+			tt.mockBehavior(mock_service.NewMockPhotoService(ctrl), mockRepo, tt.userUUID, tt.photoID)
+			s := NewService(Deps{StorageFolderPath: ""}, mockRepo, nil)
+			err := s.UnpublishPhoto(context.TODO(), tt.userUUID, tt.photoID)
+			if tt.expectedError != nil {
+				assert.ErrorIs(t, err, tt.expectedError)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

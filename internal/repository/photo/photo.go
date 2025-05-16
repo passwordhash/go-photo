@@ -70,6 +70,25 @@ func (r *repository) CreateOriginalPhoto(ctx context.Context, params *repoModel.
 	return photoID, nil
 }
 
+func (r *repository) GetPhotoByID(ctx context.Context, photoID int) (*repoModel.Photo, error) {
+	var photo repoModel.Photo
+
+	query := `
+		SELECT id, user_uuid, filename, uploaded_at
+		FROM photos
+		WHERE id = $1`
+
+	err := r.db.GetContext(ctx, &photo, query, photoID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("%w: no photo found with id %d", repoErr.NotFoundError, photoID)
+		}
+		return nil, err
+	}
+
+	return &photo, nil
+}
+
 func (r *repository) CreatePhotoPublishedInfo(ctx context.Context, photoID int) (string, error) {
 	query := `
 		INSERT INTO published_photo_info (photo_id)
@@ -90,23 +109,25 @@ func (r *repository) CreatePhotoPublishedInfo(ctx context.Context, photoID int) 
 	return publicToken, nil
 }
 
-func (r *repository) GetPhotoByID(ctx context.Context, photoID int) (*repoModel.Photo, error) {
-	var photo repoModel.Photo
-
+func (r *repository) DeletePhotoPublishedInfo(ctx context.Context, photoID int) error {
 	query := `
-		SELECT id, user_uuid, filename, uploaded_at
-		FROM photos
-		WHERE id = $1`
+		DELETE FROM published_photo_info
+		WHERE photo_id = $1`
 
-	err := r.db.GetContext(ctx, &photo, query, photoID)
+	res, err := r.db.ExecContext(ctx, query, photoID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("%w: no photo found with id %d", repoErr.NotFoundError, photoID)
-		}
-		return nil, err
+		return fmt.Errorf("failed to delete published photo info: %w", err)
 	}
 
-	return &photo, nil
+	affectedCnt, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows count: %w", err)
+	}
+	if affectedCnt < 1 {
+		return fmt.Errorf("%w: no rows affected with id %d", repoErr.NotFoundError, photoID)
+	}
+
+	return nil
 }
 
 func (r *repository) GetPhotoVersionByToken(
@@ -210,25 +231,4 @@ func (r *repository) GetPhotoVersions(ctx context.Context, photoID int) ([]repoM
 	}
 
 	return versions, nil
-}
-
-func (r *repository) DeletePhotoPublishedInfo(ctx context.Context, photoID int) error {
-	query := `
-		DELETE FROM published_photo_info
-		WHERE photo_id=$(1)`
-
-	res, err := r.db.ExecContext(ctx, query, photoID)
-	if err != nil {
-		return fmt.Errorf("failed to delete published photo info: %w", err)
-	}
-
-	affectedCnt, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get affected rows count: %w", err)
-	}
-	if affectedCnt < 1 {
-		return fmt.Errorf("%w: no rows affected with id %d", repoErr.NotFoundError, photoID)
-	}
-
-	return nil
 }

@@ -1,0 +1,113 @@
+name: CI/CD
+
+on:
+    push:
+        tags:
+            - "v*.*.*" # любые теги вида v1.0.0
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+
+            - name: Set version
+              uses: ./.github/actions/set-version
+
+            - name: Login to Docker Hub
+              uses: docker/login-action@v3
+              with:
+                  username: ${{ vars.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+            - name: Checkout
+              uses: actions/checkout@v2
+
+            - name: Set up Go
+              uses: actions/setup-go@v2
+              with:
+                  go-version: "1.24.1"
+
+            - name: Install dependencies
+              run: make install-deps
+
+            - name: Docs generation
+              run: |
+                  make generate-docs
+
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v3
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Build and push
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  push: true
+                  no-cache: true
+                  file: ./prod.Dockerfile
+                  tags: |
+                      ${{ github.repository }}:latest
+                      ${{ github.repository }}:${{ env.VERSION }}
+
+            # - name: Upload config as artifact
+            #   uses: actions/upload-artifact@v4
+            #   with:
+            #       name: config-files
+            #       path: ./config/
+
+    deploy:
+        needs: build
+
+        runs-on: ubuntu-latest
+
+        env:
+            VAULT_ADDR: http://vault.passwordhash.tech
+            CONTAINER_NAME: go-photo
+            CONTAINER_PORT: 2040
+            # HOST_CONFIG_PATH: /home/yaroslav/.config/go-sso/
+
+        steps:
+            # - name: Download config artifact
+            #   uses: actions/download-artifact@v4
+            #   with:
+            #       name: config-files
+            #       path: ./config/
+
+            # - name: Copy config to server
+            #   uses: appleboy/scp-action@v0.1.5
+            #   with:
+            #       host: ${{ vars.SSH_HOST }}
+            #       username: ${{ vars.SSH_USER }}
+            #       key: ${{ secrets.SSH_KEY }}
+            #       passphrase: ${{ secrets.SSH_PASSPHRASE }}
+            #       source: ./config/*
+            #       target: ${{ env.HOST_CONFIG_PATH }}
+
+            - name: Run docker image
+              uses: appleboy/ssh-action@v1.2.0
+              with:
+                  host: ${{ vars.SSH_HOST }}
+                  username: ${{ vars.SSH_USER }}
+                  key: ${{ secrets.SSH_KEY }}
+                  passphrase: ${{ secrets.SSH_PASSPHRASE }}
+                  script: |
+                      export VAULT_ADDR=${{ env.VAULT_ADDR }}
+                      vault kv get -format=json -mount=kv ${{ env.CONTAINER_NAME }} | \
+                        jq -r '.data.data | to_entries[] | "\(.key)=\(.value)"' > .env
+
+                      docker pull ${{ github.repository }}:latest
+                      docker stop ${{ env.CONTAINER_NAME }} || true
+                      docker rm ${{ env.CONTAINER_NAME }} -f || true
+                      docker run -d  \
+                        --env-file .env \
+                        -p 2040:${{ env.CONTAINER_PORT }} \
+                        --network go-network \
+                        --name ${{ env.CONTAINER_NAME }} \
+                        ${{ github.repository }}:latest
+
+                      rm -f .env

@@ -43,7 +43,7 @@ services:
             - ${HTTP_PORT}:${HTTP_PORT}
         build:
             context: .
-            dockerfile: Dockerfile
+            dockerfile: prod.Dockerfile
         volumes:
             - app_storage:/app/storage
 

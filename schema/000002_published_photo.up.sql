@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE "published_photo_info"
 (
     "photo_id"     int PRIMARY KEY,

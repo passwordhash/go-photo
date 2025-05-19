@@ -115,6 +115,20 @@ jobs:
 
                       rm -f .env
 
+    migrate:
+        needs: deploy
+
+        runs-on: ubuntu-latest
+
+        env:
+            VAULT_ADDR: http://vault.passwordhash.tech
+            CONTAINER_NAME: go-sso
+            # HOST_CONFIG_PATH: /home/yaroslav/.config/go-sso/
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+
             - name: Fetch DB credentials from Vault
               run: |
                   export VAULT_ADDR=${{ env.VAULT_ADDR }}
@@ -133,5 +147,5 @@ jobs:
                   -v ${{ github.workspace }}/migrations:/migrations \
                   migrate/migrate \
                   -path=/migrations \
-                  -database "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable" \
+                  -database "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5433/${POSTGRES_DB}?sslmode=disable" \
                   up

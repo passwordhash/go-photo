@@ -1,37 +1,28 @@
 package tests
 
 import (
+	"fmt"
 	"go-photo/internal/handler/request"
-	authReq "go-photo/internal/handler/request"
 	authResp "go-photo/internal/handler/response/auth"
 	"net/http"
-	"net/url"
 	"testing"
 
 	"github.com/brianvoe/gofakeit/v6"
-
 	"github.com/gavv/httpexpect/v2"
 )
 
-const passDefaultLen = 12
-
 const (
-	host = "localhost:8080"
+	uploadFormFieldName = "photo_file"
 )
 
-var u = url.URL{
-	Scheme: "http",
-	Host:   host,
-}
-
-func TestRegisterLogin_HappyPath(t *testing.T) {
+func TestAuthUploadImage_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	email := gofakeit.Email()
 	pass := randomFakePassword()
 
 	e.POST("/api/v1/auth/register").
-		WithJSON(authReq.AuthRegister{
+		WithJSON(request.AuthRegister{
 			Email:    email,
 			Password: pass,
 		}).
@@ -42,6 +33,7 @@ func TestRegisterLogin_HappyPath(t *testing.T) {
 		ContainsKey("user_uuid").
 		Decode(&authResp.Register{})
 
+	var loginResp authResp.Login
 	e.POST("/api/v1/auth/login").
 		WithJSON(request.AuthLogin{
 			Email:    email,
@@ -51,9 +43,15 @@ func TestRegisterLogin_HappyPath(t *testing.T) {
 		Status(http.StatusOK).
 		JSON().
 		Object().
-		Decode(&authResp.Login{})
-}
+		Decode(&loginResp)
 
-func randomFakePassword() string {
-	return gofakeit.Password(true, true, true, true, false, passDefaultLen)
+	fmt.Println("token: ", loginResp.Token)
+
+	file := gofakeit.ImagePng(300, 200)
+	e.POST("/api/v1/photos/").
+		WithHeader("Authorization", "Bearer "+loginResp.Token).
+		WithMultipart().
+		WithFileBytes(uploadFormFieldName, "img.png", file).
+		Expect().
+		Status(http.StatusOK)
 }

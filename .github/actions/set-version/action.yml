@@ -1,0 +1,7 @@
+name: "Set VERSION from tag"
+description: "Extracts version from tag and sets it as env.VERSION"
+runs:
+    using: "composite"
+    steps:
+        - run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          shell: bash

@@ -106,7 +106,7 @@ generate-docs:
 
 migrate-up:
 	docker run --rm \
-		-v ./schema:/migrations \
+		-v ./migrations:/migrations \
 		--network host migrate/migrate \
 		-path=/migrations \
 		-database "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable" \
@@ -114,7 +114,7 @@ migrate-up:
 
 migrate-down:
 	docker run --rm \
-		-v ./schema:/migrations \
+		-v ./migrations:/migrations \
 		--network host migrate/migrate \
 		-path=/migrations \
 		-database "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable" \

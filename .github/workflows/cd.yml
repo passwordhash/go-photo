@@ -72,6 +72,9 @@ jobs:
             # HOST_CONFIG_PATH: /home/yaroslav/.config/go-sso/
 
         steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+
             # - name: Download config artifact
             #   uses: actions/download-artifact@v4
             #   with:
@@ -111,3 +114,24 @@ jobs:
                         ${{ github.repository }}:latest
 
                       rm -f .env
+
+            - name: Fetch DB credentials from Vault
+              run: |
+                  export VAULT_ADDR=${{ env.VAULT_ADDR }}
+                  export VAULT_TOKEN=${{ secrets.VAULT_TOKEN }}
+
+                  vault kv get -format=json -mount=kv ${{ env.CONTAINER_NAME }} | \
+                      jq -r '.data.data | to_entries[] | "\(.key)=\(.value)"' > db.env
+
+            - name: Run DB migrations
+              run: |
+                  set -a
+                  source db.env
+                  set +a
+
+                  docker run --rm \
+                  -v ${{ github.workspace }}/migrations:/migrations \
+                  migrate/migrate \
+                  -path=/migrations \
+                  -database "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable" \
+                  up

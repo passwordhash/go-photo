@@ -29,7 +29,7 @@ services:
         depends_on:
             - postgres
         volumes:
-            - ./schema:/migrations
+            - ./migrations:/migrations
 
     app:
         container_name: go-photo-app

@@ -4,4 +4,4 @@
 
 *.env*
 
-schema/
+migrations/

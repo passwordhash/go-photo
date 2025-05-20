@@ -187,7 +187,7 @@ func (h *handler) getPhotoVersions(c *gin.Context) {
 // @Failure 404 {object} response.Error "Photo not found."
 // @Failure 409 {object} response.Error "Photo already published."
 // @Failure 500 {object} response.Error "Unexpected error occurred."
-// @Router /api/v1/photos/{id}/publicate [post]
+// @Router /api/v1/photos/{id}/publish [post]
 func (h *handler) publishPhoto(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()
@@ -235,7 +235,7 @@ func (h *handler) publishPhoto(c *gin.Context) {
 // @Failure 403 {object} response.Error "Access denied."
 // @Failure 404 {object} response.Error "Photo not found or already unpublished."
 // @Failure 500 {object} response.Error "Unexpected error occurred."
-// @Router /api/v1/photos/{id}/unpublicate [delete]
+// @Router /api/v1/photos/{id}/unpublish [delete]
 func (h *handler) unpublishPhoto(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, config.DefaultContextTimeout)
 	defer cancel()

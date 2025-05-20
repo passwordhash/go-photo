@@ -696,7 +696,7 @@ func createMultipartBodyMixed(filenames, contents []string) (*bytes.Buffer, stri
 	return body, writer.FormDataContentType()
 }
 
-func createDefaultUploads(count int) servicePhotoModel.UploadInfoList {
+func createDefaultUploads(count int) *servicePhotoModel.UploadInfoList {
 	uploads := servicePhotoModel.UploadInfoList{}
 	for i := 1; i <= count; i++ {
 		uploads.Add(servicePhotoModel.UploadInfo{
@@ -704,7 +704,7 @@ func createDefaultUploads(count int) servicePhotoModel.UploadInfoList {
 			Filename: fmt.Sprintf("tt%d.jpg", i),
 		})
 	}
-	return uploads
+	return &uploads
 }
 
 func createPartialUploads() *servicePhotoModel.UploadInfoList {

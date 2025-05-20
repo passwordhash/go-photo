@@ -25,18 +25,19 @@ func NewHandler(
 func (h *handler) RegisterRoutes(router *gin.RouterGroup) {
 	photosGroup := router.Group("/photos")
 
-	photosGroup.Use(middleware.UserIdentity(h.tokenService.ValidateToken))
-
 	{
+		photosGroup.Use(middleware.UserIdentity(h.tokenService.ValidateToken))
+
 		photosGroup.POST("/", h.uploadPhoto)
+
 		photosGroup.POST("/batch", h.uploadBatchPhotos)
+
 		{
 			photoGroup := photosGroup.Group("/:id")
 
 			photoGroup.GET("/versions", h.getPhotoVersions)
-			photoGroup.POST("/publicate", h.publishPhoto)
-			photoGroup.DELETE("/unpublicate", h.unpublishPhoto)
+			photoGroup.POST("/publish", h.publishPhoto)
+			photoGroup.DELETE("/unpublish", h.unpublishPhoto)
 		}
-
 	}
 }

@@ -242,7 +242,7 @@ func TestRepository_GetPhotoByID(t *testing.T) {
 
 			tt.mockSetup(mock)
 
-			result, err := repo.GetPhotoByID(context.Background(), tt.photoID)
+			result, err := repo.PhotoByID(context.Background(), tt.photoID)
 			if tt.expectedError != nil {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError.Error())

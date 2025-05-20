@@ -28,7 +28,7 @@ func TestService_PublishPhoto(t *testing.T) {
 			userUUID: "user-uuid",
 			photoID:  1,
 			mockBehavior: func(s *mock_service.MockPhotoService, r *mock_repository.MockPhotoRepository, userUUID string, photoID int) {
-				r.EXPECT().GetPhotoByID(gomock.Any(), photoID).Return(&repoModel.Photo{
+				r.EXPECT().PhotoByID(gomock.Any(), photoID).Return(&repoModel.Photo{
 					ID:       1,
 					UserUUID: userUUID,
 				}, nil).Times(1)
@@ -43,7 +43,7 @@ func TestService_PublishPhoto(t *testing.T) {
 			userUUID: "user-uuid",
 			photoID:  1,
 			mockBehavior: func(s *mock_service.MockPhotoService, r *mock_repository.MockPhotoRepository, userUUID string, photoID int) {
-				r.EXPECT().GetPhotoByID(gomock.Any(), photoID).Return(nil, repoErr.NotFoundError).Times(1)
+				r.EXPECT().PhotoByID(gomock.Any(), photoID).Return(nil, repoErr.NotFoundError).Times(1)
 			},
 			expectedToken: "",
 			expectedError: serviceErr.PhotoNotFoundError,
@@ -54,7 +54,7 @@ func TestService_PublishPhoto(t *testing.T) {
 			userUUID: "user-uuid",
 			photoID:  1,
 			mockBehavior: func(s *mock_service.MockPhotoService, r *mock_repository.MockPhotoRepository, userUUID string, photoID int) {
-				r.EXPECT().GetPhotoByID(gomock.Any(), photoID).Return(&repoModel.Photo{
+				r.EXPECT().PhotoByID(gomock.Any(), photoID).Return(&repoModel.Photo{
 					ID:       1,
 					UserUUID: "other-user-uuid",
 				}, nil).Times(1)
@@ -101,7 +101,7 @@ func TestService_UnpublishPhoto(t *testing.T) {
 			userUUID: "user-uuid",
 			photoID:  1,
 			mockBehavior: func(s *mock_service.MockPhotoService, r *mock_repository.MockPhotoRepository, userUUID string, photoID int) {
-				r.EXPECT().GetPhotoByID(gomock.Any(), photoID).Return(&repoModel.Photo{
+				r.EXPECT().PhotoByID(gomock.Any(), photoID).Return(&repoModel.Photo{
 					ID:       1,
 					UserUUID: userUUID,
 				}, nil).Times(1)
@@ -115,7 +115,7 @@ func TestService_UnpublishPhoto(t *testing.T) {
 			userUUID: "user-uuid",
 			photoID:  1,
 			mockBehavior: func(s *mock_service.MockPhotoService, r *mock_repository.MockPhotoRepository, userUUID string, photoID int) {
-				r.EXPECT().GetPhotoByID(gomock.Any(), photoID).Return(nil, repoErr.NotFoundError).Times(1)
+				r.EXPECT().PhotoByID(gomock.Any(), photoID).Return(nil, repoErr.NotFoundError).Times(1)
 			},
 			expectedError: serviceErr.PhotoNotFoundError,
 		},
@@ -125,7 +125,7 @@ func TestService_UnpublishPhoto(t *testing.T) {
 			userUUID: "user-uuid",
 			photoID:  1,
 			mockBehavior: func(s *mock_service.MockPhotoService, r *mock_repository.MockPhotoRepository, userUUID string, photoID int) {
-				r.EXPECT().GetPhotoByID(gomock.Any(), photoID).Return(&repoModel.Photo{
+				r.EXPECT().PhotoByID(gomock.Any(), photoID).Return(&repoModel.Photo{
 					ID:       1,
 					UserUUID: "other-user-uuid",
 				}, nil).Times(1)

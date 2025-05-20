@@ -44,7 +44,7 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 					VersionType: versionType,
 				}).Return(photoVersion, nil)
 
-				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
+				repo.EXPECT().PhotoByID(gomock.Any(), photoVersion.PhotoID).
 					Return(&repoModel.Photo{
 						UserUUID: "some-user-uuid",
 					}, nil)
@@ -66,7 +66,7 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 					VersionType: versionType,
 				}).Return(photoVersion, nil)
 
-				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
+				repo.EXPECT().PhotoByID(gomock.Any(), photoVersion.PhotoID).
 					Return(&repoModel.Photo{
 						UserUUID: "some-user-uuid",
 					}, nil)
@@ -88,7 +88,7 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 					VersionType: versionType,
 				}).Return(photoVersion, nil)
 
-				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
+				repo.EXPECT().PhotoByID(gomock.Any(), photoVersion.PhotoID).
 					Return(&repoModel.Photo{
 						UserUUID: "some-user-uuid",
 					}, nil)
@@ -132,7 +132,7 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 					VersionType: versionType,
 				}).Return(photoVersion, nil)
 
-				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
+				repo.EXPECT().PhotoByID(gomock.Any(), photoVersion.PhotoID).
 					Return(&repoModel.Photo{
 						UserUUID: "some-user-uuid",
 					}, nil)
@@ -154,7 +154,7 @@ func TestPhotoService_GetPhotoFileByVersionAndToken(t *testing.T) {
 					VersionType: versionType,
 				}).Return(photoVersion, nil)
 
-				repo.EXPECT().GetPhotoByID(gomock.Any(), photoVersion.PhotoID).
+				repo.EXPECT().PhotoByID(gomock.Any(), photoVersion.PhotoID).
 					Return(&repoModel.Photo{
 						UserUUID: "some-user-uuid",
 					}, nil)

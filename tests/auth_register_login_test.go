@@ -5,24 +5,12 @@ import (
 	authReq "go-photo/internal/handler/request"
 	authResp "go-photo/internal/handler/response/auth"
 	"net/http"
-	"net/url"
 	"testing"
 
 	"github.com/brianvoe/gofakeit/v6"
 
 	"github.com/gavv/httpexpect/v2"
 )
-
-const passDefaultLen = 12
-
-const (
-	host = "localhost:8080"
-)
-
-var u = url.URL{
-	Scheme: "http",
-	Host:   host,
-}
 
 func TestRegisterLogin_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
@@ -52,8 +40,4 @@ func TestRegisterLogin_HappyPath(t *testing.T) {
 		JSON().
 		Object().
 		Decode(&authResp.Login{})
-}
-
-func randomFakePassword() string {
-	return gofakeit.Password(true, true, true, true, false, passDefaultLen)
 }

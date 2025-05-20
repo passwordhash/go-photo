@@ -23,7 +23,7 @@ func (s *service) PhotoByID(ctx context.Context, photoID int) (*model.Photo, err
 }
 
 func (s *service) GetPhotoVersions(ctx context.Context, userUUID string, photoID int) ([]model.PhotoVersion, error) {
-	photo, err := s.photoRepository.GetPhotoByID(ctx, photoID)
+	photo, err := s.photoRepository.PhotoByID(ctx, photoID)
 	if err := s.HandleRepoErr(err); err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (s *service) GetPhotoFileByVersionAndToken(ctx context.Context, token strin
 		return nil, err
 	}
 
-	photo, err := s.photoRepository.GetPhotoByID(ctx, photoVersion.PhotoID)
+	photo, err := s.photoRepository.PhotoByID(ctx, photoVersion.PhotoID)
 	if err := s.HandleRepoErr(err); err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (s *service) GetPhotoFileByVersionAndToken(ctx context.Context, token strin
 // Если фотография не найдена, возвращает ошибку PhotoNotFoundError.
 // Если фотография найдена, но принадлежит другому пользователю, возвращает ошибку AccessDeniedError.
 func (s *service) getUserPhoto(ctx context.Context, userUUID string, photoID int) (*repoModel.Photo, error) {
-	photo, err := s.photoRepository.GetPhotoByID(ctx, photoID)
+	photo, err := s.photoRepository.PhotoByID(ctx, photoID)
 	if err := s.HandleRepoErr(err); err != nil {
 		return &repoModel.Photo{}, err
 	}

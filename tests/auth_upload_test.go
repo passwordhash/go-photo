@@ -5,16 +5,14 @@ import (
 	"go-photo/internal/handler/request"
 	authResp "go-photo/internal/handler/response/auth"
 	photoResp "go-photo/internal/handler/response/photo"
+	"go-photo/internal/handler/v1/photos"
+	photoHandler "go-photo/internal/handler/v1/photos"
 	"net/http"
 	"strconv"
 	"testing"
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
-)
-
-const (
-	uploadFormFieldName = "photo_file"
 )
 
 func TestAuthUploadImage_HappyPath(t *testing.T) {
@@ -53,7 +51,7 @@ func TestAuthUploadImage_HappyPath(t *testing.T) {
 	e.POST("/api/v1/photos/").
 		WithHeader("Authorization", "Bearer "+loginResp.Token).
 		WithMultipart().
-		WithFileBytes(uploadFormFieldName, "img.png", file).
+		WithFileBytes(photos.FormPhotoFile, "img.png", file).
 		Expect().
 		Status(http.StatusOK)
 }
@@ -93,7 +91,7 @@ func TestAuthUploadImageAndPublicate_HappyPath(t *testing.T) {
 	e.POST("/api/v1/photos/").
 		WithHeader("Authorization", "Bearer "+loginResp.Token).
 		WithMultipart().
-		WithFileBytes(uploadFormFieldName, "img.png", file).
+		WithFileBytes(photoHandler.FormPhotoFile, "img.png", file).
 		Expect().
 		Status(http.StatusOK).
 		JSON().
@@ -178,7 +176,7 @@ func TestAuthUploadImageAndPublicate_ByNotOwner(t *testing.T) {
 	e.POST("/api/v1/photos/").
 		WithHeader("Authorization", "Bearer "+loginResp1.Token).
 		WithMultipart().
-		WithFileBytes(uploadFormFieldName, "img.png", file).
+		WithFileBytes(photoHandler.FormPhotoFile, "img.png", file).
 		Expect().
 		Status(http.StatusOK).
 		JSON().
@@ -200,7 +198,7 @@ func TestAuthUploadImage_Unauthorized(t *testing.T) {
 
 	e.POST("/api/v1/photos/").
 		WithMultipart().
-		WithFileBytes(uploadFormFieldName, "img.png", file).
+		WithFileBytes(photoHandler.FormPhotoFile, "img.png", file).
 		Expect().
 		Status(http.StatusUnauthorized)
 }

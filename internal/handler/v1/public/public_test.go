@@ -3,9 +3,6 @@ package public
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"go-photo/internal/handler/response"
 	serviceErr "go-photo/internal/service/error"
 	mock_service "go-photo/internal/service/mock"
@@ -13,6 +10,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHandler_getPublicPhoto(t *testing.T) {
@@ -78,7 +79,7 @@ func TestHandler_getPublicPhoto(t *testing.T) {
 			expectedStatusCode:  http.StatusBadRequest,
 			expectedContentType: "application/json",
 			expectedResponseBody: response.Error{
-				Error: response.InvalidReqestsQueryParams,
+				Error: response.InvalidReqestQueryParams,
 			},
 		},
 		{

@@ -2,10 +2,11 @@ package public
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
 	"go-photo/internal/handler/response"
 	serviceErr "go-photo/internal/service/error"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -40,7 +41,7 @@ func (h *handler) getPublicPhoto(c *gin.Context) {
 		return
 	}
 	if errors.Is(err, serviceErr.InvalidVersionTypeError) {
-		response.NewErr(c, http.StatusBadRequest, response.InvalidReqestsQueryParams, err, "Invalid version type")
+		response.NewErr(c, http.StatusBadRequest, response.InvalidReqestQueryParams, err, "Invalid version type")
 		return
 	}
 	if response.HandleError(c, err) {

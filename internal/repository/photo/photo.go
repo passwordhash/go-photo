@@ -70,7 +70,7 @@ func (r *repository) CreateOriginalPhoto(ctx context.Context, params *repoModel.
 	return photoID, nil
 }
 
-func (r *repository) GetPhotoByID(ctx context.Context, photoID int) (*repoModel.Photo, error) {
+func (r *repository) PhotoByID(ctx context.Context, photoID int) (*repoModel.Photo, error) {
 	var photo repoModel.Photo
 
 	query := `

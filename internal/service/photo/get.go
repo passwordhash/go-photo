@@ -3,14 +3,24 @@ package photo
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"go-photo/internal/model"
 	"go-photo/internal/repository/photo/converter"
 	repoModel "go-photo/internal/repository/photo/model"
 	serviceErr "go-photo/internal/service/error"
 	"os"
 	"path/filepath"
+
+	log "github.com/sirupsen/logrus"
 )
+
+func (s *service) PhotoByID(ctx context.Context, photoID int) (*model.Photo, error) {
+	photo, err := s.photoRepository.PhotoByID(ctx, photoID)
+	if err := s.HandleRepoErr(err); err != nil {
+		return nil, err
+	}
+
+	return converter.ToPhotoFromRepo(photo, nil), nil
+}
 
 func (s *service) GetPhotoVersions(ctx context.Context, userUUID string, photoID int) ([]model.PhotoVersion, error) {
 	photo, err := s.photoRepository.GetPhotoByID(ctx, photoID)

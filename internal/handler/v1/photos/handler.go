@@ -35,6 +35,8 @@ func (h *handler) RegisterRoutes(router *gin.RouterGroup) {
 		{
 			photoGroup := photosGroup.Group("/:id")
 
+			photoGroup.Use(middleware.PhotoOwner(h.photoService))
+
 			photoGroup.GET("/versions", h.getPhotoVersions)
 			photoGroup.POST("/publish", h.publishPhoto)
 			photoGroup.DELETE("/unpublish", h.unpublishPhoto)

@@ -39,9 +39,8 @@ type PhotoService interface {
 	// Если возникла ошибка во время загрузки фотографии, то прикрепляет информацию об ошибке.
 	UploadBatchPhotos(ctx context.Context, userUUID string, photoFiles []*multipart.FileHeader) (*servicePhotoModel.UploadInfoList, error)
 
-	// PublishPhoto публикует фотографию, делая ее доступной для других пользователей.
-	// Осуществляет проверку прав доступа к фотографии.
-	PublishPhoto(ctx context.Context, userUUID string, photoID int) (string, error)
+	// PhotoByID получает фотографию по ее ID.
+	PhotoByID(ctx context.Context, photoID int) (*model.Photo, error)
 
 	// GetPhotoVersions получает все версии фотографии по ее ID.
 	// Осуществляет проверку прав доступа к фотографии.
@@ -49,8 +48,11 @@ type PhotoService interface {
 	GetPhotoVersions(ctx context.Context, userUUID string, photoID int) ([]model.PhotoVersion, error)
 
 	// GetPhotoFileByVersionAndToken получает файл публичной фотографии по ее версии и токену.
-	// TODO: tests
 	GetPhotoFileByVersionAndToken(ctx context.Context, token string, version string) ([]byte, error)
+
+	// PublishPhoto публикует фотографию, делая ее доступной для других пользователей.
+	// Осуществляет проверку прав доступа к фотографии.
+	PublishPhoto(ctx context.Context, userUUID string, photoID int) (string, error)
 
 	// UnpublishPhoto отменяет публикацию фотографии, делая ее недоступной для других пользователей.
 	// Осуществляет проверку прав доступа к фотографии.

@@ -17,9 +17,9 @@ type PhotoRepository interface {
 	// Если запись уже существует, возвращает ошибку.
 	CreatePhotoPublishedInfo(ctx context.Context, photoID int) (string, error)
 
-	// GetPhotoByID возвращает фото по его ID.
+	// PhotoByID возвращает фото по его ID.
 	// Если фото не найдено, возвращает ошибку PhotoNotFound.
-	GetPhotoByID(ctx context.Context, photoID int) (*repoModel.Photo, error)
+	PhotoByID(ctx context.Context, photoID int) (*repoModel.Photo, error)
 
 	// GetPhotoVersions возвращает все версии фото по его ID.
 	GetPhotoVersions(ctx context.Context, photoID int) ([]repoModel.PhotoVersion, error)
@@ -28,7 +28,6 @@ type PhotoRepository interface {
 	GetPhotoVersionByToken(ctx context.Context, token string, filterParams *repoModel.FilterParams) (*repoModel.PhotoVersion, error)
 
 	// GetPublicPhotosByTokenPrefix возвращает все публичные фото, которые начинаются с заданного токена.
-	// TODO: tests
 	GetPublicPhotosByTokenPrefix(ctx context.Context, tokenPrefix string, filterParams *repoModel.FilterParams) ([]repoModel.PhotoWithPhotoVersion, error)
 
 	// DeletePhotoPublishedInfo удаляет запись repoModel.PublishedPhotoInfo из БД.

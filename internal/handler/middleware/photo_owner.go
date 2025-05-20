@@ -16,8 +16,11 @@ const (
 func PhotoOwner(photoService service.PhotoService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userUUID, exists := c.Get(UserUUIDKey)
-		if !exists {
-			c.AbortWithStatus(http.StatusUnauthorized)
+		if !exists || userUUID == "" {
+			response.NewErr(c,
+				http.StatusUnauthorized,
+				response.Unauthorized,
+				nil, "User not authorized.")
 			return
 		}
 

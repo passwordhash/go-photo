@@ -28,6 +28,10 @@ build: install-deps
 
 tests-build: install-deps generate-mock generate-mock
 
+integration-test:
+	@echo "Запуск интеграционных тестов..."
+	go test -v ./tests/...
+
 run-tests:
 	@echo "Установка go зависимостей..."
 	go mod tidy

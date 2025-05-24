@@ -1,7 +1,7 @@
 [
 	{
 		"label": "Docker Compose Up",
-		"command": "docker-compose up --no-deps --build app",
+		"command": "docker-compose --env-file .env -f docker/docker-compose.yml up --no-deps --build app",
 		"use_new_terminal": false,
 		"allow_concurrent_runs": false,
 		"reveal": "never",

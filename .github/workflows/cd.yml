@@ -9,6 +9,9 @@ jobs:
     build:
         runs-on: ubuntu-latest
 
+        env:
+            DOCKERFILE_PATH: ./docker/prod.Dockerfile
+
         steps:
             - name: Checkout
               uses: actions/checkout@v2
@@ -49,7 +52,7 @@ jobs:
                   context: .
                   push: true
                   no-cache: true
-                  file: ./prod.Dockerfile
+                  file: ${{ env.DOCKERFILE_PATH }}
                   tags: |
                       ${{ github.repository }}:latest
                       ${{ github.repository }}:${{ env.VERSION }}

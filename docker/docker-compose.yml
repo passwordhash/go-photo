@@ -1,6 +1,21 @@
 version: "3.9"
 
 services:
+    app:
+        container_name: go-photo-app
+        build:
+            context: ../
+            dockerfile: docker/Dockerfile
+        depends_on:
+            - postgres
+            - migrate
+        networks:
+            - shared-net
+        ports:
+            - ${HTTP_PORT}:${HTTP_PORT}
+        volumes:
+            - app_storage:/app/storage
+
     postgres:
         image: postgres:15
         container_name: go-photo-db
@@ -30,22 +45,6 @@ services:
             - postgres
         volumes:
             - ./migrations:/migrations
-
-    app:
-        container_name: go-photo-app
-        env_file: .env
-        networks:
-            - shared-net
-        depends_on:
-            - postgres
-            - migrate
-        ports:
-            - ${HTTP_PORT}:${HTTP_PORT}
-        build:
-            context: .
-            dockerfile: prod.Dockerfile
-        volumes:
-            - app_storage:/app/storage
 
 volumes:
     db_data:

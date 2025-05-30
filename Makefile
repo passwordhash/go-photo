@@ -16,15 +16,19 @@ UTILS_DIR = internal/utils
 PB_DIR = pkg/account_v1
 DOCS_DIR = ./docs
 
-.PHONY: install-deps generate test clean run-tests build compose-up \
+.PHONY: install-deps generate test clean run-tests up compose-up \
 	generate-pb generate-mock swagger migrate-up-remote migrate-down tests-build
 
 # ==========================
 # Локальная разработка / Тесты
 # ==========================
 
-build: install-deps
-	docker-compose up -d
+up:
+	docker-compose \
+		--env-file .env \
+		-p go-photo \
+		-f docker/docker-compose.yml \
+		up -d
 
 tests-build: install-deps generate-mock generate-mock
 

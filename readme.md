@@ -2,17 +2,17 @@
 [![Swagger UI](https://img.shields.io/badge/docs-Swagger-blue?logo=swagger)](https://go-photo.passwordhash.tech/api/v1/docs/index.html)
 [![codecov](https://codecov.io/gh/passwordhash/go-photo/branch/develop/graph/badge.svg?token=4TW15AUT4C)](https://codecov.io/gh/passwordhash/go-photo)
 
-Микросервис для загрузки, обработки и хранения фотографий, написанный на языке *Go*. Он предоставляет *RESTful API* для загрузки, получения и удаления фотографий. Микросервис использует [внешний Auth-сервис](https://github.com/passwordhash/account-microservice) по *gRPC* для выполнения аутентификации и авторизации пользователей.
+Микросервис для загрузки, обработки и хранения фотографий, написанный на языке *Go*. Он предоставляет *RESTful API* для загрузки, получения и удаления фотографий. Микросервис использует [внешний SSO-сервис](https://github.com/passwordhash/go-sso) по *gRPC* для выполнения аутентификации и авторизации пользователей.
 
 ---
 
 ## Зависимости проекта
 
 - [Go](https://golang.org/) версии 1.24 или выше
-- Упомянутый выше account-microservice по gRPC
-- [Репозиторий](https://github.com/passwordhash/protobuf-files) с моими protobuf файлами
-- БД: PostgreSQL версии 15 или выше и миграции с Migrate 
-- Генерация: protoc, protoc-gen-go, protoc-gen-go-grpc, swagger, mockgen
+- Упомянутый выше go-sso, который предоставляет *gRPC* API для аутентификации и авторизации пользователей
+- [Библиотека](https://github.com/passwordhash/protos) с моими proto файлами и сгенерированными кодами, моки
+- БД: PostgreSQL версии 15 или выше и миграции с Migrate
+- Генерация: swagger, mockgen
 
 ## Develop развертывание в Docker
 
@@ -20,25 +20,29 @@
 
 - Склонировать репозиторий
     ```
-    git clone https://github.com/passwordhash/go-photo.git ./go-photo
+    git clone https://github.com/passwordhash/go-photo.git
     cd go-photo
     ```
-  
+
 - Заполнить файл `.env` на основе [.env.example](.env.example)
     ```
-    cp .env.example .env
+    cp docker/.env.example docker/.env
     ```
 
 - Поднять проект
     ```
-    docker-compose up -d
+    make upp
     ```
-  
-## Описание CI/CD 
+    или вручную (p.s. команда может быть неактульной)
+    ```
+    docker-compose -p go-photo -f docker/docker-compose.yml up -d
+    ```
+
+## Описание CI/CD
 
 ### Непрерывная интеграция (CI)
 
-При разработке этого проекта я научился настраивать и использовать процессы непрерывной интеграции (CI). 
+При разработке этого проекта я научился настраивать и использовать процессы непрерывной интеграции (CI).
 
 При любом push/pull request запускается GitHub Actions, который выполняет следующие шаги:
 1. Сборка проекта на удаленном сервере.

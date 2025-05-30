@@ -116,8 +116,6 @@ jobs:
                         --name ${{ env.CONTAINER_NAME }} \
                         ${{ github.repository }}:latest
 
-                      rm -f .env
-
     migrate:
         needs: deploy
 

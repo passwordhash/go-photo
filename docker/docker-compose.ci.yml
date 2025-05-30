@@ -5,7 +5,7 @@ services:
         build:
             context: ../
             dockerfile: docker/Dockerfile
-        env_file: .env.ci
+        env_file: .env
         depends_on:
             - postgres
             - migrate
@@ -19,9 +19,8 @@ services:
     postgres:
         image: postgres:15
         restart: always
-        env_file: .env.ci
         ports:
-            - "${POSTGRES_OUT_PORT}:${POSTGRES_PORT}"
+            - "${POSTGRES_PORT}:5432"
         networks:
             - shared-net
         environment:
@@ -34,19 +33,16 @@ services:
 
     migrate:
         image: migrate/migrate
-        env_file: .env.ci
-        networks:
-            - shared-net
         entrypoint:
             [
                 "sh",
                 "-c",
-                "sleep 5 && migrate -path /migrations -database postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}?sslmode=disable up",
+                "sleep 5 && migrate -path /migrations -database postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable up",
             ]
         depends_on:
             - postgres
         volumes:
-            - ../migrations:/migrations
+            - ./migrations:/migrations
 
 volumes:
     db_data:
@@ -54,4 +50,4 @@ volumes:
 
 networks:
     shared-net:
-        # external: true
+        external: true
